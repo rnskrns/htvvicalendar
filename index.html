@@ -544,7 +544,9 @@
 
         @media screen and (max-width: 768px) {
             .calendar-body { flex-direction: column; }
-            .memo-panel-container.open { width: 100%; padding-left: 0; margin-top: 20px; height: 300px; }
+            .memo-panel-container { order: -1; width: 100%; }
+            .memo-panel-container.open { width: 100%; padding-left: 0; margin-top: 20px; height: auto; max-height: none; }
+            .memo-list { max-height: 260px; }
         }
 
         #toastMessage {
