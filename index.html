@@ -544,17 +544,17 @@
 
         @media screen and (max-width: 768px) {
             .calendar-body { flex-direction: column; }
-            .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 18px; margin-top: 20px; }
+            .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px; margin-top: 16px; }
             .memo-panel-container.open { width: 100%; padding-left: 0; height: auto; max-height: none; }
             .memo-panel-header { flex-direction: column; align-items: stretch; gap: 12px; }
-            .memo-tabs { width: 100%; overflow-x: auto; padding-left: 8px; }
+            .memo-tabs { width: 100%; overflow-x: auto; padding: 0 8px 4px 8px; margin: 0 -8px 8px -8px; }
             .memo-tab { flex: 1 1 auto; min-width: 0; padding: 10px 12px; margin-right: 6px; }
             .memo-add-button { align-self: flex-end; }
             .memo-input-area { gap: 14px; }
             .memo-item-input { min-height: 120px; padding: 16px; }
-            .memo-list { max-height: 280px; padding-right: 0; }
-            .memo-item-entry { padding: 14px; }
-            .memo-item-entry span { margin-right: 8px; }
+            .memo-list { max-height: 280px; padding: 0 4px 0 0; }
+            .memo-item-entry { padding: 14px; width: 100%; }
+            .memo-item-entry span { margin-right: 12px; }
             .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; }
             .memo-input-actions .btn { flex: 1; min-width: 140px; }
         }
