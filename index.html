@@ -150,18 +150,14 @@
         .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
+        /* 무모순 연산을 위해 자바스크립트 인라인 대신 부드러운 기본 트랜지션 클래스 지정 */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
             gap: 0; 
-            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease-out;
-            opacity: 1;
-            transform: translateX(0);
+            transition: transform 0.2s ease-in-out, opacity 0.18s ease-in-out;
         }
         .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
-
-        .slide-left { transform: translateX(-30px); opacity: 0; }
-        .slide-right { transform: translateX(30px); opacity: 0; }
 
         .week-row {
             display: grid;
@@ -350,7 +346,6 @@
         .admin-active { background: var(--admin-color) !important; }
         .admin-active svg { fill: white !important; }
 
-        /* 버튼 고정 직경 적용으로 모양 찌그러짐 원천 방어 */
         .icon-circle-btn, .nav-btn {
             background: #F5F5F5; border: none; width: 50px; height: 50px; border-radius: 50%;
             cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
@@ -445,7 +440,6 @@
             .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
             .today-summary { width: 100%; max-width: 100%; }
             
-            /* 화살표 크기 소폭 축소로 글씨와 조화 최적화 */
             .nav-btn { width: 44px; height: 44px; }
             
             .calendar-header {
@@ -453,7 +447,6 @@
                 align-items: center;
                 gap: 16px;
             }
-            /* 글씨 찌그러짐을 예방하기 위해 모바일 제목 크기를 적정 볼륨(text-xl)으로 스케일 하향 */
             .calendar-header h2 { font-size: 1.25rem !important; line-height: 1.75rem !important; text-align: center; min-width: 170px !important; }
             .calendar-grid {
                 grid-template-columns: 1fr;
@@ -1088,45 +1081,41 @@
         function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
         function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
         
-        // [완벽 보완] 브라우저 간 가속도 차이 문제를 해결한 불침번 타임-스위칭 잠금 엔진
+        // [완벽 개선] 가동성 100% 보장하는 무결성 Tailwind 전용 스위칭 엔진
         function moveMonth(v) {
-            if (isTransitioning) return; // 실행 중이면 클릭 씹음
-            isTransitioning = true;
+            if (isTransitioning) return;
             
             const grid = document.getElementById('calendarGrid');
             const isMobile = window.innerWidth < 768;
 
             if (isMobile) {
-                // 1단계: 기존 데이터를 담은 채 방향에 맞춰 페이드아웃 슬라이딩
-                grid.classList.add(v > 0 ? 'slide-left' : 'slide-right');
+                isTransitioning = true;
+                
+                // 1단계: 순수 Tailwind 클래스만을 활용하여 옆으로 부드럽게 퇴장 연출 (밀어내며 투명화)
+                grid.classList.add('opacity-0', v > 0 ? '-translate-x-8' : 'translate-x-8');
 
-                // 200ms 애니메이션이 딱 끝나는 타이밍에 교체 진행
                 setTimeout(() => {
+                    // 데이터 갱신 적용 (날짜 연산)
                     currentDate.setDate(currentDate.getDate() + (v * 7));
-                    renderCalendar(); // 알맹이 갱신
+                    renderCalendar();
 
-                    // 2단계: 효과 클래스를 빼고 반대편 가상 공간에 대기 배치 (트랜지션 끄기)
-                    grid.style.transition = 'none';
-                    grid.classList.remove('slide-left', 'slide-right');
-                    grid.style.opacity = '0';
-                    grid.style.transform = v > 0 ? 'translateX(30px)' : 'translateX(-30px)';
+                    // 2단계: 효과 클래스를 초기화하고 반대편 방향 대기실에 배치
+                    grid.classList.remove('-translate-x-8', 'translate-x-8');
+                    grid.classList.add(v > 0 ? 'translate-x-8' : '-translate-x-8');
 
-                    // 브라우저가 변경된 스타일 좌표를 그리도록 살짝 유예 후 중앙 인입
+                    // 3단계: 브라우저가 화면을 그리는 주기에 맞춰 다시 중앙으로 부드럽게 인입
                     setTimeout(() => {
-                        grid.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease-out';
-                        grid.style.opacity = '1';
-                        grid.style.transform = 'translateX(0)';
+                        grid.classList.remove('opacity-0', '-translate-x-8', 'translate-x-8');
                         
-                        // 인입 연출 완료 후 플래그 완벽 해제 (연속 클릭 100% 보장)
+                        // 인입 연출 처리 완료 직후 완벽하게 잠금장치 초기화
                         setTimeout(() => {
                             isTransitioning = false;
-                        }, 210);
-                    }, 20);
+                        }, 200);
+                    }, 30);
                 }, 200);
             } else {
                 currentDate.setMonth(currentDate.getMonth() + v);
                 renderCalendar();
-                isTransitioning = false;
             }
         }
 
