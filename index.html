@@ -150,12 +150,11 @@
         .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
-        /* 무모순 연산을 위해 자바스크립트 인라인 대신 부드러운 기본 트랜지션 클래스 지정 */
+        /* 모선 충돌을 방지하기 위해 transition 구문을 완전히 제거 및 단순화 */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
             gap: 0; 
-            transition: transform 0.2s ease-in-out, opacity 0.18s ease-in-out;
         }
         .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
 
@@ -665,7 +664,6 @@
         let currentAMPM = '오전';
         let activeDateId = '';
         let pickerYear = currentDate.getFullYear();
-        let isTransitioning = false;
 
         function getWeekOfMonth(date) {
             const target = new Date(date);
@@ -903,8 +901,11 @@
             } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
         }
 
+        // [구조 수정] DOM의 안전하고 직관적인 완전 재생성 방식으로 전환하여 에러 소지 원천 봉쇄
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = ''; // 오류 방지를 위해 모바일/데스크톱 불문 일괄 초기화
+            
             const isMobile = window.innerWidth < 768;
             
             if (isMobile) {
@@ -921,24 +922,7 @@
                 const yoils = ['월', '화', '수', '목', '금', '토', '일'];
                 const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
                 
-                if (grid.querySelectorAll('.week-row').length !== 7) {
-                    grid.innerHTML = '';
-                    for (let i = 0; i < 7; i++) {
-                        const row = document.createElement('div');
-                        row.className = 'week-row';
-                        row.innerHTML = `
-                            <div class="week-day-label">
-                                <span class="week-day-name"></span>
-                                <span class="week-day-num"></span>
-                            </div>
-                            <div class="week-events"></div>
-                        `;
-                        grid.appendChild(row);
-                    }
-                }
-                
-                const rows = grid.querySelectorAll('.week-row');
-                
+                // 루프 내부 가변을 막고 순수 독립 노드 방식으로 행 인입
                 for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(monday);
                     dayDate.setDate(monday.getDate() + i);
@@ -948,31 +932,36 @@
                     const y = dayDate.getFullYear();
                     const dateId = `${y}-${m}-${num}`;
                     
-                    const row = rows[i];
+                    const row = document.createElement('div');
+                    row.className = 'week-row';
                     if (isAdmin) {
                         row.onclick = () => openAddModal(dateId);
-                    } else {
-                        row.onclick = null;
                     }
                     
-                    const nameSpan = row.querySelector('.week-day-name');
-                    nameSpan.className = `week-day-name ${yoilColors[i] || ''}`;
-                    nameSpan.innerText = yoils[i];
+                    const dayLabel = document.createElement('div');
+                    dayLabel.className = 'week-day-label';
                     
-                    const numSpan = row.querySelector('.week-day-num');
+                    const dayName = document.createElement('span');
+                    dayName.className = `week-day-name ${yoilColors[i] || ''}`;
+                    dayName.innerText = yoils[i];
+                    
+                    const dayNumber = document.createElement('span');
                     const today = new Date();
                     const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
                     
                     if (isToday) {
-                        numSpan.className = 'today-circle';
-                        numSpan.innerText = num;
+                        dayNumber.className = 'today-circle';
+                        dayNumber.innerText = num;
                     } else {
-                        numSpan.className = `week-day-num ${yoilColors[i] || ''}`;
-                        numSpan.innerText = num;
+                        dayNumber.className = `week-day-num ${yoilColors[i] || ''}`;
+                        dayNumber.innerText = num;
                     }
                     
-                    const eventsDiv = row.querySelector('.week-events');
-                    eventsDiv.innerHTML = '';
+                    dayLabel.appendChild(dayName);
+                    dayLabel.appendChild(dayNumber);
+                    
+                    const eventsDiv = document.createElement('div');
+                    eventsDiv.className = 'week-events';
                     
                     if (events[dateId] && events[dateId].length > 0) {
                         events[dateId].forEach((ev, idx) => {
@@ -995,6 +984,10 @@
                         noEvent.innerText = '등록된 일정이 없습니다.';
                         eventsDiv.appendChild(noEvent);
                     }
+                    
+                    row.appendChild(dayLabel);
+                    row.appendChild(eventsDiv);
+                    grid.appendChild(row);
                 }
             } else {
                 grid.className = 'calendar-grid';
@@ -1081,42 +1074,26 @@
         function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
         function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
         
-        // [완벽 개선] 가동성 100% 보장하는 무결성 Tailwind 전용 스위칭 엔진
+        // [완벽 복구] 간섭 현상을 유발하던 모션 락을 100% 철거하고 기준일 고정형 날짜 연산 방식으로 교정
         function moveMonth(v) {
-            if (isTransitioning) return;
-            
-            const grid = document.getElementById('calendarGrid');
             const isMobile = window.innerWidth < 768;
 
             if (isMobile) {
-                isTransitioning = true;
+                // 기준일(월요일)을 명확하게 산출한 후 일주일 단위로 통째로 가감하여 날짜 왜곡 버그 해결
+                const target = new Date(currentDate);
+                const dayNum = target.getDay();
+                const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
+                const monday = new Date(target.setDate(diff));
                 
-                // 1단계: 순수 Tailwind 클래스만을 활용하여 옆으로 부드럽게 퇴장 연출 (밀어내며 투명화)
-                grid.classList.add('opacity-0', v > 0 ? '-translate-x-8' : 'translate-x-8');
-
-                setTimeout(() => {
-                    // 데이터 갱신 적용 (날짜 연산)
-                    currentDate.setDate(currentDate.getDate() + (v * 7));
-                    renderCalendar();
-
-                    // 2단계: 효과 클래스를 초기화하고 반대편 방향 대기실에 배치
-                    grid.classList.remove('-translate-x-8', 'translate-x-8');
-                    grid.classList.add(v > 0 ? 'translate-x-8' : '-translate-x-8');
-
-                    // 3단계: 브라우저가 화면을 그리는 주기에 맞춰 다시 중앙으로 부드럽게 인입
-                    setTimeout(() => {
-                        grid.classList.remove('opacity-0', '-translate-x-8', 'translate-x-8');
-                        
-                        // 인입 연출 처리 완료 직후 완벽하게 잠금장치 초기화
-                        setTimeout(() => {
-                            isTransitioning = false;
-                        }, 200);
-                    }, 30);
-                }, 200);
+                // 월선 경계 오류 방지를 위해 월요일 좌표에서 정확하게 7일을 더하고 뺌
+                monday.setDate(monday.getDate() + (v * 7));
+                currentDate = monday; // 현재 제어 날짜를 완전히 갱신
             } else {
                 currentDate.setMonth(currentDate.getMonth() + v);
-                renderCalendar();
             }
+            
+            // 딜레이 없이 즉시 렌더링을 호출하여 무한 연타 가능 상태 구현
+            renderCalendar();
         }
 
         function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
