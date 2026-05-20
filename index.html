@@ -132,7 +132,22 @@
         }
 
         .top-action-bar { display: flex; gap: 12px; z-index: 50; }
-        .site-admin-actions { display: flex; gap: 12px; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+
+        /* [구조 변경] 우측 하단에 항상 완벽하게 떠다니는 플로팅 전용 고정 레이아웃 */
+        .site-admin-actions { 
+            display: flex; 
+            gap: 12px; 
+            position: fixed; 
+            right: 24px; 
+            bottom: 24px; 
+            z-index: 9999; 
+            background: rgba(255, 253, 240, 0.7);
+            padding: 8px;
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
 
         .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
         
@@ -150,7 +165,6 @@
         .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
-        /* 모선 충돌을 방지하기 위해 transition 구문을 완전히 제거 및 단순화 */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
@@ -461,6 +475,10 @@
             .main-logo { height: 90px; }
             .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
             .calendar-main { flex: 1; min-width: 0; width: 100%; }
+            
+            /* 모바일 플로팅 최적화 */
+            .site-admin-actions { right: 16px; bottom: 16px; padding: 6px; }
+            .site-admin-actions .icon-circle-btn { width: 44px; height: 44px; }
         }
     </style>
 </head>
@@ -505,15 +523,16 @@
                 <div class="calendar-grid" id="calendarGrid"></div>
             </div>
         </div>
+    </div>
 
-        <div class="site-admin-actions">
-            <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
-                <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-            </button>
-            <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
-                <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7)1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
-            </button>
-        </div>
+    <!-- 스크롤해도 항상 고정되어 따라오는 관리 버튼 바 -->
+    <div class="site-admin-actions">
+        <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
+            <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </button>
+        <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
+            <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7)1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
+        </button>
     </div>
 
     <!-- Modals -->
@@ -901,10 +920,9 @@
             } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
         }
 
-        // [구조 수정] DOM의 안전하고 직관적인 완전 재생성 방식으로 전환하여 에러 소지 원천 봉쇄
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = ''; // 오류 방지를 위해 모바일/데스크톱 불문 일괄 초기화
+            grid.innerHTML = '';
             
             const isMobile = window.innerWidth < 768;
             
@@ -922,7 +940,6 @@
                 const yoils = ['월', '화', '수', '목', '금', '토', '일'];
                 const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
                 
-                // 루프 내부 가변을 막고 순수 독립 노드 방식으로 행 인입
                 for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(monday);
                     dayDate.setDate(monday.getDate() + i);
@@ -1074,25 +1091,21 @@
         function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
         function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
         
-        // [완벽 복구] 간섭 현상을 유발하던 모션 락을 100% 철거하고 기준일 고정형 날짜 연산 방식으로 교정
         function moveMonth(v) {
             const isMobile = window.innerWidth < 768;
 
             if (isMobile) {
-                // 기준일(월요일)을 명확하게 산출한 후 일주일 단위로 통째로 가감하여 날짜 왜곡 버그 해결
                 const target = new Date(currentDate);
                 const dayNum = target.getDay();
                 const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
                 const monday = new Date(target.setDate(diff));
                 
-                // 월선 경계 오류 방지를 위해 월요일 좌표에서 정확하게 7일을 더하고 뺌
                 monday.setDate(monday.getDate() + (v * 7));
-                currentDate = monday; // 현재 제어 날짜를 완전히 갱신
+                currentDate = monday;
             } else {
                 currentDate.setMonth(currentDate.getMonth() + v);
             }
             
-            // 딜레이 없이 즉시 렌더링을 호출하여 무한 연타 가능 상태 구현
             renderCalendar();
         }
 
