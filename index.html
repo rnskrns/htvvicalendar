@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTVVI Schedule Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --point-yellow: #FFD54F;
+            --light-yellow: #FFF9C4;
+            --bg-cream: #FFFDF0;
+            --text-dark: #4E4942;
+            --white: #FFFFFF;
+            --radius-xl: 40px;
+            --radius-lg: 30px;
+            --radius-md: 20px;
+            --font-main: 16px;
+            --font-date: 16px;
+            --font-event: 15px;
+            --font-title-lg: 36px;
+            --font-modal-label: 14px;
+            --color-personal: #FFF176;
+            --color-collab: #B3E5FC;
+            --color-off: #E0E0E0;
+            --color-tbd: #E1BEE7;
+            --admin-color: #FF7043;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* --- Header & Logo --- */
+        .main-header {
+            width: 96%;
+            max-width: 1600px;
+            display: grid;
+            grid-template-columns: 1fr auto minmax(320px, 1fr);
+            align-items: center;
+            padding: 40px 45px 20px;
+            margin: 0 auto;
+            position: relative;
+            gap: 24px;
+        }
+
+        .header-left, .header-right {
+            display: flex;
+        }
+
+        .header-left { justify-content: flex-start; }
+        .header-right { justify-content: flex-end; align-items: flex-start; }
+
+        .header-center {
+            grid-column: 2;
+            justify-self: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding: 0 40px;
+        }
+
+        .main-logo { height: 120px; object-fit: contain; display: block; }
+
+        .fallback-logo {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--text-dark);
+            letter-spacing: -1px;
+            display: none;
+        }
+
+        /* --- Today Summary --- */
+        .today-summary {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border: 1px solid #F5F5F5;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            word-break: break-word;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .summary-item:hover { background-color: #F9F9F9; }
+
+        .summary-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .summary-title { flex: 1; font-weight: 700; color: var(--text-dark); }
+        .summary-time { font-size: 12px; color: #7a7a7a; white-space: nowrap; }
+
+        .type-dot-합방 { background: #81D4FA; }
+        .type-dot-개인방송 { background: #FFD54F; }
+        .type-dot-휴방 { background: #B0BEC5; }
+        .type-dot-미확정 { background: #CE93D8; }
+
+        .container {
+            width: 96%;
+            max-width: 1600px;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 45px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+            position: relative;
+        }
+
+        .top-action-bar { display: flex; gap: 12px; z-index: 50; }
+        .site-admin-actions { display: flex; gap: 12px; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+
+        .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
+        
+        /* 컨트롤러 중앙 정렬 스타일 보완 */
+        .calendar-header { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center;
+            gap: 16px;
+            width: 100%; 
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
+        .calendar-main { flex: 1; min-width: 0; width: 100%; }
+
+        /* 부드러운 애니메이션 트랜지션 처리 */
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 0; 
+            transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.22s ease-out;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
+
+        /* 슬라이드 방향별 모션 클래스 */
+        .slide-left { transform: translateX(-30px); opacity: 0; }
+        .slide-right { transform: translateX(30px); opacity: 0; }
+
+        .week-row {
+            display: grid;
+            grid-template-columns: 72px 1fr;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid #F3F4F6;
+            border-radius: var(--radius-md);
+            align-items: center;
+            background: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .week-row:hover {
+            border-color: var(--point-yellow);
+            background: #FFFDF5;
+        }
+
+        .week-day-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .week-day-name { font-weight: 800; font-size: 13px; color: #A09586; margin-bottom: 2px; }
+        .week-day-num { font-size: 20px; font-weight: 900; color: var(--text-dark); }
+        .week-events { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        .week-no-event { color: #A1A1AA; font-size: 13px; font-weight: 700; padding: 10px 14px; background: #FAFAFA; border-radius: 12px; border: 1.5px dashed #E4E4E7; }
+
+        .day-label { padding-bottom: 15px; text-align: center; font-weight: 900; font-size: 15px; color: #C0B7A9; }
+
+        .day {
+            background: transparent;
+            min-height: 180px;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            border: 1px dashed #E5E1DA;
+            transition: 0.2s;
+            overflow: hidden;
+        }
+
+        .day:hover {
+            background: #FFFEF5;
+            border-style: solid;
+            border-color: var(--point-yellow);
+            z-index: 10;
+        }
+
+        .day.not-current { pointer-events: none; border-color: #F0F0F0; }
+
+        .day-num {
+            padding: 10px 15px;
+            font-weight: 800;
+            font-size: var(--font-date);
+            position: relative;
+            z-index: 5;
+            background: transparent;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .event-container { flex: 1; display: flex; flex-direction: column; width: 100%; padding: 4px; gap: 4px; }
+        .event-tag {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            padding: 8px 10px;
+            font-size: var(--font-event);
+            font-weight: 800;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            transition: 0.2s;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+            gap: 4px;
+        }
+
+        .event-tag:hover { transform: scale(0.98); }
+
+        .event-time-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            display: inline-block;
+            border: 1.5px solid #FFFFFF;
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            padding: 3px 7px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .type-개인방송 { background-color: var(--color-personal); color: #827717; }
+        .type-합방 { background-color: var(--color-collab); color: #01579B; }
+        .type-휴방 { background-color: var(--color-off); color: #616161; }
+        .type-미확정 { background-color: var(--color-tbd); color: #4A148C; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 90%;
+            max-width: 480px;
+            padding: 40px;
+            border-radius: var(--radius-xl);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 25px; }
+        .form-group { margin-bottom: 24px; }
+        .form-group label {
+            display: block;
+            font-size: var(--font-modal-label);
+            font-weight: 800;
+            color: #A09586;
+            margin-bottom: 10px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border: 2px solid #F5F5F5;
+            background: #F9F9F9;
+            font-family: inherit;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .custom-time-picker { display: flex; flex-direction: column; gap: 15px; }
+        .ampm-toggle { display: flex; gap: 8px; }
+        .ampm-btn {
+            flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #F0F0EE;
+            background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .ampm-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
+
+        .time-input-container {
+            display: flex; align-items: center; gap: 10px; justify-content: center;
+            background: #F9F9F9; padding: 15px; border-radius: 15px;
+        }
+        .time-field { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .time-field span { font-size: 10px; color: #AAA; font-weight: 700; }
+        .time-field input { width: 70px; text-align: center; font-size: 20px; font-weight: 900; padding: 10px; }
+        .time-colon { font-size: 24px; font-weight: 900; color: #CCC; margin-top: 15px; }
+
+        .btn-group { display: flex; gap: 12px; margin-top: 35px; flex-wrap: wrap; }
+        .btn {
+            flex: 1; padding: 16px; border: none; border-radius: var(--radius-md);
+            font-weight: 900; cursor: pointer; transition: 0.2s; text-align: center;
+        }
+        .btn-save { background: var(--point-yellow); color: #5D4037; }
+        .btn-cancel { background: #F0F0EE; color: #757575; }
+        .btn-danger { background: #FFEBEE; color: #D32F2F; }
+
+        .member-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; background: #F9F9F9; border-radius: 15px; margin-bottom: 10px; }
+        .member-img-preview { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #EEE; }
+
+        .profile-card { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 60px; }
+        .profile-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--point-yellow); background: #F0F0F0; }
+        .profile-name {
+            font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; width: 100%; text-align: center;
+        }
+
+        .admin-only-btn { display: none !important; }
+        .admin-only-btn.admin-visible { display: flex !important; }
+        .admin-active { background: var(--admin-color) !important; }
+        .admin-active svg { fill: white !important; }
+
+        .icon-circle-btn, .nav-btn {
+            background: #F5F5F5; border: none; width: 50px; height: 50px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .icon-circle-btn:hover, .nav-btn:hover { background: #EEEEEE; transform: translateY(-2px); }
+
+        .memo-btn {
+            background: #F5F5F5; border: none; height: 50px; padding: 0 20px; border-radius: 25px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: 0.2s; font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 15px; color: var(--text-dark);
+        }
+        .memo-btn:hover { background: #EEEEEE; transform: translateY(-2px); }
+
+        .today-circle {
+            background: #B3E5FC; color: #0277BD; border-radius: 50%; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center; margin-left: -5px;
+        }
+
+        .inline-memo-container {
+            width: 100%; max-height: 0; overflow: hidden;
+            transition: max-height 0.4s ease, margin-bottom 0.4s ease, opacity 0.3s ease; opacity: 0;
+        }
+        .inline-memo-container.open { max-height: 500px; margin-bottom: 25px; opacity: 1; }
+        .inline-memo-text {
+            width: 100%; min-height: 150px; background: #F9F9F9; border: 2px solid #F5F5F5;
+            border-radius: var(--radius-md); padding: 20px; font-family: inherit; font-size: 15px;
+            outline: none; resize: vertical; box-sizing: border-box; color: var(--text-dark);
+        }
+        .inline-memo-text:focus { border-color: var(--point-yellow); }
+
+        #toastMessage {
+            display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 30px;
+            z-index: 9999; font-weight: 700; font-size: 14px;
+        }
+
+        .pw-modal { width: 320px; }
+        .admin-pw { width: 100%; padding: 16px; border-radius: 2rem; border: 2px solid #E5E7EB; margin-bottom: 12px; }
+        .pw-error { color: #ef4444; font-size: 12px; text-align: center; margin-bottom: 12px; }
+        .hidden { display: none; }
+
+        .member-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+        .member-add-box { background: var(--light-yellow); padding: 20px; border-radius: 20px; }
+        .member-input { width: 100%; padding: 15px; border-radius: 1rem; border: none; margin-bottom: 12px; box-sizing: border-box; }
+        .member-upload-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .member-upload-btn, .image-upload-btn { background: #ffffff; border: none; padding: 12px 16px; border-radius: 1rem; font-weight: 700; cursor: pointer; }
+
+        .info-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; text-align: center; }
+        .info-block { background: transparent; padding: 10px 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
+        .profile-list { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; justify-content: center; }
+        
+        .time-badge { 
+            background: #E1F5FE; color: #0288D1; border: 2px solid #B3E5FC; 
+            font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 20px; 
+            margin-bottom: 10px; display: inline-block; 
+        }
+
+        .month-btn {
+            padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9;
+            font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center;
+        }
+        .month-btn:hover, .month-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
+
+        @media screen and (max-width: 1024px) {
+            .main-header { 
+                display: grid; 
+                grid-template-columns: 1fr; 
+                gap: 20px; 
+                padding: 60px 45px 20px;
+                align-items: center; 
+            }
+            .header-left, .header-right { justify-content: center; width: 100%; padding: 0; }
+            .header-right { margin-left: 0; align-items: center; position: static; justify-self: center; }
+            .header-center { grid-column: 1; justify-self: center; }
+            .calendar-top { flex-direction: column; }
+            .calendar-body { flex-direction: column; }
+            .today-summary { width: 100%; max-width: 400px; }
+            .top-action-bar { position: static; right: auto; bottom: auto; margin-top: 16px; justify-content: center; }
+        }
+
+        @media screen collector and (max-width: 768px) {
+            .main-header { 
+                display: flex;
+                flex-direction: column;
+                grid-template-columns: none;
+                width: 100%;
+                padding: 40px 16px 20px;
+                gap: 16px;
+            }
+            .header-center { width: 100%; padding: 0; }
+            .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
+            .today-summary { width: 100%; max-width: 100%; }
+            .icon-circle-btn { width: 40px; height: 40px; }
+            .calendar-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+            }
+            .calendar-header h2 { font-size: 24px; text-align: center; }
+            .calendar-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .day-label {
+                text-align: left;
+                padding-left: 15px;
+                font-size: 14px;
+            }
+            .day { min-height: 120px; }
+            .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
+            .main-logo { height: 90px; }
+            .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
+            .calendar-main { flex: 1; min-width: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+    <header class="main-header">
+        <div class="header-left"></div>
+        <div class="header-center">
+            <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='block';">
+            <div id="fallbackLogo" class="fallback-logo">htvvi</div>
+        </div>
+        <div class="header-right">
+            <div class="today-summary">
+                <h4 class="font-black text-xl mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-amber-400 rounded-full"></span>오늘 일정
+                </h4>
+                <div id="summaryContent"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 컨트롤바 구성 정중앙 정렬화 -->
+        <div class="calendar-top">
+            <div class="calendar-header mt-2">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; width: 100%;">
+                    <button class="nav-btn" onclick="moveMonth(-1)">◀</button>
+                    <h2 id="monthDisplay" class="text-4xl font-black cursor-pointer hover:text-amber-400 transition-colors text-center select-none" style="min-width: 240px;" title="월 선택" onclick="openMonthPicker()"></h2>
+                    <button class="nav-btn" onclick="moveMonth(1)">▶</button>
+                </div>
+                <button class="memo-btn mx-auto" title="메모장 열기/닫기" onclick="toggleMemo()">
+                    <svg viewBox="0 0 24 24" width="20" style="fill: currentColor;"><path d="M14,2H6C4.9,2,4.01,2.9,4.01,4L4,20c0,1.1,0.89,2,1.99,2H18c1.1,0,2-0.9,2-2V8L14,2z M18,20H6V4h7v5h5V20z"/></svg>
+                    <span>MEMO</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="calendar-body">
+            <div class="calendar-main">
+                <div id="inlineMemo" class="inline-memo-container">
+                    <textarea id="memoText" class="inline-memo-text" placeholder="메모를 입력하세요..." oninput="saveMemo()"></textarea>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+
+        <div class="site-admin-actions">
+            <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
+                <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            </button>
+            <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
+                <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="modal-title">일정 관리</h2>
+            <input type="hidden" id="editIndex">
+            <div class="form-group"><label>제목</label><input type="text" id="eventTitle" placeholder="일정 제목을 입력하세요"></div>
+            <div class="form-group">
+                <label>시간 설정</label>
+                <div class="custom-time-picker">
+                    <div class="ampm-toggle">
+                        <button type="button" id="ampmAM" class="ampm-btn" onclick="setAMPM('오전')">오전</button>
+                        <button type="button" id="ampmPM" class="ampm-btn" onclick="setAMPM('오후')">오후</button>
+                    </div>
+                    <div class="time-input-container">
+                        <div class="time-field">
+                            <span>시 (1~12)</span>
+                            <input type="number" id="timeHour" min="1" max="12" placeholder="12">
+                        </div>
+                        <span class="time-colon">:</span>
+                        <div class="time-field">
+                            <span>분 (0~59)</span>
+                            <input type="number" id="timeMin" min="0" max="59" placeholder="00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>유형</label>
+                <select id="eventType">
+                    <option value="개인방송">개인방송</option>
+                    <option value="합방">합방</option>
+                    <option value="휴방">휴방</option>
+                    <option value="미확정">미확정</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>일정 이미지</label>
+                <div class="file-upload-row">
+                    <input type="text" id="eventImageUrl" class="flex-1 w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]" placeholder="이미지 주소 (또는 업로드)">
+                    <button class="image-upload-btn mt-2" onclick="document.getElementById('eventImgFile').click()">파일 선택</button>
+                </div>
+                <input type="file" id="eventImgFile" hidden accept="image/*" onchange="handleEventImgUpload(this)">
+            </div>
+            <div class="form-group"><label>참여 멤버 (쉼표 구분)</label><input type="text" id="eventMembers" placeholder="멤버A, 멤버B"></div>
+            <div class="btn-group">
+                <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()">삭제</button>
+                <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
+                <button class="btn btn-save" onclick="saveEvent()">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <h3 id="infoTitle" class="info-title"></h3>
+            <div class="info-block">
+                <div id="infoTime" class="time-badge"></div>
+                <div id="infoMemberContainer" class="w-full mt-4">
+                    <div id="infoProfiles" class="profile-list"></div>
+                </div>
+            </div>
+            <button class="btn btn-cancel w-full mt-5" onclick="closeModal('infoModal')">닫기</button>
+        </div>
+    </div>
+    
+    <div id="pwModal" class="modal">
+        <div class="modal-content pw-modal">
+            <h3 class="text-center font-black mb-5">관리자 인증</h3>
+            <input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()">
+            <p id="pwError" class="pw-error hidden">틀렸습니다.</p>
+            <div class="btn-group">
+                <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>
+                <button class="btn btn-save" onclick="loginAdmin()">확인</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">멤버 DB 관리</h2>
+            <div id="memberList" class="member-list"></div>
+            <div class="member-add-box">
+                <h4 class="font-black mb-3">새 멤버 등록</h4>
+                <input type="text" id="newMemberName" class="member-input" placeholder="닉네임">
+                <div class="member-upload-row">
+                    <input type="text" id="newMemberImg" class="member-input flex-1" placeholder="프사 URL (또는 업로드)">
+                    <button class="member-upload-btn" onclick="document.getElementById('memberImgFile').click()">파일 선택</button>
+                    <input type="file" id="memberImgFile" hidden accept="image/*" onchange="handleMemberImgUpload(this)">
+                </div>
+                <button class="btn btn-save w-full" onclick="addMember()">멤버 추가하기</button>
+            </div>
+            <button class="btn btn-cancel w-full mt-4" onclick="closeModal('memberModal')">닫기</button>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content confirm-modal">
+            <h3 class="font-black mb-4" id="confirmMessage">정말 삭제하시겠습니까?</h3>
+            <div class="btn-group">
+                <button class="btn btn-cancel" onclick="closeModal('confirmModal')">취소</button>
+                <button id="confirmBtn" class="btn btn-danger">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="monthPickerModal" class="modal">
+        <div class="modal-content" style="max-width: 380px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <button class="nav-btn" onclick="changePickerYear(-1)">◀</button>
+                <h3 id="pickerYearDisplay" class="text-2xl font-black"></h3>
+                <button class="nav-btn" onclick="changePickerYear(1)">▶</button>
+            </div>
+            <div class="month-picker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+            <button class="btn btn-cancel w-full mt-5" onclick="closeModal('monthPickerModal')">닫기</button>
+        </div>
+    </div>
+
+    <div id="toastMessage"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
+            authDomain: "htvvi-calendar.firebaseapp.com",
+            projectId: "htvvi-calendar",
+            storageBucket: "htvvi-calendar.firebasestorage.app",
+            messagingSenderId: "629395623347",
+            appId: "1:629395623347:web:64b75d50633ac275c58fc6",
+            measurementId: "G-QECSWX905Y",
+            databaseURL: "https://htvvi-calendar-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let isAdmin = false;
+        let currentDate = new Date();
+        let events = {};
+        let members = {};
+        let currentAMPM = '오전';
+        let activeDateId = '';
+        let pickerYear = currentDate.getFullYear();
+        let isTransitioning = false; // 슬라이드 전환 플래그
+
+        function getWeekOfMonth(date) {
+            const target = new Date(date);
+            const day = target.getDay();
+            const diff = target.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(target.setDate(diff));
+            
+            const year = monday.getFullYear();
+            const month = monday.getMonth();
+            
+            const firstDay = new Date(year, month, 1);
+            const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+            
+            let firstMonday = new Date(year, month, 1 - firstDayOfWeek);
+            
+            const diffTime = monday.getTime() - firstMonday.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const weekNo = Math.floor(diffDays / 7) + 1;
+            
+            return { month: month + 1, week: weekNo };
+        }
+
+        async function handleEventImgUpload(input) {
+            if (input.files && input.files[0]) {
+                try {
+                    const file = input.files[0];
+                    showToast('일정 이미지를 업로드 중입니다...');
+                    const url = await uploadFileToStorage(file, `event-images/${Date.now()}_${file.name}`);
+                    document.getElementById('eventImageUrl').value = url;
+                    showToast('일정 이미지가 Firebase에 업로드되었습니다.');
+                } catch (error) { console.error(error); showToast('일정 이미지 업로드에 실패했습니다.'); }
+            }
+        }
+
+        async function handleMemberImgUpload(input) {
+            if (input.files && input.files[0]) {
+                try {
+                    const file = input.files[0];
+                    showToast('멤버 이미지를 업로드 중입니다...');
+                    const url = await uploadFileToStorage(file, `member-images/${Date.now()}_${file.name}`);
+                    document.getElementById('newMemberImg').value = url;
+                    showToast('멤버 이미지가 Firebase에 업로드되었습니다.');
+                } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); }
+            }
+        }
+
+        async function addMember() {
+            const name = document.getElementById('newMemberName').value.trim();
+            let img = document.getElementById('newMemberImg').value.trim();
+            if (!name) return showToast('닉네임을 입력해주세요.');
+            const fileInput = document.getElementById('memberImgFile');
+            if (!img && fileInput.files && fileInput.files[0]) {
+                try {
+                    showToast('이미지 업로드 중...');
+                    img = await uploadFileToStorage(fileInput.files[0], `member-images/${Date.now()}_${fileInput.files[0].name}`);
+                } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); return; }
+            }
+            const id = `member_${encodeURIComponent(name)}`;
+            const data = { name, img: img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(name[0] || '')}` };
+            try {
+                await setDoc(doc(db, 'members', id), data);
+                await loadMembersFromFirebase();
+                document.getElementById('newMemberName').value = '';
+                document.getElementById('newMemberImg').value = '';
+                fileInput.value = '';
+                renderMemberList();
+                showToast(`${name} 멤버가 추가되었습니다.`);
+            } catch (error) { console.error(error); showToast(`멤버 저장 실패: ${error.message}`); }
+        }
+
+        function deleteMember(name) {
+            const btn = document.getElementById('confirmBtn');
+            document.getElementById('confirmMessage').innerText = `[${name}] 멤버를 삭제할까요?`;
+            btn.onclick = async () => {
+                try {
+                    await deleteDoc(doc(db, 'members', `member_${encodeURIComponent(name)}`));
+                    delete members[name];
+                    renderMemberList();
+                    closeModal('confirmModal');
+                    showToast(`${name} 멤버가 삭제되었습니다.`);
+                } catch (error) { console.error(error); showToast('멤버 삭제에 실패했습니다.'); }
+            };
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        function openMemberManager() { renderMemberList(); document.getElementById('memberModal').style.display = 'flex'; }
+
+        function renderMemberList() {
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
+            Object.values(members).forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'member-list-item';
+                item.innerHTML = `<img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'"><div style="flex:1; font-weight:800;">${m.name}</div><button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>`;
+                list.appendChild(item);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            toast.innerText = msg; toast.style.display = 'block';
+            clearTimeout(showToast.timeout);
+            showToast.timeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function formatTime12h(timeStr) {
+            if (!timeStr) return '';
+            const [h, m] = timeStr.split(':').map(Number);
+            return `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${m.toString().padStart(2, '0')}`;
+        }
+        
+        function setAMPM(val) {
+            currentAMPM = val;
+            document.getElementById('ampmAM').classList.toggle('active', val === '오전');
+            document.getElementById('ampmPM').classList.toggle('active', val === '오후');
+        }
+        
+        async function uploadFileToStorage(file, path) {
+            const storageRef = ref(storage, path);
+            await uploadBytes(storageRef, file);
+            return await getDownloadURL(storageRef);
+        }
+        
+        async function loadMembersFromFirebase() {
+            members = {};
+            const snapshot = await getDocs(collection(db, 'members'));
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (!data || !data.name) return;
+                members[data.name] = { name: data.name, img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` };
+            });
+        }
+        
+        async function loadEventsFromFirebase() {
+            events = {};
+            const snapshot = await getDocs(collection(db, 'events'));
+            const docs = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (!data || !data.dateId) return;
+                docs.push({ ...data, id: docSnap.id });
+            });
+            docs.sort((a, b) => {
+                const [ay, am, ad] = a.dateId.split('-').map(Number);
+                const [by, bm, bd] = b.dateId.split('-').map(Number);
+                const adate = new Date(ay, am - 1, ad).getTime();
+                const bdate = new Date(by, bm - 1, bd).getTime();
+                if (adate !== bdate) return adate - bdate;
+                if (!a.time) return b.time ? 1 : 0;
+                if (!b.time) return a.time ? -1 : 0;
+                return a.time.localeCompare(b.time);
+            });
+            docs.forEach(data => {
+                if (!events[data.dateId]) events[data.dateId] = [];
+                events[data.dateId].push(data);
+            });
+        }
+        
+        async function loadData() {
+            try { await Promise.all([loadMembersFromFirebase(), loadEventsFromFirebase()]); }
+            catch (error) { console.error(error); }
+            finally { renderCalendar(); }
+        }
+
+        function openAddModal(id) {
+            activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
+            document.getElementById('editIndex').value = '-1';
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
+            document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
+            document.getElementById('eventMembers').value = ''; document.getElementById('eventType').value = '개인방송';
+            setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
+            document.getElementById('eventModal').style.display = 'flex';
+        }
+
+        function openEditModal(id, idx) {
+            activeDateId = id;
+            const ev = events[id][idx];
+            document.getElementById('modalTitle').innerText = '일정 수정';
+            document.getElementById('editIndex').value = idx;
+            document.getElementById('eventTitle').value = ev.title;
+            document.getElementById('eventType').value = ev.type;
+            document.getElementById('eventMembers').value = ev.members || '';
+            document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+            if (ev.time) {
+                const [h, m] = ev.time.split(':').map(Number);
+                setAMPM(h >= 12 ? '오후' : '오전');
+                document.getElementById('timeHour').value = h % 12 || 12;
+                document.getElementById('timeMin').value = m.toString().padStart(2, '0');
+            }
+            document.getElementById('delBtn').style.display = 'block';
+            document.getElementById('eventModal').style.display = 'flex';
+        }
+
+        async function saveEvent() {
+            const title = document.getElementById('eventTitle').value.trim();
+            if (!title) return showToast('제목을 입력하세요.');
+            const hRaw = document.getElementById('timeHour').value;
+            const mRaw = document.getElementById('timeMin').value;
+            let timeStr = '';
+            if (hRaw !== '') {
+                let h = parseInt(hRaw, 10);
+                const m = parseInt(mRaw || '0', 10);
+                if (currentAMPM === '오후' && h < 12) h += 12;
+                if (currentAMPM === '오전' && h === 12) h = 0;
+                timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            }
+            const data = {
+                title, time: timeStr, type: document.getElementById('eventType').value,
+                members: document.getElementById('eventMembers').value,
+                imageUrl: document.getElementById('eventImageUrl').value, dateId: activeDateId
+            };
+            const idx = parseInt(document.getElementById('editIndex').value, 10);
+            try {
+                if (idx === -1) await setDoc(doc(collection(db, 'events')), data);
+                else {
+                    const existingEvent = events[activeDateId][idx];
+                    if (existingEvent && existingEvent.id) await setDoc(doc(db, 'events', existingEvent.id), data);
+                    else await setDoc(doc(collection(db, 'events')), data);
+                }
+                await loadEventsFromFirebase();
+                closeModal('eventModal'); renderCalendar(); showToast('일정이 저장되었습니다.');
+            } catch (error) { console.error(error); showToast(`일정 저장 실패: ${error.message}`); }
+        }
+
+        async function deleteEvent() {
+            const idx = parseInt(document.getElementById('editIndex').value, 10);
+            if (!confirm('이 일정을 삭제할까요?')) return;
+            try {
+                const existingEvent = events[activeDateId][idx];
+                if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
+                await loadEventsFromFirebase(); closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
+            } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile) {
+                grid.className = 'calendar-grid weekly-view';
+                
+                const target = new Date(currentDate);
+                const dayNum = target.getDay();
+                const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
+                const monday = new Date(target.setDate(diff));
+                
+                const { month, week } = getWeekOfMonth(currentDate);
+                document.getElementById('monthDisplay').innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
+                
+                const yoils = ['월', '화', '수', '목', '금', '토', '일'];
+                const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
+                
+                if (grid.querySelectorAll('.week-row').length !== 7) {
+                    grid.innerHTML = '';
+                    for (let i = 0; i < 7; i++) {
+                        const row = document.createElement('div');
+                        row.className = 'week-row';
+                        row.innerHTML = `
+                            <div class="week-day-label">
+                                <span class="week-day-name"></span>
+                                <span class="week-day-num"></span>
+                            </div>
+                            <div class="week-events"></div>
+                        `;
+                        grid.appendChild(row);
+                    }
+                }
+                
+                const rows = grid.querySelectorAll('.week-row');
+                
+                for (let i = 0; i < 7; i++) {
+                    const dayDate = new Date(monday);
+                    dayDate.setDate(monday.getDate() + i);
+                    
+                    const num = dayDate.getDate();
+                    const m = dayDate.getMonth() + 1;
+                    const y = dayDate.getFullYear();
+                    const dateId = `${y}-${m}-${num}`;
+                    
+                    const row = rows[i];
+                    if (isAdmin) {
+                        row.onclick = () => openAddModal(dateId);
+                    } else {
+                        row.onclick = null;
+                    }
+                    
+                    const nameSpan = row.querySelector('.week-day-name');
+                    nameSpan.className = `week-day-name ${yoilColors[i] || ''}`;
+                    nameSpan.innerText = yoils[i];
+                    
+                    const numSpan = row.querySelector('.week-day-num');
+                    const today = new Date();
+                    const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
+                    
+                    if (isToday) {
+                        numSpan.className = 'today-circle';
+                        numSpan.innerText = num;
+                    } else {
+                        numSpan.className = `week-day-num ${yoilColors[i] || ''}`;
+                        numSpan.innerText = num;
+                    }
+                    
+                    const eventsDiv = row.querySelector('.week-events');
+                    eventsDiv.innerHTML = '';
+                    
+                    if (events[dateId] && events[dateId].length > 0) {
+                        events[dateId].forEach((ev, idx) => {
+                            const tag = document.createElement('div');
+                            tag.className = `event-tag type-${ev.type}`;
+                            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
+                            tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
+                            if (isAdmin) {
+                                tag.oncontextmenu = (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    openEditModal(dateId, idx);
+                                };
+                            }
+                            eventsDiv.appendChild(tag);
+                        });
+                    } else {
+                        const noEvent = document.createElement('div');
+                        noEvent.className = 'week-no-event';
+                        noEvent.innerText = '등록된 일정이 없습니다.';
+                        eventsDiv.appendChild(noEvent);
+                    }
+                }
+            } else {
+                grid.className = 'calendar-grid';
+                grid.innerHTML = `<div class="day-label">월</div><div class="day-label">화</div><div class="day-label">수</div><div class="day-label">목</div><div class="day-label">금</div><div class="day-label text-blue-400">토</div><div class="day-label text-red-400">일</div>`;
+                
+                const y = currentDate.getFullYear();
+                const m = currentDate.getMonth();
+                document.getElementById('monthDisplay').innerText = `${y}년 ${m + 1}월`;
+                
+                const firstDay = new Date(y, m, 1);
+                const lastDay = new Date(y, m + 1, 0);
+                const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+                const prevLastDay = new Date(y, m, 0).getDate();
+                
+                for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
+                for (let i = 1; i <= lastDay.getDate(); i++) createDay(i, true);
+            }
+            updateAdminUI(); updateSummary();
+        }
+
+        function createDay(num, isCurr) {
+            const dateId = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${num}`;
+            const div = document.createElement('div');
+            div.className = 'day' + (isCurr ? '' : ' not-current');
+            const numDiv = document.createElement('div');
+            numDiv.className = 'day-num';
+            const today = new Date();
+            const isToday = isCurr && today.getDate() === num && today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear();
+            numDiv.innerHTML = isCurr ? (isToday ? `<span class="today-circle">${num}</span>` : num) : '';
+            div.appendChild(numDiv);
+            const evCont = document.createElement('div');
+            evCont.className = 'event-container';
+            if (isCurr && events[dateId]) {
+                events[dateId].forEach((ev, idx) => {
+                    const tag = document.createElement('div');
+                    tag.className = `event-tag type-${ev.type}`;
+                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
+                    tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
+                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
+                    evCont.appendChild(tag);
+                });
+            }
+            div.appendChild(evCont);
+            if (isCurr && isAdmin) div.onclick = () => openAddModal(dateId);
+            document.getElementById('calendarGrid').appendChild(div);
+        }
+
+        function showInfo(id, idx) {
+            const ev = events[id][idx];
+            document.getElementById('infoTitle').innerText = ev.title;
+            document.getElementById('infoTime').innerText = formatTime12h(ev.time) || '시간 미정';
+            const profs = document.getElementById('infoProfiles');
+            profs.innerHTML = '';
+            if (ev.members) {
+                ev.members.split(',').forEach(nameRaw => {
+                    const name = nameRaw.trim();
+                    if (!name) return;
+                    const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
+                    const card = document.createElement('div');
+                    card.className = 'profile-card';
+                    card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
+                    profs.appendChild(card);
+                });
+            } else profs.innerHTML = '<span class="text-sm text-gray-400 font-bold">등록된 멤버가 없습니다.</span>';
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function updateSummary() {
+            const today = new Date();
+            const id = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+            const cont = document.getElementById('summaryContent');
+            cont.innerHTML = '';
+            if (events[id] && events[id].length > 0) {
+                events[id].forEach((ev, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'summary-item';
+                    item.onclick = () => showInfo(id, idx);
+                    item.innerHTML = `<span class="summary-dot type-dot-${ev.type.replace(/\s+/g, '')}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
+                    cont.appendChild(item);
+                });
+            } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
+        }
+
+        function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
+        function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
+        
+        // 화살표 누를 때 작동하는 부드러운 슬라이드 트랜지션 로직
+        function moveMonth(v) {
+            if (isTransitioning) return;
+            
+            const grid = document.getElementById('calendarGrid');
+            const isMobile = window.innerWidth < 768;
+
+            if (isMobile) {
+                isTransitioning = true;
+                
+                // 1. 현재 화면 바깥으로 슬라이딩 페이드아웃
+                grid.classList.add(v > 0 ? 'slide-left' : 'slide-right');
+
+                setTimeout(() => {
+                    currentDate.setDate(currentDate.getDate() + (v * 7));
+                    renderCalendar(); // 내용 변경
+
+                    // 2. 트랜지션을 끄고 반대편 바깥 대기실로 순간이동
+                    grid.style.transition = 'none';
+                    grid.classList.remove('slide-left', 'slide-right');
+                    grid.style.opacity = '0';
+                    grid.style.transform = v > 0 ? 'translateX(30px)' : 'translateX(-30px)';
+
+                    // 3. 브라우저가 위치를 인지한 후 다시 트랜지션을 켜고 부드럽게 인입
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            grid.style.transition = 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.22s ease-out';
+                            grid.style.opacity = '1';
+                            grid.style.transform = 'translateX(0)';
+                            
+                            setTimeout(() => {
+                                isTransitioning = false;
+                            }, 220);
+                        });
+                    });
+                }, 200);
+            } else {
+                currentDate.setMonth(currentDate.getMonth() + v);
+                renderCalendar();
+            }
+        }
+
+        function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
+        
+        function updatePickerUI() {
+            document.getElementById('pickerYearDisplay').innerText = `${pickerYear}년`;
+            const grid = document.querySelector('.month-picker-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'month-btn';
+                btn.innerText = `${i + 1}월`;
+                if (pickerYear === currentDate.getFullYear() && i === currentDate.getMonth()) btn.classList.add('active');
+                btn.onclick = () => selectMonth(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        function changePickerYear(offset) { pickerYear += offset; updatePickerUI(); }
+        function selectMonth(m) { currentDate.setFullYear(pickerYear); currentDate.setMonth(m); closeModal('monthPickerModal'); renderCalendar(); }
+        
+        function promptAdmin() {
+            if (isAdmin) { isAdmin = false; updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제'); }
+            else {
+                document.getElementById('adminPw').value = '';
+                document.getElementById('pwError').classList.add('hidden');
+                document.getElementById('pwModal').style.display = 'flex';
+            }
+        }
+
+        function loginAdmin() {
+            if (document.getElementById('adminPw').value === '0112') {
+                isAdmin = true; closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
+            } else document.getElementById('pwError').classList.remove('hidden');
+        }
+
+        function updateAdminUI() {
+            document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
+            document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
+        }
+
+        Object.assign(window, {
+            handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
+            openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
+            setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
+            toggleMemo, saveMemo, moveMonth, openMonthPicker, changePickerYear,
+            selectMonth, promptAdmin, loginAdmin
+        });
+
+        window.onload = async () => {
+            document.getElementById('memoText').value = localStorage.getItem('htvvi_memo') || '';
+            await loadData();
+            
+            window.addEventListener('resize', () => { renderCalendar(); });
+        };
+    </script>
+</body>
+</html>
