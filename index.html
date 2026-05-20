@@ -8,7 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --point-yellow: #FFD54F;
+            --point-yellow: #FFF3B0;
+            --point-text: #7A5A2F;
             --light-yellow: #FFF9C4;
             --bg-cream: #FFFDF0;
             --text-dark: #4E4942;
@@ -43,10 +44,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-bottom: 120px; /* 관리 버튼을 고려한 하단 여백 추가 */
-            overflow-x: hidden;
-            position: relative; /* absolute 하위 정렬을 보장하기 위해 선언 */
+            padding-bottom: 80px;
+            position: relative;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* --- Header & Logo --- */
@@ -135,20 +136,14 @@
 
         .top-action-bar { display: flex; gap: 12px; z-index: 50; }
 
-        /* [구조 변경] fixed 대신 absolute를 사용하여 스크롤 시 흐르지 않고 페이지의 절대 우측 하단에 고정되도록 디자인 */
+        /* [디자인 변경] 테두리 선과 배경원 서클을 모두 없앤 플랫 스타일 */
         .site-admin-actions { 
             display: flex; 
-            gap: 12px; 
+            gap: 16px; 
             position: absolute; 
             right: 24px; 
             bottom: 24px; 
-            z-index: 99; 
-            background: rgba(255, 253, 240, 0.7);
-            padding: 8px;
-            border-radius: 40px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            z-index: 9999; 
         }
 
         .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
@@ -160,12 +155,175 @@
             justify-content: center;
             gap: 16px;
             width: 100%; 
-            max-width: 600px;
+            max-width: none;
             margin: 0 auto;
         }
 
-        .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
+        .calendar-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 12px;
+        }
+
+        .calendar-header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .memo-btn {
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
+
+        .memo-panel-container {
+            display: none;
+            width: 360px;
+            min-width: 280px;
+            border-radius: var(--radius-xl);
+            background: #FFFDF5;
+            border: 1px solid #F5F5F5;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.08);
+            padding: 20px;
+            box-sizing: border-box;
+            align-self: stretch;
+            overflow: hidden;
+        }
+
+        .memo-panel-container.open {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .memo-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .memo-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .memo-tab {
+            background: #F5F5F5;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: 800;
+            color: #4E4942;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .memo-tab.memo-tab-active {
+            background: #B3E5FC;
+            color: #0D47A1;
+        }
+
+        .memo-add-button {
+            background: var(--point-yellow);
+            color: #5D4037;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 24px;
+            line-height: 1;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .memo-add-button:hover {
+            opacity: 0.9;
+        }
+
+        .memo-input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .memo-input-area.hidden {
+            display: none;
+        }
+
+        .memo-item-input {
+            width: 100%;
+            min-height: 100px;
+            border: 2px solid #F5F5F5;
+            border-radius: 18px;
+            padding: 16px;
+            resize: vertical;
+            font-family: inherit;
+            background: #FFFFFF;
+            color: var(--text-dark);
+            box-sizing: border-box;
+        }
+
+        .memo-input-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .memo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100% - 180px);
+            padding-right: 4px;
+        }
+
+        .memo-item-entry {
+            background: #FFFFFF;
+            border: 1px solid #F5F5F5;
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            word-break: break-word;
+        }
+
+        .memo-item-entry .emoji {
+            font-size: 18px;
+            line-height: 1.2;
+        }
+
+        .memo-item-entry span {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text-dark);
+            white-space: pre-wrap;
+        }
+
+        .memo-item-delete {
+            background: transparent;
+            border: none;
+            color: #D32F2F;
+            font-weight: 900;
+            cursor: pointer;
+        }
 
         .calendar-grid { 
             display: grid; 
@@ -342,7 +500,7 @@
             flex: 1; padding: 16px; border: none; border-radius: var(--radius-md);
             font-weight: 900; cursor: pointer; transition: 0.2s; text-align: center;
         }
-        .btn-save { background: var(--point-yellow); color: #5D4037; }
+        .btn-save { background: var(--point-yellow); color: var(--point-text); }
         .btn-cancel { background: #F0F0EE; color: #757575; }
         .btn-danger { background: #FFEBEE; color: #D32F2F; }
 
@@ -358,39 +516,36 @@
 
         .admin-only-btn { display: none !important; }
         .admin-only-btn.admin-visible { display: flex !important; }
-        .admin-active { background: var(--admin-color) !important; }
-        .admin-active svg { fill: white !important; }
+        
+        /* 관리자 활성화 상태 시 아이콘에 주황 포인트 부여 */
+        .admin-active svg { fill: var(--admin-color) !important; }
 
+        /* [테두리 제거 업데이트] 모든 버튼류의 디폴트 원형 외곽선 완전 삭감 */
         .icon-circle-btn, .nav-btn {
-            background: #F5F5F5; border: none; width: 50px; height: 50px; border-radius: 50%;
+            background: transparent; border: none; width: 50px; height: 50px;
             cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
             flex-shrink: 0;
         }
-        .icon-circle-btn:hover, .nav-btn:hover { background: #EEEEEE; transform: translateY(-2px); }
+        .icon-circle-btn:hover, .nav-btn:hover { transform: translateY(-2px); opacity: 0.7; }
 
         .memo-btn {
-            background: #F5F5F5; border: none; height: 50px; padding: 0 20px; border-radius: 25px;
+            background: transparent; border: none; height: 50px; padding: 0 20px;
             cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
             transition: 0.2s; font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 15px; color: var(--text-dark);
         }
-        .memo-btn:hover { background: #EEEEEE; transform: translateY(-2px); }
+        .memo-btn:hover { transform: translateY(-2px); opacity: 0.7; }
 
         .today-circle {
             background: #B3E5FC; color: #0277BD; border-radius: 50%; width: 28px; height: 28px;
             display: flex; align-items: center; justify-content: center; margin-left: -5px;
         }
 
-        .inline-memo-container {
-            width: 100%; max-height: 0; overflow: hidden;
-            transition: max-height 0.4s ease, margin-bottom 0.4s ease, opacity 0.3s ease; opacity: 0;
+        .memo-panel-text:focus { border-color: var(--point-yellow); }
+
+        @media screen and (max-width: 768px) {
+            .calendar-body { flex-direction: column; }
+            .memo-panel-container.open { width: 100%; padding-left: 0; margin-top: 20px; height: 300px; }
         }
-        .inline-memo-container.open { max-height: 500px; margin-bottom: 25px; opacity: 1; }
-        .inline-memo-text {
-            width: 100%; min-height: 150px; background: #F9F9F9; border: 2px solid #F5F5F5;
-            border-radius: var(--radius-md); padding: 20px; font-family: inherit; font-size: 15px;
-            outline: none; resize: vertical; box-sizing: border-box; color: var(--text-dark);
-        }
-        .inline-memo-text:focus { border-color: var(--point-yellow); }
 
         #toastMessage {
             display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -478,8 +633,7 @@
             .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
             .calendar-main { flex: 1; min-width: 0; width: 100%; }
             
-            /* 모바일 플로팅 최적화 - 스크롤 따라가지 않는 절대 구석 정렬 */
-            .site-admin-actions { right: 16px; bottom: 16px; padding: 6px; position: absolute; }
+            .site-admin-actions { right: 16px; bottom: 16px; gap: 12px; }
             .site-admin-actions .icon-circle-btn { width: 44px; height: 44px; }
         }
     </style>
@@ -505,36 +659,52 @@
     <div class="container">
         <div class="calendar-top">
             <div class="calendar-header mt-2">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;">
-                    <button class="nav-btn" onclick="moveMonth(-1)">◀</button>
-                    <h2 id="monthDisplay" class="text-4xl font-black cursor-pointer hover:text-amber-400 transition-colors text-center select-none" style="min-width: 240px;" title="월 선택" onclick="openMonthPicker()"></h2>
-                    <button class="nav-btn" onclick="moveMonth(1)">▶</button>
+                <div class="calendar-header-top">
+                    <div class="calendar-header-title">
+                        <button class="nav-btn" onclick="moveMonth(-1)">◀</button>
+                        <h2 id="monthDisplay" class="text-4xl font-black cursor-pointer hover:text-amber-400 transition-colors text-center select-none" style="min-width: 240px;" title="월 선택" onclick="openMonthPicker()"></h2>
+                        <button class="nav-btn" onclick="moveMonth(1)">▶</button>
+                    </div>
+                    <button class="memo-btn" title="메모장 열기/닫기" onclick="toggleMemo()">
+                        <svg viewBox="0 0 24 24" width="20" style="fill: #4E4942;"><path d="M14,2H6C4.9,2,4.01,2.9,4.01,4L4,20c0,1.1,0.89,2,1.99,2H18c1.1,0,2-0.9,2-2V8L14,2z M18,20H6V4h7v5h5V20z"/></svg>
+                        <span>MEMO</span>
+                    </button>
                 </div>
-                <button class="memo-btn mx-auto" title="메모장 열기/닫기" onclick="toggleMemo()">
-                    <svg viewBox="0 0 24 24" width="20" style="fill: currentColor;"><path d="M14,2H6C4.9,2,4.01,2.9,4.01,4L4,20c0,1.1,0.89,2,1.99,2H18c1.1,0,2-0.9,2-2V8L14,2z M18,20H6V4h7v5h5V20z"/></svg>
-                    <span>MEMO</span>
-                </button>
             </div>
         </div>
 
         <div class="calendar-body">
-            <div class="calendar-main">
-                <div id="inlineMemo" class="inline-memo-container">
-                    <textarea id="memoText" class="inline-memo-text" placeholder="메모를 입력하세요..." oninput="saveMemo()"></textarea>
-                </div>
+            <div id="calendarMain" class="calendar-main">
                 <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div id="memoPanel" class="memo-panel-container">
+                <div class="memo-panel-header">
+                    <div class="memo-tabs">
+                        <button class="memo-tab memo-tab-active" data-tab="컨텐츠" onclick="selectMemoTab('컨텐츠')">컨텐츠</button>
+                        <button class="memo-tab" data-tab="LCK" onclick="selectMemoTab('LCK')">LCK</button>
+                        <button class="memo-tab" data-tab="시네티" onclick="selectMemoTab('시네티')">시네티</button>
+                    </div>
+                    <button id="memoAddBtn" class="memo-add-button admin-only-btn" onclick="openMemoInput()">+</button>
+                </div>
+                <div id="memoInputArea" class="memo-input-area hidden">
+                    <textarea id="memoItemText" class="memo-item-input" placeholder="메모 내용을 입력하세요"></textarea>
+                    <div class="memo-input-actions">
+                        <button class="btn btn-cancel" onclick="closeMemoInput()">취소</button>
+                        <button class="btn btn-save" onclick="saveMemoItem()">추가하기</button>
+                    </div>
+                </div>
+                <div id="memoList" class="memo-list"></div>
             </div>
         </div>
     </div>
 
-    <!-- [구조 변경] 휠을 해도 따라다니지 않도록 body 최하단 우측에 고정시켜두는 플로팅바 배치 -->
+    <!-- 우측 하단 절대 좌표 고정형 순수 플랫 아이콘 컨트롤바 -->
     <div class="site-admin-actions">
         <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
-            <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <svg viewBox="0 0 24 24" width="26" style="fill: #4E4942;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         </button>
         <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
-            <!-- SVG 기어 아이콘 정상 교환으로 깨짐 및 오작동 박멸 -->
-            <svg viewBox="0 0 24 24" width="22" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+            <svg viewBox="0 0 24 24" width="26" style="fill: #4E4942;"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
         </button>
     </div>
 
@@ -582,6 +752,7 @@
                 <input type="file" id="eventImgFile" hidden accept="image/*" onchange="handleEventImgUpload(this)">
             </div>
             <div class="form-group"><label>참여 멤버 (쉼표 구분)</label><input type="text" id="eventMembers" placeholder="멤버A, 멤버B"></div>
+            <div class="form-group"><label>공지 링크</label><input type="text" id="eventNoticeLink" placeholder="https://..." class="w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]"></div>
             <div class="btn-group">
                 <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()">삭제</button>
                 <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
@@ -599,7 +770,8 @@
                     <div id="infoProfiles" class="profile-list"></div>
                 </div>
             </div>
-            <button class="btn btn-cancel w-full mt-5" onclick="closeModal('infoModal')">닫기</button>
+            <button id="infoNoticeBtn" class="btn btn-save w-full mt-3" style="display:none;" type="button">공지</button>
+            <button class="btn btn-cancel w-full mt-3" onclick="closeModal('infoModal')">닫기</button>
         </div>
     </div>
     
@@ -660,7 +832,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, addDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -684,8 +856,10 @@
         let events = {};
         let members = {};
         let currentAMPM = '오전';
+        let activeMemoTab = '컨텐츠';
         let activeDateId = '';
         let pickerYear = currentDate.getFullYear();
+        let memoTimeout = null; // 디바운스 저장을 위한 타이머 플래그
 
         function getWeekOfMonth(date) {
             const target = new Date(date);
@@ -845,9 +1019,10 @@
                 events[data.dateId].push(data);
             });
         }
-        
+
+        // [기능 추가] 파이어베이스 Firestore에서 고유 메모 데이터 로드
         async function loadData() {
-            try { await Promise.all([loadMembersFromFirebase(), loadEventsFromFirebase()]); }
+            try { await Promise.all([loadMembersFromFirebase(), loadEventsFromFirebase(), loadMemos()]); }
             catch (error) { console.error(error); }
             finally { renderCalendar(); }
         }
@@ -858,7 +1033,7 @@
             document.getElementById('eventTitle').value = '';
             document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
             document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
-            document.getElementById('eventMembers').value = ''; document.getElementById('eventType').value = '개인방송';
+            document.getElementById('eventMembers').value = ''; document.getElementById('eventNoticeLink').value = ''; document.getElementById('eventType').value = '개인방송';
             setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
             document.getElementById('eventModal').style.display = 'flex';
         }
@@ -871,6 +1046,7 @@
             document.getElementById('eventTitle').value = ev.title;
             document.getElementById('eventType').value = ev.type;
             document.getElementById('eventMembers').value = ev.members || '';
+            document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
             document.getElementById('eventImageUrl').value = ev.imageUrl || '';
             if (ev.time) {
                 const [h, m] = ev.time.split(':').map(Number);
@@ -898,6 +1074,7 @@
             const data = {
                 title, time: timeStr, type: document.getElementById('eventType').value,
                 members: document.getElementById('eventMembers').value,
+                noticeLink: document.getElementById('eventNoticeLink').value.trim(),
                 imageUrl: document.getElementById('eventImageUrl').value, dateId: activeDateId
             };
             const idx = parseInt(document.getElementById('editIndex').value, 10);
@@ -913,26 +1090,14 @@
             } catch (error) { console.error(error); showToast(`일정 저장 실패: ${error.message}`); }
         }
 
-        // [안전성 패치] native confirm()을 완전히 배제하고, 커스텀 확인 모달 방식으로 일관성 있게 일정을 삭제하도록 보완
-        function deleteEvent() {
+        async function deleteEvent() {
             const idx = parseInt(document.getElementById('editIndex').value, 10);
-            const btn = document.getElementById('confirmBtn');
-            document.getElementById('confirmMessage').innerText = '이 일정을 삭제할까요?';
-            btn.onclick = async () => {
-                try {
-                    const existingEvent = events[activeDateId][idx];
-                    if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
-                    await loadEventsFromFirebase();
-                    closeModal('confirmModal');
-                    closeModal('eventModal');
-                    renderCalendar();
-                    showToast('일정이 삭제되었습니다.');
-                } catch (error) {
-                    console.error(error);
-                    showToast('일정 삭제에 실패했습니다.');
-                }
-            };
-            document.getElementById('confirmModal').style.display = 'flex';
+            if (!confirm('이 일정을 삭제할까요?')) return;
+            try {
+                const existingEvent = events[activeDateId][idx];
+                if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
+                await loadEventsFromFirebase(); closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
+            } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
         }
 
         function renderCalendar() {
@@ -1083,7 +1248,14 @@
                     card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
                     profs.appendChild(card);
                 });
-            } else profs.innerHTML = '<span class="text-sm text-gray-400 font-bold">등록된 멤버가 없습니다.</span>';
+            }
+            const noticeBtn = document.getElementById('infoNoticeBtn');
+            if (ev.noticeLink) {
+                noticeBtn.style.display = 'block';
+                noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
+            } else {
+                noticeBtn.style.display = 'none';
+            }
             document.getElementById('infoModal').style.display = 'flex';
         }
 
@@ -1103,8 +1275,55 @@
             } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
         }
 
-        function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
-        function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
+        function toggleMemo() {
+            const panel = document.getElementById('memoPanel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) {
+                updateMemoTabUI();
+                loadMemos();
+            }
+        }
+
+        function selectMemoTab(tab) {
+            activeMemoTab = tab;
+            updateMemoTabUI();
+            loadMemos();
+        }
+
+        function updateMemoTabUI() {
+            document.querySelectorAll('.memo-tab').forEach(btn => {
+                btn.classList.toggle('memo-tab-active', btn.dataset.tab === activeMemoTab);
+            });
+        }
+
+        function openMemoInput() {
+            if (!isAdmin) return;
+            document.getElementById('memoInputArea').classList.remove('hidden');
+            document.getElementById('memoItemText').focus();
+        }
+
+        function closeMemoInput() {
+            const input = document.getElementById('memoItemText');
+            if (input) input.value = '';
+            document.getElementById('memoInputArea').classList.add('hidden');
+        }
+
+        async function saveMemoItem() {
+            if (!isAdmin) return;
+            const input = document.getElementById('memoItemText');
+            const text = input.value.trim();
+            if (!text) return showToast('메모 내용을 입력하세요.');
+            try {
+                await addDoc(collection(db, 'memos_list'), { text, tab: activeMemoTab, createdAt: new Date() });
+                input.value = '';
+                closeMemoInput();
+                loadMemos();
+                showToast('메모가 추가되었습니다.');
+            } catch (error) {
+                console.error('메모 추가 실패:', error);
+                showToast('메모 추가에 실패했습니다.');
+            }
+        }
         
         function moveMonth(v) {
             const isMobile = window.innerWidth < 768;
@@ -1158,23 +1377,79 @@
             } else document.getElementById('pwError').classList.remove('hidden');
         }
 
+        function updateMemoEditState() {
+            const memoInput = document.getElementById('memoItemText');
+            if (!memoInput) return;
+            memoInput.disabled = !isAdmin;
+        }
+
         function updateAdminUI() {
             document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
             document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
+            updateMemoEditState();
+            const memoPanel = document.getElementById('memoPanel');
+            if (memoPanel && memoPanel.classList.contains('open')) {
+                loadMemos();
+            }
         }
+
+        // 메모 리스트 로드 (Firestore 'memos_list' 컬렉션 사용)
+async function loadMemos() {
+    const list = document.getElementById('memoList');
+    list.innerHTML = '';
+    const q = query(collection(db, "memos_list"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.tab !== activeMemoTab) return;
+        const entry = document.createElement('div');
+        entry.className = 'memo-item-entry';
+        entry.innerHTML = `<div class="emoji">📌</div><span>${data.text}</span>${isAdmin ? `<button class="memo-item-delete" onclick="deleteMemo('${docSnap.id}')">✕</button>` : ''}`;
+        list.appendChild(entry);
+    });
+}
+
+// 메모 추가 모달 오픈
+window.openAddMemoModal = () => document.getElementById('memoModal').style.display = 'flex';
+
+// 메모 저장 함수
+window.saveNewMemo = async () => {
+    const text = document.getElementById('newMemoText').value;
+    if(!text) return;
+    await addDoc(collection(db, "memos_list"), { text, createdAt: new Date() });
+    document.getElementById('newMemoText').value = '';
+    closeModal('memoModal');
+    loadMemos();
+};
+
+// 메모 삭제 함수
+window.deleteMemo = async (id) => {
+    if (!isAdmin) {
+        showToast('관리자만 삭제할 수 있습니다.');
+        return;
+    }
+    if(confirm('이 메모를 삭제하시겠습니까?')) {
+        try {
+            await deleteDoc(doc(db, "memos_list", id));
+            loadMemos();
+            showToast('메모가 삭제되었습니다.');
+        } catch (error) {
+            console.error('메모 삭제 실패:', error);
+            showToast('메모 삭제에 실패했습니다.');
+        }
+    }
+};
 
         Object.assign(window, {
             handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
             openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
             setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
-            toggleMemo, saveMemo, moveMonth, openMonthPicker, changePickerYear,
+            toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, moveMonth, openMonthPicker, changePickerYear,
             selectMonth, promptAdmin, loginAdmin
         });
 
         window.onload = async () => {
-            document.getElementById('memoText').value = localStorage.getItem('htvvi_memo') || '';
             await loadData();
-            
             window.addEventListener('resize', () => { renderCalendar(); });
         };
     </script>
