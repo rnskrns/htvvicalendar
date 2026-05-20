@@ -430,7 +430,6 @@
             .top-action-bar { position: static; right: auto; bottom: auto; margin-top: 16px; justify-content: center; }
         }
 
-        /* [오타 수정 완료] 미디어 쿼리 속성값 교정 */
         @media screen and (max-width: 768px) {
             .main-header { 
                 display: flex;
@@ -1083,6 +1082,7 @@
         function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
         function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
         
+        // [완벽 보완] 타이머 디펜던시를 끊고 순수 브라우저 CSS 트랜지션 완료 이벤트 기반의 안전 제어 엔진
         function moveMonth(v) {
             if (isTransitioning) return;
             
@@ -1092,33 +1092,48 @@
             if (isMobile) {
                 isTransitioning = true;
                 
-                // 1. 현재 화면 바깥으로 슬라이딩 페이드아웃
-                grid.classList.add(v > 0 ? 'slide-left' : 'slide-right');
+                // 역방향 매핑 정의 (애니메이션 중간에 데이터를 부드럽게 갈아끼우기 위함)
+                const currentV = v;
 
-                setTimeout(() => {
-                    currentDate.setDate(currentDate.getDate() + (v * 7));
-                    renderCalendar(); // 주간 데이터 갱신
+                // 1단계: 현재 화면을 밀어서 사라지게 만듦
+                grid.classList.add(currentV > 0 ? 'slide-left' : 'slide-right');
 
-                    // 2. 트랜지션을 끄고 반대편 바깥 대기실로 순간이동
+                // 애니메이션이 완전히 끝났을 때의 콜백 함수 정의
+                const onFadeOutEnd = (e) => {
+                    // 무관한 자식 요소의 이벤트 발생 차단
+                    if (e.target !== grid) return;
+                    grid.removeEventListener('transitionend', onFadeOutEnd);
+
+                    // 주간 일자 데이터를 다음/이전 주로 교환
+                    currentDate.setDate(currentDate.getDate() + (currentV * 7));
+                    renderCalendar();
+
+                    // 2단계: 효과 클래스를 제거하고 반대편 바깥 대기실 위치로 고속 이동 (트랜지션을 잠시 끄기)
                     grid.style.transition = 'none';
                     grid.classList.remove('slide-left', 'slide-right');
                     grid.style.opacity = '0';
-                    grid.style.transform = v > 0 ? 'translateX(30px)' : 'translateX(-30px)';
+                    grid.style.transform = currentV > 0 ? 'translateX(30px)' : 'translateX(-30px)';
 
-                    // 3. 브라우저 엔진 동기화 후 중앙 인입 연출
+                    // 브라우저가 대기 위치를 연산하도록 한 프레임 대기 후 인입 모션 적용
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                             grid.style.transition = 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.22s ease-out';
                             grid.style.opacity = '1';
                             grid.style.transform = 'translateX(0)';
-                            
-                            // 안전 타임아웃 종료 후 확실하게 플래그 잠금 해제
-                            setTimeout(() => {
-                                isTransitioning = false;
-                            }, 240);
+
+                            // 인입 완료 이벤트 등록 -> 완벽하게 제자리를 잡으면 다음 클릭 잠금 해제
+                            const onFadeInEnd = (e2) => {
+                                if (e2.target !== grid) return;
+                                grid.removeEventListener('transitionend', onFadeInEnd);
+                                isTransitioning = false; // 플래그 해제 보장
+                            };
+                            grid.addEventListener('transitionend', onFadeInEnd);
                         });
                     });
-                }, 200);
+                };
+
+                // 애니메이션 감지 리스너 등록
+                grid.addEventListener('transitionend', onFadeOutEnd);
             } else {
                 currentDate.setMonth(currentDate.getMonth() + v);
                 renderCalendar();
