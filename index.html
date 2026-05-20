@@ -136,7 +136,6 @@
 
         .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
         
-        /* 컨트롤러 중앙 정렬 스타일 보완 */
         .calendar-header { 
             display: flex; 
             flex-direction: column;
@@ -151,7 +150,6 @@
         .calendar-body { display: flex; align-items: flex-start; gap: 24px; width: 100%; }
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
-        /* 부드러운 애니메이션 트랜지션 처리 */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
@@ -162,7 +160,6 @@
         }
         .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
 
-        /* 슬라이드 방향별 모션 클래스 */
         .slide-left { transform: translateX(-30px); opacity: 0; }
         .slide-right { transform: translateX(30px); opacity: 0; }
 
@@ -433,7 +430,8 @@
             .top-action-bar { position: static; right: auto; bottom: auto; margin-top: 16px; justify-content: center; }
         }
 
-        @media screen collector and (max-width: 768px) {
+        /* [오타 수정 완료] 미디어 쿼리 속성값 교정 */
+        @media screen and (max-width: 768px) {
             .main-header { 
                 display: flex;
                 flex-direction: column;
@@ -488,7 +486,6 @@
     </header>
 
     <div class="container">
-        <!-- 컨트롤바 구성 정중앙 정렬화 -->
         <div class="calendar-top">
             <div class="calendar-header mt-2">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 20px; width: 100%;">
@@ -517,7 +514,7 @@
                 <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
             </button>
             <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
-                <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
+                <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7(1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
             </button>
         </div>
     </div>
@@ -670,7 +667,7 @@
         let currentAMPM = '오전';
         let activeDateId = '';
         let pickerYear = currentDate.getFullYear();
-        let isTransitioning = false; // 슬라이드 전환 플래그
+        let isTransitioning = false;
 
         function getWeekOfMonth(date) {
             const target = new Date(date);
@@ -1086,7 +1083,6 @@
         function toggleMemo() { document.getElementById('inlineMemo').classList.toggle('open'); }
         function saveMemo() { localStorage.setItem('htvvi_memo', document.getElementById('memoText').value); }
         
-        // 화살표 누를 때 작동하는 부드러운 슬라이드 트랜지션 로직
         function moveMonth(v) {
             if (isTransitioning) return;
             
@@ -1101,7 +1097,7 @@
 
                 setTimeout(() => {
                     currentDate.setDate(currentDate.getDate() + (v * 7));
-                    renderCalendar(); // 내용 변경
+                    renderCalendar(); // 주간 데이터 갱신
 
                     // 2. 트랜지션을 끄고 반대편 바깥 대기실로 순간이동
                     grid.style.transition = 'none';
@@ -1109,16 +1105,17 @@
                     grid.style.opacity = '0';
                     grid.style.transform = v > 0 ? 'translateX(30px)' : 'translateX(-30px)';
 
-                    // 3. 브라우저가 위치를 인지한 후 다시 트랜지션을 켜고 부드럽게 인입
+                    // 3. 브라우저 엔진 동기화 후 중앙 인입 연출
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                             grid.style.transition = 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.22s ease-out';
                             grid.style.opacity = '1';
                             grid.style.transform = 'translateX(0)';
                             
+                            // 안전 타임아웃 종료 후 확실하게 플래그 잠금 해제
                             setTimeout(() => {
                                 isTransitioning = false;
-                            }, 220);
+                            }, 240);
                         });
                     });
                 }, 200);
