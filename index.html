@@ -43,8 +43,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-bottom: 80px;
+            padding-bottom: 120px; /* 관리 버튼을 고려한 하단 여백 추가 */
             overflow-x: hidden;
+            position: relative; /* absolute 하위 정렬을 보장하기 위해 선언 */
+            min-height: 100vh;
         }
 
         /* --- Header & Logo --- */
@@ -133,14 +135,14 @@
 
         .top-action-bar { display: flex; gap: 12px; z-index: 50; }
 
-        /* [구조 변경] 우측 하단에 항상 완벽하게 떠다니는 플로팅 전용 고정 레이아웃 */
+        /* [구조 변경] fixed 대신 absolute를 사용하여 스크롤 시 흐르지 않고 페이지의 절대 우측 하단에 고정되도록 디자인 */
         .site-admin-actions { 
             display: flex; 
             gap: 12px; 
-            position: fixed; 
+            position: absolute; 
             right: 24px; 
             bottom: 24px; 
-            z-index: 9999; 
+            z-index: 99; 
             background: rgba(255, 253, 240, 0.7);
             padding: 8px;
             border-radius: 40px;
@@ -476,8 +478,8 @@
             .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
             .calendar-main { flex: 1; min-width: 0; width: 100%; }
             
-            /* 모바일 플로팅 최적화 */
-            .site-admin-actions { right: 16px; bottom: 16px; padding: 6px; }
+            /* 모바일 플로팅 최적화 - 스크롤 따라가지 않는 절대 구석 정렬 */
+            .site-admin-actions { right: 16px; bottom: 16px; padding: 6px; position: absolute; }
             .site-admin-actions .icon-circle-btn { width: 44px; height: 44px; }
         }
     </style>
@@ -525,13 +527,14 @@
         </div>
     </div>
 
-    <!-- 스크롤해도 항상 고정되어 따라오는 관리 버튼 바 -->
+    <!-- [구조 변경] 휠을 해도 따라다니지 않도록 body 최하단 우측에 고정시켜두는 플로팅바 배치 -->
     <div class="site-admin-actions">
         <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
             <svg viewBox="0 0 24 24" width="22"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         </button>
         <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
-            <svg viewBox="0 0 24 24" width="22"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7)1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
+            <!-- SVG 기어 아이콘 정상 교환으로 깨짐 및 오작동 박멸 -->
+            <svg viewBox="0 0 24 24" width="22" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
         </button>
     </div>
 
@@ -910,14 +913,26 @@
             } catch (error) { console.error(error); showToast(`일정 저장 실패: ${error.message}`); }
         }
 
-        async function deleteEvent() {
+        // [안전성 패치] native confirm()을 완전히 배제하고, 커스텀 확인 모달 방식으로 일관성 있게 일정을 삭제하도록 보완
+        function deleteEvent() {
             const idx = parseInt(document.getElementById('editIndex').value, 10);
-            if (!confirm('이 일정을 삭제할까요?')) return;
-            try {
-                const existingEvent = events[activeDateId][idx];
-                if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
-                await loadEventsFromFirebase(); closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
-            } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
+            const btn = document.getElementById('confirmBtn');
+            document.getElementById('confirmMessage').innerText = '이 일정을 삭제할까요?';
+            btn.onclick = async () => {
+                try {
+                    const existingEvent = events[activeDateId][idx];
+                    if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
+                    await loadEventsFromFirebase();
+                    closeModal('confirmModal');
+                    closeModal('eventModal');
+                    renderCalendar();
+                    showToast('일정이 삭제되었습니다.');
+                } catch (error) {
+                    console.error(error);
+                    showToast('일정 삭제에 실패했습니다.');
+                }
+            };
+            document.getElementById('confirmModal').style.display = 'flex';
         }
 
         function renderCalendar() {
