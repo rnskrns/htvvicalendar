@@ -160,9 +160,10 @@
         }
 
         .calendar-header-top {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             width: 100%;
             gap: 12px;
         }
@@ -176,6 +177,10 @@
         }
 
         .memo-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
             margin: 0;
             flex-shrink: 0;
         }
@@ -187,7 +192,7 @@
             display: none;
             width: 360px;
             min-width: 280px;
-            border-radius: var(--radius-xl);
+            border-radius: var(--radius-lg);
             background: #FFFDF5;
             border: 1px solid #F5F5F5;
             box-shadow: 0 20px 45px rgba(0,0,0,0.08);
@@ -260,6 +265,7 @@
             flex-direction: column;
             gap: 12px;
             margin-bottom: 18px;
+            align-items: center;
         }
 
         .memo-input-area.hidden {
@@ -268,6 +274,7 @@
 
         .memo-item-input {
             width: 100%;
+            max-width: 100%;
             min-height: 100px;
             border: 2px solid #F5F5F5;
             border-radius: 18px;
@@ -315,6 +322,7 @@
             font-size: 14px;
             color: var(--text-dark);
             white-space: pre-wrap;
+            font-family: 'Pretendard', sans-serif;
         }
 
         .memo-item-delete {
@@ -544,18 +552,19 @@
 
         @media screen and (max-width: 768px) {
             .calendar-body { flex-direction: column; }
-            .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px; margin-top: 16px; }
+            .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px 16px 18px; margin-top: 16px; }
             .memo-panel-container.open { width: 100%; padding-left: 0; height: auto; max-height: none; }
             .memo-panel-header { flex-direction: column; align-items: stretch; gap: 12px; }
-            .memo-tabs { width: 100%; overflow-x: auto; padding: 0 8px 4px 8px; margin: 0 -8px 8px -8px; }
-            .memo-tab { flex: 1 1 auto; min-width: 0; padding: 10px 12px; margin-right: 6px; }
+            .memo-tabs { width: 100%; display: flex; justify-content: center; overflow-x: auto; padding: 0 12px 8px; margin: 0 -12px 10px -12px; }
+            .memo-tab { flex: 0 0 auto; min-width: auto; padding: 10px 14px; margin-right: 8px; }
+            .memo-tab:last-child { margin-right: 0; }
             .memo-add-button { align-self: flex-end; }
-            .memo-input-area { gap: 14px; }
-            .memo-item-input { min-height: 120px; padding: 16px; }
+            .memo-input-area { gap: 14px; align-items: center; margin-left: 8px; }
+            .memo-item-input { min-height: 120px; padding: 16px; width: 100%; max-width: 100%; }
             .memo-list { max-height: 280px; padding: 0 4px 0 0; }
             .memo-item-entry { padding: 14px; width: 100%; }
-            .memo-item-entry span { margin-right: 12px; }
-            .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+            .memo-item-entry span { margin-right: 12px; text-align: center; }
+            .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; width: 100%; }
             .memo-input-actions .btn { flex: 1; min-width: 140px; }
         }
 
@@ -872,6 +881,7 @@
         let activeDateId = '';
         let pickerYear = currentDate.getFullYear();
         let memoTimeout = null; // 디바운스 저장을 위한 타이머 플래그
+        let memoLoadToken = 0;
 
         function getWeekOfMonth(date) {
             const target = new Date(date);
@@ -1409,8 +1419,10 @@
 async function loadMemos() {
     const list = document.getElementById('memoList');
     list.innerHTML = '';
+    const currentLoad = ++memoLoadToken;
     const q = query(collection(db, "memos_list"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
+    if (currentLoad !== memoLoadToken) return;
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.tab !== activeMemoTab) return;
