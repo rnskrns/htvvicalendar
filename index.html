@@ -132,7 +132,9 @@
 
         /* 플레이어 패널 - 이제 사이드바 안에서 흐름을 타도록 수정 */
         .fav-player-panel {
-            position: relative; 
+            position: sticky;
+            top: 25px;
+            z-index: 1;
             background: var(--white);
             padding: 20px;
             border-radius: var(--radius-lg);
@@ -210,9 +212,18 @@
         .memo-item-entry span { flex: 1; font-size: 14px; color: var(--text-dark); white-space: pre-wrap; font-family: 'Pretendard', sans-serif; }
         .memo-item-delete { background: transparent; border: none; color: #D32F2F; font-weight: 900; cursor: pointer; }
 
-        .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: hidden; }
-        .songbook-section.visible { display: flex; max-height: calc(100vh - 220px); }
-        .songbook-sidebar { flex: 0 0 33.3333%; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+        .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: visible; }
+        .songbook-section.visible { display: flex; max-height: calc(100vh - 220px); height: calc(100vh - 220px); }
+        .songbook-sidebar { flex: 0 0 33.3333%; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 220px); }
+        .fav-player-panel { position: sticky; top: 25px; z-index: 2; margin-bottom: 20px; }
+        .artist-list-wrapper { flex: 1 1 0; min-height: 0; height: 0; margin-top: 20px; overflow-y: auto; overflow-x: hidden; }
+        .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 0; }
+        .artist-list-wrapper::-webkit-scrollbar { width: 10px; }
+        .artist-list-wrapper::-webkit-scrollbar-track { background: #FFFBE2; border-radius: 999px; }
+        .artist-list-wrapper::-webkit-scrollbar-thumb { background: #FFF176; border-radius: 999px; border: 2px solid #FFFBE2; transition: background-color 0.2s ease; }
+        .artist-list-wrapper::-webkit-scrollbar-thumb:hover,
+        .artist-list-wrapper::-webkit-scrollbar-thumb:active,
+        .artist-list-wrapper::-webkit-scrollbar-thumb:focus { background: #7DD3FC; }
         .songbook-sidebar::-webkit-scrollbar { width: 10px; }
         .songbook-sidebar::-webkit-scrollbar-track { background: #FFFBE2; border-radius: 999px; }
         .songbook-sidebar::-webkit-scrollbar-thumb { background: #FFF176; border-radius: 999px; border: 2px solid #FFFBE2; transition: background-color 0.2s ease; }
@@ -220,8 +231,6 @@
         .songbook-sidebar::-webkit-scrollbar-thumb:active,
         .songbook-sidebar::-webkit-scrollbar-thumb:focus { background: #7DD3FC; }
         .songbook-sidebar { scrollbar-color: #FFF176 #FFFBE2; scrollbar-width: thin; }
-
-        .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .artist-btn { padding: 10px; border: 1px solid #F0E68C; background: #FFFDF0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
         .artist-btn:hover { background: var(--point-yellow); }
         .artist-btn.active { background: #B3E5FC; border-color: #38bdf8; color: #0369a1; font-weight: bold; }
@@ -538,7 +547,9 @@
                 </div>
 
                 <!-- 아티스트 목록 -->
-                <div class="artist-grid" id="artistList"></div>
+                <div class="artist-list-wrapper">
+                    <div class="artist-grid" id="artistList"></div>
+                </div>
             </div>
 
             <!-- 메인 노래 목록 -->
