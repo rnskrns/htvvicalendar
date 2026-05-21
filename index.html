@@ -340,8 +340,25 @@
         .btn-cancel { background: #F0F0EE; color: #757575; }
         .btn-danger { background: #FFEBEE; color: #D32F2F; }
 
+        /* Info Modal Specific Scaling (approx 1.5x larger for desktop) */
+        #infoModal .modal-content {
+            max-width: 720px;
+            padding: 50px;
+        }
+        #infoModal .info-title { font-size: 32px; font-weight: 900; margin-bottom: 12px; text-align: center; }
+        #infoModal .time-badge { background: #E1F5FE; color: #0288D1; border: 2px solid #B3E5FC; font-size: 18px; font-weight: 800; padding: 10px 20px; border-radius: 30px; margin-bottom: 16px; display: inline-block; }
+        #infoModal .info-image-container { width: 100%; margin-top: 16px; display: flex; justify-content: center; }
+        #infoModal .info-image { width: 100%; max-width: 100%; max-height: 420px; border-radius: 24px; border: 1px solid #F5F5F5; object-fit: cover; }
+        #infoModal .profile-list { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; justify-content: center; }
+        #infoModal .profile-card { display: flex; flex-direction: column; align-items: center; width: 80px; gap: 8px; }
+        #infoModal .profile-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--point-yellow); background: #F0F0F0; }
+        #infoModal .profile-name { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
+        #infoModal .btn { font-size: 18px; padding: 18px; border-radius: 16px; }
+        #infoModal .info-link { display: inline-flex; padding: 15px 24px; margin-top: 10px; border-radius: 20px; background: #F8F8F8; border: 1px solid #E0E0E0; color: #3B3B3B; text-decoration: none; font-weight: 700; font-size: 18px; }
+
         .member-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; background: #F9F9F9; border-radius: 15px; margin-bottom: 10px; }
         .member-img-preview { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #EEE; }
+        /* 기존 작은 모달용 프로필 (일정 추가 등에서 사용할 수도 있으므로 유지) */
         .profile-card { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 60px; }
         .profile-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--point-yellow); background: #F0F0F0; }
         .profile-name { font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
@@ -369,13 +386,7 @@
         .member-upload-row { display: flex; gap: 12px; margin-bottom: 16px; }
         .member-upload-btn, .image-upload-btn { background: #ffffff; border: none; padding: 12px 16px; border-radius: 1rem; font-weight: 700; cursor: pointer; }
 
-        .info-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; text-align: center; }
         .info-block { background: transparent; padding: 10px 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
-        .info-image-container { width: 100%; margin-top: 16px; display: flex; justify-content: center; }
-        .info-image { width: 100%; max-width: 100%; max-height: 280px; border-radius: 18px; border: 1px solid #F5F5F5; object-fit: cover; }
-        .info-link { display: inline-flex; padding: 10px 14px; margin-top: 10px; border-radius: 14px; background: #F8F8F8; border: 1px solid #E0E0E0; color: #3B3B3B; text-decoration: none; font-weight: 700; }
-        .profile-list { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; justify-content: center; }
-        .time-badge { background: #E1F5FE; color: #0288D1; border: 2px solid #B3E5FC; font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 20px; margin-bottom: 10px; display: inline-block; }
 
         .month-btn { padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center; }
         .month-btn:hover, .month-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
@@ -441,6 +452,17 @@
             .minimized-mode .music-note-btn { display: block !important; }
             
             .fav-player-panel { position: relative; bottom: auto; right: auto; width: 100%; margin-top: 0; }
+
+            /* 모바일용 Info Modal 조절 (너무 크게 벗어나지 않도록 방어) */
+            #infoModal .modal-content { padding: 30px 20px; }
+            #infoModal .info-title { font-size: 24px; }
+            #infoModal .time-badge { font-size: 15px; padding: 8px 16px; }
+            #infoModal .info-image { max-height: 300px; border-radius: 16px; }
+            #infoModal .profile-card { width: 65px; }
+            #infoModal .profile-img { width: 55px; height: 55px; }
+            #infoModal .profile-name { font-size: 13px; }
+            #infoModal .btn { font-size: 16px; padding: 15px; }
+            #infoModal .info-link { font-size: 15px; padding: 12px 18px; }
         }
     </style>
 </head>
@@ -662,7 +684,7 @@
         </div>
     </div>
 
-    <!-- 정보 모달 -->
+    <!-- 정보 모달 (이 모달의 크기가 CSS로 1.5배 확대됨) -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <h3 id="infoTitle" class="info-title"></h3>
@@ -740,7 +762,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, addDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
         // 사용자의 Firebase 설정 유지
@@ -768,7 +790,6 @@
         let activeMemoTab = '컨텐츠';
         let activeDateId = '';
         let pickerYear = currentDate.getFullYear();
-        let memoTimeout = null; 
         let memoLoadToken = 0;
         
         let favPlaylist = [];
@@ -900,7 +921,6 @@
             catch(e) { return []; }
         }
 
-        // --- 기타 로직 함수 ---
         function getWeekOfMonth(date) {
             const target = new Date(date);
             const day = target.getDay();
@@ -1770,7 +1790,6 @@
             renderSongbook(); 
         }
 
-        // 탭 전환 기능
         function showTab(tab) {
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tab);
