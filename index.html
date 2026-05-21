@@ -385,11 +385,13 @@
             display: flex; 
             justify-content: center; 
             flex-shrink: 0; /* 이미지가 찌그러지지 않게 방지 */
+            overflow: hidden;
         }
 
         #infoModal .info-image { 
+            width: 100%; 
             max-width: 100%; 
-            max-height: 50vh; /* 이미지 최대 높이를 화면의 절반 정도로 제한 */
+            height: auto; 
             object-fit: contain; 
             border-radius: 24px; 
             border: 1px solid #F5F5F5;
