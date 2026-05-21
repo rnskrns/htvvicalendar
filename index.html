@@ -320,20 +320,17 @@
 
         .fav-player-panel {
 
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
             background: var(--white);
-
             padding: 20px;
-
             border-radius: var(--radius-lg);
-
             width: 320px;
-
-            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             border: 1px solid #F5F5F5;
-
-            display: none; 
-
+            display: none; /* 기본 숨김 */
         }
 
         .player-controls {
@@ -2655,38 +2652,40 @@ window.updateFavPlayerPlaylist = function() {
     document.getElementById('playerTrackArtist').innerText = favPlaylist[currentFavIndex].artist;
 };
 
-let isPlaying = false; // 현재 재생 상태 저장
+let isPlaying = false; 
 
 window.toggleFavPlay = function() {
-    if (favPlaylist.length === 0) {
-        showToast("재생할 곡이 없습니다.");
-        return;
-    }
+    if (favPlaylist.length === 0) return;
     
-    const audioIframe = document.getElementById('audioPlayerIframe');
-    const btn = document.getElementById('playPauseBtn'); // 버튼 id 확인하세요
+    const playerWrapper = document.getElementById('playerWrapper');
+    const btn = document.getElementById('playPauseBtn'); 
     const visualizer = document.getElementById('visualizer');
     const currentSong = favPlaylist[currentFavIndex];
 
     if (isPlaying) {
-        // --- 정지 로직 ---
-        audioIframe.src = ""; // iframe을 비워 재생 강제 중단
-        btn.innerText = "▶";   // 재생 아이콘으로 변경
+        // 정지: 내용물을 비워서 완전히 소멸시킴
+        playerWrapper.innerHTML = ""; 
+        btn.innerText = "▶";
         visualizer.style.display = 'none';
         isPlaying = false;
         showToast("플레이어가 정지되었습니다.");
     } else {
-        // --- 재생 로직 ---
+        // 재생: 새로운 iframe 생성
+        let src = "";
         if (currentSong.url.includes("sooplive.com/player/")) {
             const parts = currentSong.url.split('/');
             const videoId = parts[parts.length - 1];
-            audioIframe.src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
+            src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
         } else if (extractYtId(currentSong.url)) {
             const videoId = extractYtId(currentSong.url);
-            audioIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        } else {
+            src = currentSong.url;
         }
         
-        btn.innerText = "■"; // 정지(네모) 아이콘으로 변경
+        playerWrapper.innerHTML = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
+        
+        btn.innerText = "■";
         visualizer.style.display = 'flex';
         isPlaying = true;
         showToast(`${currentSong.title} 재생 시작!`);
@@ -4560,29 +4559,27 @@ window.updateFavPlayerUIAndPlay = function() {
 
     </script>
     
-<!-- 즐겨찾기 미니 플레이어 패널 -->
+<!-- </body> 바로 위 코드를 이것으로 교체 -->
 <div id="favoritePlayerPanel" class="fav-player-panel">
     <h4 class="font-black text-xl mb-4 flex items-center gap-2">
-        <span class="w-2 h-5 bg-pink-400 rounded-full"></span>즐겨찾기 플레이어
+        <span class="w-2 h-5 bg-pink-400 rounded-full"></span>플레이어
     </h4>
-    
-    <!-- 이 부분 추가: 플레이어가 여기서 재생됩니다 -->
+    <!-- iframe을 감싸는 div id="playerWrapper"만 남김 -->
     <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 15px; overflow: hidden;">
-        <iframe id="audioPlayerIframe" width="100%" height="100%" frameborder="0" 
-                allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>
     </div>
-
+    
+    <div id="visualizer" class="wave-container" style="display: none;">
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    </div>
+    
     <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
     <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
-<div class="player-controls">
-    <button class="ctrl-btn" onclick="prevFavSong()" title="이전 곡">⏮</button>
-    <!-- 여기에 id="playPauseBtn"이 있어야 아이콘이 바뀝니다 -->
-    <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()" title="재생/정지">▶</button>
-    <button class="ctrl-btn" onclick="nextFavSong()" title="다음 곡">⏭</button>
+    <div class="player-controls">
+        <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
+        <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+    </div>
 </div>
-    
-</div>
-
 </body>
 
 </html>
