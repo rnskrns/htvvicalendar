@@ -213,7 +213,14 @@
         .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: hidden; }
         .songbook-section.visible { display: flex; max-height: calc(100vh - 220px); }
         .songbook-sidebar { flex: 0 0 33.3333%; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
-        
+        .songbook-sidebar::-webkit-scrollbar { width: 10px; }
+        .songbook-sidebar::-webkit-scrollbar-track { background: #FFFBE2; border-radius: 999px; }
+        .songbook-sidebar::-webkit-scrollbar-thumb { background: #FFF176; border-radius: 999px; border: 2px solid #FFFBE2; transition: background-color 0.2s ease; }
+        .songbook-sidebar::-webkit-scrollbar-thumb:hover,
+        .songbook-sidebar::-webkit-scrollbar-thumb:active,
+        .songbook-sidebar::-webkit-scrollbar-thumb:focus { background: #7DD3FC; }
+        .songbook-sidebar { scrollbar-color: #FFF176 #FFFBE2; scrollbar-width: thin; }
+
         .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .artist-btn { padding: 10px; border: 1px solid #F0E68C; background: #FFFDF0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
         .artist-btn:hover { background: var(--point-yellow); }
