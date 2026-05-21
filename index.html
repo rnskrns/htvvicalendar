@@ -213,10 +213,11 @@
 
         .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: visible; }
         .songbook-section.visible { display: flex; max-height: calc(100vh - 260px); height: calc(100vh - 260px); }
-        .songbook-sidebar { flex: 0 0 33.3333%; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 260px); }
+        .songbook-sidebar { flex: 0 0 40%; max-width: 480px; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 260px); }
+        .songbook-main-content { flex: 1 1 60%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
         .fav-player-panel { position: sticky; top: 25px; z-index: 2; margin-bottom: 20px; }
-        .artist-list-wrapper { flex: 1 1 0; min-height: 0; height: 0; margin-top: 20px; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; }
-        .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 0; }
+        .artist-list-wrapper { flex: 1 1 0; min-height: 0; /* height: 0; */ margin-top: 20px; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; max-height: 760px; }
+        .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 0; grid-auto-rows: minmax(0, auto); }
         
         /* 공통 스크롤바 설정 (화살표 완벽 제거, 배경 흰색, 둥근 모서리) */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -525,12 +526,51 @@
             .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; width: 100%; }
             .memo-input-actions .btn { flex: 1; min-width: 140px; }
             
-            .songbook-section { flex-direction: column; height: auto; }
-            .songbook-sidebar { flex: 0 0 auto; border-right: none; border-bottom: 1px solid #F5F5F5; padding: 20px; height: auto; }
-            .songbook-main-content { flex: 1; padding: 20px; }
-            .songbook-header { flex-direction: column; }
+            .songbook-section { flex-direction: column; height: auto; max-height: none; overflow: visible; gap: 16px; }
+            .songbook-section.visible { height: auto; max-height: none; }
+            .songbook-sidebar {
+                flex: 0 0 auto;
+                border-right: none;
+                border-bottom: 1px solid #F5F5F5;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                height: 360px; /* 사이드바 전체 높이 고정 (플레이어+가수목록 합산) */
+            }
+
+            .fav-player-panel {
+                flex: 1; /* 가용 공간의 절반 */
+                margin-bottom: 10px;
+                overflow: hidden;
+            }
+
+            .artist-list-wrapper {
+                flex: 1; /* 가용 공간의 절반 */
+                overflow-y: auto; /* 6개 이상일 때 세로 스크롤 */
+                border: 1px solid #F0E68C;
+                border-radius: 12px;
+                background: #FFFDF0;
+                padding: 8px;
+            }
+
+            .artist-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr); /* 한 줄에 3개씩 */
+                gap: 6px;
+            }
+
+            .artist-btn {
+                padding: 6px 2px;
+                font-size: 0.75rem;
+                height: 32px; /* 버튼 높이 강제 지정으로 찌그러짐 방지 */
+            }
+
+            .songbook-main-content { flex: 1; padding: 20px; overflow: visible; }
+            .songbook-header { flex-direction: column; align-items: stretch; }
             .songbook-search { width: 100%; }
-            .artist-grid { grid-template-columns: repeat(3, 1fr); }
+            .songbook-content { overflow: visible; }
+            .song-item { flex-wrap: wrap; gap: 12px; }
+            .song-item-left { min-width: auto; }
 
             /* 모바일 최소화 모드 */
             .minimized-mode { width: 60px !important; height: 60px !important; padding: 0 !important; border-radius: 50% !important; background: var(--point-yellow) !important; display: flex !important; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -621,6 +661,8 @@
                 
                 <!-- 사이드바로 들어온 즐겨찾기 플레이어 패널 -->
                 <div id="favoritePlayerPanel" class="fav-player-panel">
+                    <!-- 펼치기 버튼 (모바일용) -->
+                    <button id="mobilePlayerBtn" class="mobile-float-btn" onclick="openPlayerModal()">🎵</button>
                     <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
                     <div id="panelContent">
                         <h4 class="font-black text-xl mb-4 flex items-center gap-2">
@@ -992,6 +1034,27 @@
                 btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
                 isMinimized = true;
             }
+        };
+
+        window.openPlayerModal = function() {
+            const panelContent = document.getElementById('panelContent');
+            if (!panelContent) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'songbook-modal visible';
+            modal.style.zIndex = '3000';
+            modal.innerHTML = `
+                <div class="browser-container" style="max-height: 80vh; width: min(90%, 480px);">
+                    <div class="browser-header">
+                        <span style="font-weight: 800; color: #4E4942;">뮤직 플레이어</span>
+                        <button class="close-browser" onclick="this.closest('.songbook-modal').remove()">닫기</button>
+                    </div>
+                    <div class="browser-content-wrapper" style="padding: 16px;">
+                        ${panelContent.innerHTML}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         };
 
         function getFavorites() {
