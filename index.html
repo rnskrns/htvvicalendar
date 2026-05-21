@@ -316,37 +316,79 @@
 
 
 
-        /* 즐겨찾기 미니 플레이어 패널 */
 
-        .fav-player-panel {
+.fav-player-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--white);
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    width: 320px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border: 1px solid #F5F5F5;
+    display: none; /* 기본 숨김 */
+}
 
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: var(--white);
-            padding: 20px;
-            border-radius: var(--radius-lg);
-            width: 320px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            border: 1px solid #F5F5F5;
-            display: none; /* 기본 숨김 */
-        }
+/* 물결 컨테이너를 버튼 위쪽으로 이동 및 스타일 최적화 */
+.wave-container {
+    position: relative;
+    width: 100%;
+    height: 8px; /* 버튼 위라 너무 두껍지 않게 조절 */
+    overflow: hidden;
+    background: transparent;
+    border-radius: 4px;
+}
 
-        .player-controls {
+/* 아주 자연스럽게 흐르는 애니메이션 */
+.wave {
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        rgba(255, 243, 176, 0.4), 
+        rgba(255, 243, 176, 0.9), 
+        rgba(255, 243, 176, 0.4), 
+        rgba(255, 243, 176, 0.9), 
+        rgba(255, 243, 176, 0.4));
+    background-size: 50% 100%; 
+    animation: wave-move 3s linear infinite; /* 속도를 조절하고 싶으면 3s를 변경하세요 */
+}
 
-            display: flex;
+@keyframes wave-move {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0%); }
+}
 
-            justify-content: center;
+.player-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; /* 버튼 간격 조절 */
+}
 
-            align-items: center;
+/* 왼쪽 아래 버튼 고정 (Absolute) */
+#btnMin {
+    width: 30px;
+    height: 30px;
+    background: #E5E7EB; /* 회색 배경 */
+    color: #4B5563;      /* 아이콘 색상 (회색) */
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+}
 
-            gap: 15px;
-
-            margin-top: 15px;
-
-        }
-
+/* 마우스 올렸을 때 */
+#btnMin:hover {
+    background: #D1D5DB;
+    color: #374151;
+}
         .ctrl-btn {
 
             background: none;
@@ -2663,14 +2705,12 @@ window.toggleFavPlay = function() {
     const currentSong = favPlaylist[currentFavIndex];
 
     if (isPlaying) {
-        // 정지: 내용물을 비워서 완전히 소멸시킴
         playerWrapper.innerHTML = ""; 
         btn.innerText = "▶";
         visualizer.style.display = 'none';
         isPlaying = false;
-        showToast("플레이어가 정지되었습니다.");
+        showToast("정지되었습니다.");
     } else {
-        // 재생: 새로운 iframe 생성
         let src = "";
         if (currentSong.url.includes("sooplive.com/player/")) {
             const parts = currentSong.url.split('/');
@@ -2679,16 +2719,12 @@ window.toggleFavPlay = function() {
         } else if (extractYtId(currentSong.url)) {
             const videoId = extractYtId(currentSong.url);
             src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-        } else {
-            src = currentSong.url;
-        }
-        
+        } else src = currentSong.url;
+
         playerWrapper.innerHTML = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
-        
         btn.innerText = "■";
-        visualizer.style.display = 'flex';
+        visualizer.style.display = 'block'; // 재생 시 물결 보임
         isPlaying = true;
-        showToast(`${currentSong.title} 재생 시작!`);
     }
 };
 
@@ -2711,6 +2747,37 @@ window.prevFavSong = function() {
 window.updateFavPlayerUIAndPlay = function() {
     // 단순히 플레이어 정보만 갱신합니다.
     updateFavPlayerPlaylist();
+};
+
+let isMinimized = false;
+
+window.toggleMinimize = function() {
+    const playerWrapper = document.getElementById('playerWrapper');
+    const visualizer = document.getElementById('visualizer');
+    const btnMin = document.getElementById('btnMin');
+
+    if (isMinimized) {
+        // [펼치기]
+        playerWrapper.style.display = "block";
+        // 펼쳤을 때 재생 중이면 물결 다시 보여줌
+        if (isPlaying) visualizer.style.display = "block";
+        
+        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        isMinimized = false;
+    } else {
+        // [접기]
+        playerWrapper.style.display = "none";
+        
+        // 접었을 때도 재생 중이라면 물결은 계속 보여줌!
+        if (isPlaying) {
+            visualizer.style.display = "block"; 
+        } else {
+            visualizer.style.display = "none";
+        }
+        
+        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        isMinimized = true;
+    }
 };
 
 // --- 플레이어 컨트롤 버튼도 '열기' 용도로 수정 ---
@@ -4559,26 +4626,32 @@ window.updateFavPlayerUIAndPlay = function() {
 
     </script>
     
-<!-- </body> 바로 위 코드를 이것으로 교체 -->
 <div id="favoritePlayerPanel" class="fav-player-panel">
     <h4 class="font-black text-xl mb-4 flex items-center gap-2">
         <span class="w-2 h-5 bg-pink-400 rounded-full"></span>플레이어
     </h4>
-    <!-- iframe을 감싸는 div id="playerWrapper"만 남김 -->
-    <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 15px; overflow: hidden;">
-    </div>
     
-    <div id="visualizer" class="wave-container" style="display: none;">
-        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-    </div>
-    
+    <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
+
     <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
     <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
-    <div class="player-controls">
-        <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
-        <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
-        <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+
+    <div id="visualizer" class="wave-container" style="display: none; margin-top: 10px; margin-bottom: 5px;">
+        <div class="wave"></div>
     </div>
+
+<div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
+    <button class="ctrl-btn" id="btnMin" onclick="toggleMinimize()" title="접기/펼치기" 
+            style="position: absolute; left: 0; bottom: 0; width: 30px; height: 30px; border-radius: 50%; background: #E5E7EB; color: #4B5563; display: flex; align-items: center; justify-content: center;">
+        <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
+    <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
+    <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+</div>
 </div>
 </body>
 
