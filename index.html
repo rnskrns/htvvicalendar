@@ -1,4684 +1,1802 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>HTVVI Schedule Manager</title>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
-
         :root {
-
             --point-yellow: #FFF3B0;
-
             --point-text: #7A5A2F;
-
             --light-yellow: #FFF9C4;
-
             --bg-cream: #FFFDF0;
-
             --text-dark: #4E4942;
-
             --white: #FFFFFF;
-
             --radius-xl: 40px;
-
             --radius-lg: 30px;
-
             --radius-md: 20px;
-
             --font-main: 16px;
-
             --font-date: 16px;
-
             --font-event: 15px;
-
             --font-title-lg: 36px;
-
             --font-modal-label: 14px;
-
             --color-personal: #FFF9C4;
-
             --color-collab: #B3E5FC;
-
             --color-off: #E0E0E0;
-
             --color-tbd: #E1BEE7;
-
             --admin-color: #FF7043;
-
         }
-
-
 
         * { box-sizing: border-box; }
 
-
-
         html, body {
-
             margin: 0;
-
             min-height: 100%;
-
             width: 100%;
-
             overscroll-behavior-y: none;
-
         }
-
-
 
         body {
-
             font-family: 'Pretendard', sans-serif;
-
             background-color: var(--bg-cream);
-
             color: var(--text-dark);
-
             display: flex;
-
             flex-direction: column;
-
             align-items: center;
-
             padding-bottom: 80px;
-
             position: relative;
-
             min-height: 100vh;
-
             overflow-x: hidden;
-
             touch-action: pan-y;
-
         }
-
-
 
         .main-header {
-
             width: 96%;
-
             max-width: 1600px;
-
             display: grid;
-
             grid-template-columns: 1fr auto minmax(320px, 1fr);
-
             align-items: center;
-
             padding: 40px 45px 20px;
-
             margin: 0 auto;
-
             position: relative;
-
             gap: 24px;
-
         }
 
-
-
-        .header-left, .header-right {
-
-            display: flex;
-
-        }
-
-
-
+        .header-left, .header-right { display: flex; }
         .header-left { justify-content: flex-start; }
-
         .header-right { justify-content: flex-end; align-items: flex-start; }
 
-
-
         .top-tabs {
-
             display: flex;
-
             gap: 12px;
-
             align-items: center;
-
             padding-left: 8px;
-
             margin-top: 75px;
-
         }
-
-
 
         .tab-button {
-
             display: inline-flex;
-
             align-items: center;
-
             justify-content: center;
-
             padding: 10px 18px;
-
             border-radius: 999px;
-
             background: var(--white);
-
             color: var(--text-dark);
-
             text-decoration: none;
-
             font-weight: 800;
-
             transition: all 0.2s ease;
-
             border: 2px solid transparent; 
-
         }
 
-
-
-        .tab-button:hover {
-
-            background: var(--white);
-
-            color: #EAB308; 
-
-            transform: translateY(-1px);
-
-        }
-
-
-
-        .tab-button.active {
-
-            background: var(--point-yellow);
-
-            border-color: #FDE047; 
-
-            color: #5D4037;
-
-        }
-
-
+        .tab-button:hover { background: var(--white); color: #EAB308; transform: translateY(-1px); }
+        .tab-button.active { background: var(--point-yellow); border-color: #FDE047; color: #5D4037; }
 
         .header-center {
-
             grid-column: 2;
-
             justify-self: center;
-
             display: flex;
-
             flex-direction: column;
-
             align-items: center;
-
             position: relative;
-
             padding: 0 40px;
-
         }
-
-
 
         .main-logo { height: 120px; object-fit: contain; display: block; }
-
-
-
-        .fallback-logo {
-
-            font-size: 48px;
-
-            font-weight: 900;
-
-            color: var(--text-dark);
-
-            letter-spacing: -1px;
-
-            display: none;
-
-        }
-
-
+        .fallback-logo { font-size: 48px; font-weight: 900; color: var(--text-dark); letter-spacing: -1px; display: none; }
 
         .today-summary {
-
             background: var(--white);
-
             padding: 20px;
-
             border-radius: var(--radius-lg);
-
             width: 320px;
-
             box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-
             border: 1px solid #F5F5F5;
-
         }
-
-
 
         .summary-item {
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 10px;
-
-            margin-bottom: 8px;
-
-            word-break: break-word;
-
-            padding: 10px;
-
-            border-radius: 12px;
-
-            cursor: pointer;
-
-            transition: background-color 0.2s ease;
-
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+            word-break: break-word; padding: 10px; border-radius: 12px;
+            cursor: pointer; transition: background-color 0.2s ease;
         }
-
-
-
         .summary-item:hover { background-color: #F9F9F9; }
-
-
-
         .summary-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
         .summary-title { flex: 1; font-weight: 700; color: var(--text-dark); }
-
         .summary-time { font-size: 12px; color: #7a7a7a; white-space: nowrap; }
 
-
-
         .type-dot-합방 { background: #81D4FA; }
-
         .type-dot-개인방송 { background: #FFD54F; }
-
         .type-dot-휴방 { background: #B0BEC5; }
-
         .type-dot-미확정 { background: #CE93D8; }
 
-
-
-
-/* 기본 상태 (PC): 항상 펼쳐져 있음 */
-.fav-player-panel {
-    /* 기존 position: fixed; 삭제 */
-    position: absolute; 
-    /* 기존 bottom, right 값은 부모 컨테이너 기준이 됨 */
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    background: var(--white);
-    padding: 20px;
-    border-radius: var(--radius-lg);
-    width: 320px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    border: 1px solid #F5F5F5;
-    display: none; /* 기본 숨김 */
-}
-
-/* 768px 이하 모바일 화면일 때만 최소화 모드 동작 */
-@media screen and (max-width: 768px) {
-    .minimized-mode {
-        width: 60px !important;
-        height: 60px !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-        background: var(--point-yellow) !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    
-    /* 접혔을 때 내부 요소 숨기기 */
-    .minimized-mode #panelContent {
-        display: none !important;
-    }
-    
-    /* 음표 버튼을 최소화 모드일 때만 표시 */
-    .minimized-mode .music-note-btn {
-        display: block !important;
-    }
-    .fav-player-panel {
-        position: relative; /* 모바일에서는 흐름에 따라 배치 */
-        bottom: auto;
-        right: auto;
-        width: 100%;
-        margin-top: 20px;
-    }
-}
-
-.wave {
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-        rgba(255, 243, 176, 0.4), 
-        rgba(255, 243, 176, 0.9), 
-        rgba(255, 243, 176, 0.4), 
-        rgba(255, 243, 176, 0.9), 
-        rgba(255, 243, 176, 0.4));
-    background-size: 50% 100%; 
-    animation: wave-move 3s linear infinite; /* 속도를 조절하고 싶으면 3s를 변경하세요 */
-}
-
-@keyframes wave-move {
-    0% { transform: translateX(-50%); }
-    100% { transform: translateX(0%); }
-}
-
-.player-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px; /* 버튼 간격 조절 */
-}
-
-/* 왼쪽 아래 버튼 고정 (Absolute) */
-#btnMin {
-    width: 30px;
-    height: 30px;
-    background: #E5E7EB; /* 회색 배경 */
-    color: #4B5563;      /* 아이콘 색상 (회색) */
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    left: 0;
-    bottom: 0;
-}
-
-/* 마우스 올렸을 때 */
-#btnMin:hover {
-    background: #D1D5DB;
-    color: #374151;
-}
-        .ctrl-btn {
-
-            background: none;
-
-            border: none;
-
-            font-size: 20px;
-
-            cursor: pointer;
-
-            color: var(--text-dark);
-
-            transition: 0.2s;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
+        /* 플레이어 패널 - 이제 사이드바 안에서 흐름을 타도록 수정 */
+        .fav-player-panel {
+            position: relative; 
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            box-shadow: none;
+            border: 1px solid #F5F5F5;
+            margin-bottom: 20px;
         }
 
+        .wave-container {
+            width: 100%; height: 12px; margin: 10px 0; overflow: hidden; background: #F8F8F8; border-radius: 6px;
+        }
+        .wave {
+            width: 200%; height: 100%;
+            background: linear-gradient(90deg, rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4));
+            background-size: 50% 100%; animation: wave-move 3s linear infinite;
+        }
+        @keyframes wave-move { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%); } }
+
+        .player-controls { display: flex; justify-content: center; align-items: center; gap: 10px; }
+        
+        #btnMin {
+            width: 30px; height: 30px; background: #E5E7EB; color: #4B5563; 
+            border-radius: 50%; border: none; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; position: absolute; left: 0; bottom: 0;
+        }
+        #btnMin:hover { background: #D1D5DB; color: #374151; }
+
+        .ctrl-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-dark); transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .ctrl-btn:hover { transform: scale(1.1); color: #EAB308; }
-
-        .play-btn {
-
-            width: 48px;
-
-            height: 48px;
-
-            background: var(--point-yellow);
-
-            border-radius: 50%;
-
-            font-size: 20px;
-
-            color: #5D4037;
-
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-
-        }
-
+        .play-btn { width: 48px; height: 48px; background: var(--point-yellow); border-radius: 50%; font-size: 20px; color: #5D4037; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .play-btn:hover { background: #FDE047; }
-
-        .track-info {
-
-            font-weight: 800;
-
-            text-align: center;
-
-            font-size: 15px;
-
-            color: var(--text-dark);
-
-            white-space: nowrap;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            padding: 0 10px;
-
-        }
-
-        .track-artist {
-
-            font-size: 12px;
-
-            color: #7a7a7a;
-
-            text-align: center;
-
-            margin-top: 4px;
-
-        }
-
-
+        
+        .track-info { font-weight: 800; text-align: center; font-size: 15px; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; }
+        .track-artist { font-size: 12px; color: #7a7a7a; text-align: center; margin-top: 4px; }
 
         .container {
-
-            width: 96%;
-
-            max-width: 1600px;
-
-            background: var(--white);
-
-            border-radius: var(--radius-xl);
-
-            padding: 45px;
-
-            box-sizing: border-box;
-
-            box-shadow: 0 20px 50px rgba(0,0,0,0.04);
-
-            position: relative;
-
-            display: flex;
-
-            flex-direction: column;
-
+            width: 96%; max-width: 1600px; background: var(--white); border-radius: var(--radius-xl);
+            padding: 45px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+            position: relative; display: flex; flex-direction: column;
         }
-
-
 
         .top-action-bar { display: flex; gap: 12px; z-index: 50; }
-
-
-
-        .site-admin-actions { 
-
-            display: flex; 
-
-            gap: 16px; 
-
-            position: absolute; 
-
-            right: 24px; 
-
-            bottom: 24px; 
-
-            z-index: 9999; 
-
-        }
-
-
-
+        .site-admin-actions { display: flex; gap: 16px; position: absolute; right: 24px; bottom: 24px; z-index: 9999; }
         .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
-
+        .calendar-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; max-width: none; margin: 0 auto; }
+        .calendar-header-top { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; }
+        .calendar-header-title { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; }
         
-
-        .calendar-header { 
-
-            display: flex; 
-
-            flex-direction: column;
-
-            align-items: center; 
-
-            justify-content: center;
-
-            gap: 16px;
-
-            width: 100%; 
-
-            max-width: none;
-
-            margin: 0 auto;
-
-        }
-
-
-
-        .calendar-header-top {
-
-            position: relative;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            width: 100%;
-
-            gap: 12px;
-
-        }
-
-
-
-        .calendar-header-title {
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 12px;
-
-            flex: 1;
-
-        }
-
-
-
-        .memo-btn {
-
-            position: absolute;
-
-            right: 0;
-
-            top: 50%;
-
-            transform: translateY(-50%);
-
-            margin: 0;
-
-            flex-shrink: 0;
-
-        }
-
-
-
+        .memo-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); margin: 0; flex-shrink: 0; }
         .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
-
         .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
-
-
         .memo-panel-container {
-
-            display: none;
-
-            width: 360px;
-
-            min-width: 280px;
-
-            border-radius: var(--radius-lg);
-
-            background: #FFFDF5;
-
-            border: 1px solid #F5F5F5;
-
-            box-shadow: 0 20px 45px rgba(0,0,0,0.08);
-
-            padding: 22px;
-
-            box-sizing: border-box;
-
-            align-self: stretch;
-
-            overflow: hidden;
-
+            display: none; width: 360px; min-width: 280px; border-radius: var(--radius-lg); background: #FFFDF5;
+            border: 1px solid #F5F5F5; box-shadow: 0 20px 45px rgba(0,0,0,0.08); padding: 22px; box-sizing: border-box;
+            align-self: stretch; overflow: hidden;
         }
-
-
-
-        .memo-panel-container.open {
-
-            display: flex;
-
-            flex-direction: column;
-
-        }
-
-
-
-        .memo-panel-header {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            gap: 14px;
-
-            margin-bottom: 18px;
-
-        }
-
-
-
-        .memo-tabs {
-
-            display: flex;
-
-            gap: 8px;
-
-            flex-wrap: wrap;
-
-            align-items: center;
-
-        }
-
-
-
-        .memo-tab {
-
-            background: #F5F5F5;
-
-            border: none;
-
-            border-radius: 999px;
-
-            padding: 10px 16px;
-
-            cursor: pointer;
-
-            font-weight: 800;
-
-            color: #4E4942;
-
-            transition: background 0.2s, color 0.2s;
-
-        }
-
-
-
-        .memo-tab.memo-tab-active {
-
-            background: #B3E5FC;
-
-            color: #0D47A1;
-
-        }
-
-
-
-        .memo-add-button {
-
-            background: var(--point-yellow);
-
-            color: #5D4037;
-
-            border: none;
-
-            border-radius: 50%;
-
-            width: 44px;
-
-            height: 44px;
-
-            cursor: pointer;
-
-            font-weight: 900;
-
-            font-size: 24px;
-
-            line-height: 1;
-
-            transition: 0.2s;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            padding: 0;
-
-        }
-
-
-
-        .memo-add-button:hover { opacity: 0.9; }
-
-
-
-        .memo-input-area {
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 12px;
-
-            margin-bottom: 18px;
-
-            align-items: center;
-
-        }
-
-
-
-        .memo-input-area.hidden { display: none; }
-
-
-
-        .memo-item-input {
-
-            width: 100%;
-
-            max-width: 100%;
-
-            min-height: 100px;
-
-            border: 2px solid #F5F5F5;
-
-            border-radius: 18px;
-
-            padding: 16px;
-
-            resize: vertical;
-
-            font-family: inherit;
-
-            background: #FFFFFF;
-
-            color: var(--text-dark);
-
-            box-sizing: border-box;
-
-        }
-
-
-
-        .memo-input-actions {
-
-            display: flex;
-
-            justify-content: flex-end;
-
-            gap: 12px;
-
-        }
-
-
-
-        .memo-list {
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 12px;
-
-            overflow-y: auto;
-
-            max-height: calc(100% - 180px);
-
-            padding-right: 4px;
-
-        }
-
-
-
-        .memo-item-entry {
-
-            background: #FFFFFF;
-
-            border: 1px solid #F5F5F5;
-
-            border-radius: 18px;
-
-            padding: 16px;
-
-            display: flex;
-
-            align-items: flex-start;
-
-            gap: 10px;
-
-            word-break: break-word;
-
-        }
-
-
-
-        .memo-item-entry .emoji { font-size: 18px; line-height: 1.2; }
-
-        .memo-item-entry span {
-
-            flex: 1;
-
-            font-size: 14px;
-
-            color: var(--text-dark);
-
-            white-space: pre-wrap;
-
-            font-family: 'Pretendard', sans-serif;
-
-        }
-
-        .memo-item-delete {
-
-            background: transparent; border: none; color: #D32F2F; font-weight: 900; cursor: pointer;
-
-        }
-
-
-
-        .songbook-section {
-
-            display: none;
-
-            width: 100%;
-
-            flex-direction: row;
-
-            gap: 0;
-
-            padding: 0;
-
-            margin: 0;
-
-            flex: 1;
-
-            min-height: 600px;
-
-            background: white;
-
-            border-radius: 0;
-
-        }
-
-
-
-        .songbook-section.visible { display: flex; }
-
-
-
-        .songbook-sidebar {
-
-            flex: 0 0 33.3333%;
-
-            background: white;
-
-            border-right: 1px solid #F5F5F5;
-
-            padding: 25px;
-
-            overflow-y: auto;
-
-            display: flex;
-
-            flex-direction: column;
-
-        }
-
-
-
-        .songbook-info-box {
-
-            background: var(--point-yellow);
-
-            border: 1px solid #F0E68C;
-
-            border-radius: 12px;
-
-            padding: 15px;
-
-            text-align: center;
-
-            margin-bottom: 25px;
-
-            font-size: 0.85rem;
-
-            color: #B45309;
-
-            font-weight: 800;
-
-        }
-
-
-
-        .artist-grid {
-
-            display: grid;
-
-            grid-template-columns: repeat(2, 1fr);
-
-            gap: 10px;
-
-        }
-
-
-
-        .artist-btn {
-
-            padding: 10px;
-
-            border: 1px solid #F0E68C;
-
-            background: #FFFDF0;
-
-            border-radius: 8px;
-
-            cursor: pointer;
-
-            font-size: 0.9rem;
-
-            transition: all 0.2s ease;
-
-            color: var(--text-dark);
-
-            white-space: nowrap;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            font-weight: 600;
-
-        }
-
-
-
-        .artist-btn:hover { background: var(--point-yellow); }
-
-        .artist-btn.active {
-
-            background: #B3E5FC;
-
-            border-color: #38bdf8;
-
-            color: #0369a1;
-
-            font-weight: bold;
-
-        }
-
-
-
-        .songbook-main-content {
-
-            flex: 1 1 66.6667%;
-
-            padding: 40px;
-
-            display: flex;
-
-            flex-direction: column;
-
-            overflow-y: auto;
-
-            min-width: 0;
-
-        }
-
-
-
-        .songbook-header {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            gap: 15px;
-
-            margin-bottom: 30px;
-
-            flex-wrap: wrap;
-
-        }
-
-
-
-        .songbook-search {
-
-            flex: 1;
-
-            padding: 15px 25px;
-
-            border-radius: 30px;
-
-            border: 2px solid #FDE047;
-
-            background: white;
-
-            outline: none;
-
-            font-size: 1rem;
-
-            color: var(--text-dark);
-
-        }
-
-
-
-        .songbook-content {
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 14px;
-
-            flex: 1;
-
-        }
-
-
-
-        .song-item {
-
-            background: white;
-
-            padding: 18px 25px;
-
-            border-radius: 15px;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            border: 1px solid var(--point-yellow);
-
-            gap: 12px;
-
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-
-        }
-
-
-
-        .song-item:hover {
-
-            transform: translateY(-2px);
-
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-
-            background-color: #FFFEF5;
-
-        }
-
-
-
-        .favorite-btn {
-
-            background: transparent;
-
-            border: none;
-
-            cursor: pointer;
-
-            color: #D1D5DB; 
-
-            transition: transform 0.2s, color 0.2s;
-
-            padding: 0;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-        }
-
-        .favorite-btn:hover { transform: scale(1.15); }
-
-        .favorite-btn.is-favorite { color: #FBBF24; }
-
+        .memo-panel-container.open { display: flex; flex-direction: column; }
+        .memo-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; }
+        .memo-tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .memo-tab { background: #F5F5F5; border: none; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; }
+        .memo-tab.memo-tab-active { background: #B3E5FC; color: #0D47A1; }
         
+        .memo-add-button { background: var(--point-yellow); color: #5D4037; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-weight: 900; font-size: 24px; line-height: 1; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .memo-add-button:hover { opacity: 0.9; }
+        .memo-input-area { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; align-items: center; }
+        .memo-input-area.hidden { display: none; }
+        .memo-item-input { width: 100%; max-width: 100%; min-height: 100px; border: 2px solid #F5F5F5; border-radius: 18px; padding: 16px; resize: vertical; font-family: inherit; background: #FFFFFF; color: var(--text-dark); box-sizing: border-box; }
+        .memo-input-actions { display: flex; justify-content: flex-end; gap: 12px; }
+        
+        .memo-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: calc(100% - 180px); padding-right: 4px; }
+        .memo-item-entry { background: #FFFFFF; border: 1px solid #F5F5F5; border-radius: 18px; padding: 16px; display: flex; align-items: flex-start; gap: 10px; word-break: break-word; }
+        .memo-item-entry .emoji { font-size: 18px; line-height: 1.2; }
+        .memo-item-entry span { flex: 1; font-size: 14px; color: var(--text-dark); white-space: pre-wrap; font-family: 'Pretendard', sans-serif; }
+        .memo-item-delete { background: transparent; border: none; color: #D32F2F; font-weight: 900; cursor: pointer; }
 
-        .song-item-left {
+        .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; }
+        .songbook-section.visible { display: flex; }
+        .songbook-sidebar { flex: 0 0 33.3333%; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; }
+        
+        .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .artist-btn { padding: 10px; border: 1px solid #F0E68C; background: #FFFDF0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+        .artist-btn:hover { background: var(--point-yellow); }
+        .artist-btn.active { background: #B3E5FC; border-color: #38bdf8; color: #0369a1; font-weight: bold; }
 
-            display: flex;
+        .songbook-main-content { flex: 1 1 66.6667%; padding: 40px; display: flex; flex-direction: column; overflow-y: auto; min-width: 0; }
+        .songbook-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .songbook-search { flex: 1; padding: 15px 25px; border-radius: 30px; border: 2px solid #FDE047; background: white; outline: none; font-size: 1rem; color: var(--text-dark); }
+        .songbook-content { display: flex; flex-direction: column; gap: 14px; flex: 1; }
 
-            flex-direction: column;
-
-            align-items: center;
-
-            justify-content: center;
-
-            min-width: 56px;
-
-            flex-shrink: 0;
-
-            gap: 6px;
-
-        }
-
-
-
-        .song-clickable {
-
-            flex: 1;
-
-            cursor: pointer;
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 4px;
-
-        }
-
-
-
-        .song-title {
-
-            font-weight: 700;
-
-            font-size: 1.1rem;
-
-            display: block;
-
-            color: var(--text-dark);
-
-        }
-
-
-
+        .song-item { background: white; padding: 18px 25px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--point-yellow); gap: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .song-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); background-color: #FFFEF5; }
+        
+        .favorite-btn { background: transparent; border: none; cursor: pointer; color: #D1D5DB; transition: transform 0.2s, color 0.2s; padding: 0; display: flex; align-items: center; justify-content: center; }
+        .favorite-btn:hover { transform: scale(1.15); }
+        .favorite-btn.is-favorite { color: #FBBF24; }
+        
+        .song-item-left { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 56px; flex-shrink: 0; gap: 6px; }
+        .song-clickable { flex: 1; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+        .song-title { font-weight: 700; font-size: 1.1rem; display: block; color: var(--text-dark); }
         .song-artist { font-size: 0.9rem; color: #7A7A7A; }
-
-
-
-        .condition-badge {
-
-            background-color: #FCE4EC;
-
-            color: #D81B60;
-
-            font-size: 0.65rem;
-
-            font-weight: 800;
-
-            padding: 3px 6px;
-
-            border-radius: 8px;
-
-            border: 1px solid #F8BBD0;
-
-            white-space: nowrap;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            flex-shrink: 0;
-
-        }
-
-
-
-        .song-delete-btn {
-
-            background: #fee2e2;
-
-            color: #ef4444;
-
-            border: none;
-
-            border-radius: 50%;
-
-            width: 32px;
-
-            height: 32px;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            cursor: pointer;
-
-            font-weight: 900;
-
-            font-size: 16px;
-
-            transition: transform 0.2s, background-color 0.2s;
-
-            padding: 0;
-
-            flex-shrink: 0;
-
-            margin-left: 4px;
-
-        }
-
-
-
-        .song-delete-btn:hover {
-
-            transform: scale(1.1);
-
-            background: #fca5a5;
-
-            color: #991b1b;
-
-        }
-
-
-
-        .add-song-btn {
-
-            background: var(--point-yellow);
-
-            color: var(--text-dark);
-
-            border: none;
-
-            border-radius: 50%;
-
-            width: 48px;
-
-            height: 48px;
-
-            cursor: pointer;
-
-            font-weight: 900;
-
-            font-size: 28px;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            line-height: 1;
-
-            transition: transform 0.2s, opacity 0.2s;
-
-        }
-
-
-
-        .add-song-btn:hover {
-
-            transform: scale(1.1);
-
-            opacity: 0.95;
-
-        }
-
-
-
-        .songbook-modal {
-
-            display: none;
-
-            position: fixed;
-
-            top: 0;
-
-            left: 0;
-
-            width: 100%;
-
-            height: 100%;
-
-            background: rgba(0,0,0,0.4);
-
-            backdrop-filter: blur(4px);
-
-            justify-content: center;
-
-            align-items: center;
-
-            z-index: 1000;
-
-        }
-
-
-
+        .condition-badge { background-color: #FCE4EC; color: #D81B60; font-size: 0.65rem; font-weight: 800; padding: 3px 6px; border-radius: 8px; border: 1px solid #F8BBD0; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        
+        .song-delete-btn { background: #fee2e2; color: #ef4444; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 900; font-size: 16px; transition: transform 0.2s, background-color 0.2s; padding: 0; flex-shrink: 0; margin-left: 4px; }
+        .song-delete-btn:hover { transform: scale(1.1); background: #fca5a5; color: #991b1b; }
+        .add-song-btn { background: var(--point-yellow); color: var(--text-dark); border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-weight: 900; font-size: 28px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.2s, opacity 0.2s; }
+        .add-song-btn:hover { transform: scale(1.1); opacity: 0.95; }
+
+        .songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
         .songbook-modal.visible { display: flex; }
 
-
-
-        .browser-container {
-
-            width: 95%;
-
-            height: 90%;
-
-            background: white;
-
-            border-radius: 20px;
-
-            overflow: hidden;
-
-            display: flex;
-
-            flex-direction: column;
-
-        }
-
-
-
-        .browser-header {
-
-            background: #f3f4f6;
-
-            padding: 10px 20px;
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            border-bottom: 1px solid #e5e7eb;
-
-        }
-
-
-
-        .close-browser {
-
-            background: #81D4FA; 
-
-            color: #01579B; 
-
-            border: none;
-
-            padding: 5px 15px;
-
-            border-radius: 5px;
-
-            cursor: pointer;
-
-            font-weight: bold;
-
-            transition: background-color 0.2s;
-
-        }
-
-
-
+        .browser-container { width: 95%; height: 90%; background: white; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+        .browser-header { background: #f3f4f6; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; }
+        .close-browser { background: #81D4FA; color: #01579B; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
         .close-browser:hover { background: #4FC3F7; }
-
-
-
-        .browser-content-wrapper {
-
-            flex: 1;
-
-            padding: 24px;
-
-            background: #FFFDF5; 
-
-            display: flex;
-
-            flex-direction: column;
-
-            min-height: 0;
-
-        }
-
-
-
-        .browser-iframe {
-
-            flex: 1;
-
-            width: 100%;
-
-            height: 100%;
-
-            border: none;
-
-            border-radius: 16px;
-
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-
-            background: #000;
-
-        }
-
-
-
-        .browser-footer {
-
-            padding: 16px 24px;
-
-            background: white;
-
-            border-top: 1px solid #E5E7EB;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
-        }
-
-
-
-        .modal-favorite-btn {
-
-            padding: 12px 30px;
-
-            border-radius: 999px;
-
-            border: 2px solid #E5E7EB;
-
-            background: white;
-
-            color: #7A7A7A;
-
-            font-size: 16px;
-
-            font-weight: 800;
-
-            cursor: pointer;
-
-            transition: all 0.2s;
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 8px;
-
-        }
-
-
-
+        .browser-content-wrapper { flex: 1; padding: 24px; background: #FFFDF5; display: flex; flex-direction: column; min-height: 0; }
+        .browser-iframe { flex: 1; width: 100%; height: 100%; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #000; }
+        .browser-footer { padding: 16px 24px; background: white; border-top: 1px solid #E5E7EB; display: flex; justify-content: center; align-items: center; }
+        .modal-favorite-btn { padding: 12px 30px; border-radius: 999px; border: 2px solid #E5E7EB; background: white; color: #7A7A7A; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
         .modal-favorite-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
+        .modal-favorite-btn.active { border-color: #FDE047; background: #FFFDF0; color: #D97706; }
 
-        .modal-favorite-btn.active {
-
-            border-color: #FDE047;
-
-            background: #FFFDF0;
-
-            color: #D97706;
-
-        }
-
-
-
-        .admin-song-form {
-
-            display: none;
-
-            background: white;
-
-            border: 1px solid #F5F5F5;
-
-            border-radius: 20px;
-
-            padding: 24px;
-
-            margin-bottom: 24px;
-
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-
-            width: 100%;
-
-            box-sizing: border-box;
-
-        }
-
+        .admin-song-form { display: none; background: white; border: 1px solid #F5F5F5; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box; }
         .admin-song-form.visible { display: block; }
-
-
-
-        .admin-form-row {
-
-            display: grid;
-
-            grid-template-columns: 1fr;
-
-            gap: 12px;
-
-            margin-bottom: 16px;
-
-        }
-
-
-
-        .admin-input {
-
-            width: 100%;
-
-            padding: 14px 16px;
-
-            border-radius: 14px;
-
-            border: 1px solid #E5E7EB;
-
-            background: #F8FAFC;
-
-            font-size: 1rem;
-
-            color: var(--text-dark);
-
-            outline: none;
-
-        }
-
-
-
-        .admin-add-btn {
-
-            background: var(--point-yellow);
-
-            color: var(--text-dark);
-
-            border: none;
-
-            border-radius: 999px;
-
-            padding: 12px 18px;
-
-            cursor: pointer;
-
-            font-weight: 800;
-
-            transition: transform 0.2s, opacity 0.2s;
-
-        }
-
-
-
+        .admin-form-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+        .admin-input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid #E5E7EB; background: #F8FAFC; font-size: 1rem; color: var(--text-dark); outline: none; }
+        .admin-add-btn { background: var(--point-yellow); color: var(--text-dark); border: none; border-radius: 999px; padding: 12px 18px; cursor: pointer; font-weight: 800; transition: transform 0.2s, opacity 0.2s; }
         .admin-add-btn:hover { transform: translateY(-1px); opacity: 0.95; }
 
-
-
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
-
         .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
 
-
-
-        .week-row {
-
-            display: grid;
-
-            grid-template-columns: 72px 1fr;
-
-            gap: 16px;
-
-            padding: 16px;
-
-            border: 1px solid #F3F4F6;
-
-            border-radius: var(--radius-md);
-
-            align-items: center;
-
-            background: #FFFFFF;
-
-            transition: all 0.2s ease;
-
-        }
-
+        .week-row { display: grid; grid-template-columns: 72px 1fr; gap: 16px; padding: 16px; border: 1px solid #F3F4F6; border-radius: var(--radius-md); align-items: center; background: #FFFFFF; transition: all 0.2s ease; }
         .week-row:hover { border-color: var(--point-yellow); background: #FFFDF5; }
-
-
-
         .week-day-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-
         .week-day-name { font-weight: 800; font-size: 13px; color: #A09586; margin-bottom: 2px; }
-
         .week-day-num { font-size: 20px; font-weight: 900; color: var(--text-dark); }
-
         .week-events { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-
         .week-no-event { color: #A1A1AA; font-size: 13px; font-weight: 700; padding: 10px 14px; background: #FAFAFA; border-radius: 12px; border: 1.5px dashed #E4E4E7; }
-
-
-
+        
         .day-label { padding-bottom: 15px; text-align: center; font-weight: 900; font-size: 15px; color: #C0B7A9; }
-
-
-
-        .day {
-
-            background: transparent;
-
-            min-height: 180px;
-
-            position: relative;
-
-            cursor: pointer;
-
-            display: flex;
-
-            flex-direction: column;
-
-            border: 1px dashed #E5E1DA;
-
-            transition: 0.2s;
-
-            overflow: hidden;
-
-        }
-
+        .day { background: transparent; min-height: 180px; position: relative; cursor: pointer; display: flex; flex-direction: column; border: 1px dashed #E5E1DA; transition: 0.2s; overflow: hidden; }
         .day:hover { background: #FFFEF5; border-style: solid; border-color: var(--point-yellow); z-index: 10; }
-
         .day.not-current { pointer-events: none; border-color: #F0F0F0; }
-
-
-
-        .day-num {
-
-            padding: 10px 15px;
-
-            font-weight: 800;
-
-            font-size: var(--font-date);
-
-            position: relative;
-
-            z-index: 5;
-
-            background: transparent;
-
-            height: 45px;
-
-            display: flex;
-
-            align-items: center;
-
-            box-sizing: border-box;
-
-        }
-
-
-
+        .day-num { padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
+        
         .event-container { flex: 1; display: flex; flex-direction: column; width: 100%; padding: 4px; gap: 4px; }
-
-        .event-tag {
-
-            position: relative; flex: 1; width: 100%; padding: 8px 10px; font-size: var(--font-event);
-
-            font-weight: 800; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
-
-            text-align: center; transition: 0.2s; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-
-            box-sizing: border-box; gap: 4px;
-
-        }
-
+        .event-tag { position: relative; flex: 1; width: 100%; padding: 8px 10px; font-size: var(--font-event); font-weight: 800; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; transition: 0.2s; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; gap: 4px; }
         .event-tag:hover { transform: scale(0.98); }
-
-
-
-        .event-time-badge {
-
-            position: absolute; top: 5px; left: 5px; display: inline-block; border: 1.5px solid #FFFFFF;
-
-            background-color: #FFFFFF; border-radius: 12px; padding: 3px 7px; font-size: 10px; font-weight: 800;
-
-            line-height: 1; color: inherit;
-
-        }
-
-
+        .event-time-badge { position: absolute; top: 5px; left: 5px; display: inline-block; border: 1.5px solid #FFFFFF; background-color: #FFFFFF; border-radius: 12px; padding: 3px 7px; font-size: 10px; font-weight: 800; line-height: 1; color: inherit; }
 
         .type-개인방송 { background-color: var(--color-personal); color: #B45309; }
-
         .type-합방 { background-color: var(--color-collab); color: #01579B; }
-
         .type-휴방 { background-color: var(--color-off); color: #616161; }
-
         .type-미확정 { background-color: var(--color-tbd); color: #4A148C; }
 
-
-
-        .modal {
-
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-
-            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); align-items: center;
-
-            justify-content: center; z-index: 2000;
-
-        }
-
-
-
-        .modal-content {
-
-            background: var(--white); width: 90%; max-width: 480px; padding: 40px;
-
-            border-radius: var(--radius-xl); box-shadow: 0 30px 60px rgba(0,0,0,0.2);
-
-            position: relative; max-height: 90vh; overflow-y: auto;
-
-        }
-
-
-
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: var(--white); width: 90%; max-width: 480px; padding: 40px; border-radius: var(--radius-xl); box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
         .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 25px; }
-
+        
         .form-group { margin-bottom: 24px; }
-
         .form-group label { display: block; font-size: var(--font-modal-label); font-weight: 800; color: #A09586; margin-bottom: 10px; }
-
-        .form-group input, .form-group select, .form-group textarea {
-
-            width: 100%; padding: 15px; border-radius: var(--radius-md); border: 2px solid #F5F5F5;
-
-            background: #F9F9F9; font-family: inherit; outline: none; box-sizing: border-box;
-
-        }
-
-
-
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 15px; border-radius: var(--radius-md); border: 2px solid #F5F5F5; background: #F9F9F9; font-family: inherit; outline: none; box-sizing: border-box; }
+        
         .custom-time-picker { display: flex; flex-direction: column; gap: 15px; }
-
         .ampm-toggle { display: flex; gap: 8px; }
-
-        .ampm-btn {
-
-            flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #F0F0EE;
-
-            background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s;
-
-        }
-
+        .ampm-btn { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #F0F0EE; background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s; }
         .ampm-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
-
-
-
-        .time-input-container {
-
-            display: flex; align-items: center; gap: 10px; justify-content: center;
-
-            background: #F9F9F9; padding: 15px; border-radius: 15px;
-
-        }
-
+        .time-input-container { display: flex; align-items: center; gap: 10px; justify-content: center; background: #F9F9F9; padding: 15px; border-radius: 15px; }
         .time-field { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-
         .time-field span { font-size: 10px; color: #AAA; font-weight: 700; }
-
         .time-field input { width: 70px; text-align: center; font-size: 20px; font-weight: 900; padding: 10px; }
-
         .time-colon { font-size: 24px; font-weight: 900; color: #CCC; margin-top: 15px; }
 
-
-
         .btn-group { display: flex; gap: 12px; margin-top: 35px; flex-wrap: wrap; }
-
-        .btn {
-
-            flex: 1; padding: 16px; border: none; border-radius: var(--radius-md);
-
-            font-weight: 900; cursor: pointer; transition: 0.2s; text-align: center;
-
-        }
-
+        .btn { flex: 1; padding: 16px; border: none; border-radius: var(--radius-md); font-weight: 900; cursor: pointer; transition: 0.2s; text-align: center; }
         .btn-save { background: var(--point-yellow); color: var(--point-text); }
-
         .btn-cancel { background: #F0F0EE; color: #757575; }
-
         .btn-danger { background: #FFEBEE; color: #D32F2F; }
 
-
-
         .member-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; background: #F9F9F9; border-radius: 15px; margin-bottom: 10px; }
-
         .member-img-preview { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #EEE; }
-
-
-
         .profile-card { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 60px; }
-
         .profile-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--point-yellow); background: #F0F0F0; }
-
         .profile-name { font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
 
-
-
         .admin-only-btn { display: none !important; }
-
         .admin-only-btn.admin-visible { display: flex !important; }
-
         .admin-active svg { fill: var(--admin-color) !important; }
 
-
-
-        .icon-circle-btn, .nav-btn {
-
-            background: transparent; border: none; width: 50px; height: 50px;
-
-            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0;
-
-        }
-
+        .icon-circle-btn, .nav-btn { background: transparent; border: none; width: 50px; height: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; }
         .icon-circle-btn:hover, .nav-btn:hover { transform: translateY(-2px); opacity: 0.7; }
-
-
-
-        .memo-btn {
-
-            background: transparent; border: none; height: 50px; padding: 0 20px;
-
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-
-            transition: 0.2s; font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 15px; color: var(--text-dark);
-
-        }
-
+        .memo-btn { background: transparent; border: none; height: 50px; padding: 0 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 15px; color: var(--text-dark); }
         .memo-btn:hover { transform: translateY(-2px); opacity: 0.7; }
 
-
-
-        .today-circle {
-
-            background: #B3E5FC; color: #0277BD; border-radius: 50%; width: 28px; height: 28px;
-
-            display: flex; align-items: center; justify-content: center; margin-left: -5px;
-
-        }
-
-
-
-        #toastMessage {
-
-            display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-
-            background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 30px;
-
-            z-index: 9999; font-weight: 700; font-size: 14px;
-
-        }
-
-
-
+        .today-circle { background: #B3E5FC; color: #0277BD; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-left: -5px; }
+        #toastMessage { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 30px; z-index: 9999; font-weight: 700; font-size: 14px; }
+        
         .pw-modal { width: 320px; }
-
         .admin-pw { width: 100%; padding: 16px; border-radius: 2rem; border: 2px solid #E5E7EB; margin-bottom: 12px; }
-
         .pw-error { color: #ef4444; font-size: 12px; text-align: center; margin-bottom: 12px; }
-
         .hidden { display: none; }
 
-
-
         .member-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
-
         .member-add-box { background: var(--light-yellow); padding: 20px; border-radius: 20px; }
-
         .member-input { width: 100%; padding: 15px; border-radius: 1rem; border: none; margin-bottom: 12px; box-sizing: border-box; }
-
         .member-upload-row { display: flex; gap: 12px; margin-bottom: 16px; }
-
         .member-upload-btn, .image-upload-btn { background: #ffffff; border: none; padding: 12px 16px; border-radius: 1rem; font-weight: 700; cursor: pointer; }
 
-
-
         .info-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; text-align: center; }
-
         .info-block { background: transparent; padding: 10px 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
-
         .info-image-container { width: 100%; margin-top: 16px; display: flex; justify-content: center; }
-
         .info-image { width: 100%; max-width: 100%; max-height: 280px; border-radius: 18px; border: 1px solid #F5F5F5; object-fit: cover; }
-
         .info-link { display: inline-flex; padding: 10px 14px; margin-top: 10px; border-radius: 14px; background: #F8F8F8; border: 1px solid #E0E0E0; color: #3B3B3B; text-decoration: none; font-weight: 700; }
-
         .profile-list { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; justify-content: center; }
+        .time-badge { background: #E1F5FE; color: #0288D1; border: 2px solid #B3E5FC; font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 20px; margin-bottom: 10px; display: inline-block; }
 
-        
-
-        .time-badge { 
-
-            background: #E1F5FE; color: #0288D1; border: 2px solid #B3E5FC; 
-
-            font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 20px; 
-
-            margin-bottom: 10px; display: inline-block; 
-
-        }
-
-
-
-        .month-btn {
-
-            padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9;
-
-            font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center;
-
-        }
-
+        .month-btn { padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center; }
         .month-btn:hover, .month-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
 
-
-
         @media screen and (max-width: 1024px) {
-
-            .main-header { 
-
-                display: grid; 
-
-                grid-template-columns: 1fr; 
-
-                gap: 20px; 
-
-                padding: 60px 45px 20px;
-
-                align-items: center; 
-
-            }
-
+            .main-header { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 60px 45px 20px; align-items: center; }
             .header-left, .header-right { justify-content: center; width: 100%; padding: 0; }
-
             .header-right { margin-left: 0; align-items: center; position: static; justify-self: center; }
-
             .header-center { grid-column: 1; justify-self: center; }
-
             .calendar-top { flex-direction: column; }
-
             .calendar-body { flex-direction: column; }
-
             .today-summary { width: 100%; max-width: 400px; }
-
             .top-action-bar { position: static; right: auto; bottom: auto; margin-top: 16px; justify-content: center; }
-
         }
-
-
 
         @media screen and (max-width: 768px) {
-
-            .main-header { 
-
-                display: flex; flex-direction: column; grid-template-columns: none;
-
-                width: 100%; padding: 40px 16px 20px; gap: 16px;
-
-            }
-
+            .main-header { display: flex; flex-direction: column; grid-template-columns: none; width: 100%; padding: 40px 16px 20px; gap: 16px; }
             .header-center { width: 100%; padding: 0; }
-
             .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
-
             .today-summary { width: 100%; max-width: 100%; }
-
             .top-tabs { margin-top: 0; padding-left: 0; justify-content: center; width: 100%; }
-
             .nav-btn { width: 44px; height: 44px; }
-
             .calendar-header { flex-direction: column; align-items: center; gap: 16px; }
-
             .calendar-header-top { flex-direction: column; align-items: center; width: 100%; }
-
             .calendar-header-title { width: 100%; justify-content: center; }
-
             .memo-btn { position: static; top: auto; right: auto; transform: none; margin-top: 12px; }
-
             .calendar-header h2 { font-size: 1.25rem !important; line-height: 1.75rem !important; text-align: center; min-width: 170px !important; }
-
             .calendar-grid { grid-template-columns: 1fr; gap: 14px; }
-
             .day-label { text-align: left; padding-left: 15px; font-size: 14px; }
-
             .day { min-height: 120px; }
-
             .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
-
             .main-logo { height: 90px; }
-
             .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
-
             .calendar-main { flex: 1; min-width: 0; width: 100%; }
-
             .site-admin-actions { right: 16px; bottom: 16px; gap: 12px; }
-
             .site-admin-actions .icon-circle-btn { width: 44px; height: 44px; }
-
             
-
             .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px 16px 18px; margin-top: 16px; }
-
             .memo-panel-container.open { width: 100%; padding-left: 0; height: auto; max-height: none; }
-
             .memo-panel-header { flex-direction: column; align-items: stretch; gap: 12px; }
-
             .memo-tabs { width: 100%; display: flex; justify-content: center; overflow-x: auto; padding: 0 12px 8px; margin: 0 -12px 10px -12px; }
-
             .memo-tab { flex: 0 0 auto; min-width: auto; padding: 10px 14px; margin-right: 8px; }
-
             .memo-tab:last-child { margin-right: 0; }
-
             .memo-add-button { align-self: flex-end; }
-
             .memo-input-area { gap: 14px; align-items: center; margin-left: 8px; }
-
             .memo-item-input { min-height: 120px; padding: 16px; width: 100%; max-width: 100%; }
-
             .memo-list { max-height: 280px; padding: 0 4px 0 0; }
-
             .memo-item-entry { padding: 14px; width: 100%; }
-
             .memo-item-entry span { margin-right: 12px; text-align: center; }
-
             .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; width: 100%; }
-
             .memo-input-actions .btn { flex: 1; min-width: 140px; }
-
             
-
             .songbook-section { flex-direction: column; height: auto; }
-
             .songbook-sidebar { flex: 0 0 auto; border-right: none; border-bottom: 1px solid #F5F5F5; padding: 20px; }
-
             .songbook-main-content { flex: 1; padding: 20px; }
-
             .songbook-header { flex-direction: column; }
-
             .songbook-search { width: 100%; }
-
             .artist-grid { grid-template-columns: repeat(3, 1fr); }
 
+            /* 모바일 최소화 모드 */
+            .minimized-mode { width: 60px !important; height: 60px !important; padding: 0 !important; border-radius: 50% !important; background: var(--point-yellow) !important; display: flex !important; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+            .minimized-mode #panelContent { display: none !important; }
+            .minimized-mode .music-note-btn { display: block !important; }
+            
+            .fav-player-panel { position: relative; bottom: auto; right: auto; width: 100%; margin-top: 0; }
         }
-
-.wave-container {
-    width: 100%; height: 12px; margin: 10px 0; overflow: hidden; background: #F8F8F8; border-radius: 6px;
-}
-.wave {
-    width: 200%; height: 100%;
-    background: linear-gradient(90deg, rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4));
-    background-size: 50% 100%; animation: wave-move 3s linear infinite;
-}
-@keyframes wave-move { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%); } }
-
-@media screen and (max-width: 768px) {
-    .minimized-mode { width: 60px !important; height: 60px !important; padding: 10px !important; border-radius: 50% !important; background: var(--point-yellow) !important; }
-    .minimized-mode #panelContent { display: none !important; }
-    .minimized-mode .music-note-btn { display: block !important; }
-}
     </style>
-
 </head>
-
 <body id="mainBody">
 
-
-
     <header class="main-header">
-
         <div class="header-left">
-
             <nav class="top-tabs">
-
-                <button type="button" class="tab-button active" data-tab="schedule" onclick="showTab('schedule')">일정</button>
-
-                <button type="button" class="tab-button" data-tab="songbook" onclick="showTab('songbook')">노래책</button>
-
+                <button type="button" class="tab-button active" data-tab="schedule" onclick="showTab('schedule')">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    일정
+                </button>
+                <button type="button" class="tab-button" data-tab="songbook" onclick="showTab('songbook')">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    노래책
+                </button>
             </nav>
-
         </div>
-
         <div class="header-center">
-
             <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='block';">
-
             <div id="fallbackLogo" class="fallback-logo">htvvi</div>
-
         </div>
-
         <div class="header-right">
-
             <!-- 오늘 일정 패널 -->
-
             <div id="todaySchedulePanel" class="today-summary">
-
                 <h4 class="font-black text-xl mb-4 flex items-center gap-2">
-
                     <span class="w-2 h-5 bg-amber-400 rounded-full"></span>오늘 일정
-
                 </h4>
-
                 <div id="summaryContent"></div>
-
             </div>
-
-</div>
-
+        </div>
     </header>
 
     <div class="container">
-
         <div class="calendar-top">
-
             <div class="calendar-header mt-2">
-
                 <div class="calendar-header-top">
-
                     <div class="calendar-header-title">
-
                         <button class="nav-btn" onclick="moveMonth(-1)">◀</button>
-
                         <h2 id="monthDisplay" class="text-4xl font-black cursor-pointer hover:text-amber-400 transition-colors text-center select-none" style="min-width: 240px;" title="월 선택" onclick="openMonthPicker()"></h2>
-
                         <button class="nav-btn" onclick="moveMonth(1)">▶</button>
-
                     </div>
-
                     <button class="memo-btn" title="메모장 열기/닫기" onclick="toggleMemo()">
-
                         <svg viewBox="0 0 24 24" width="20" style="fill: #4E4942;"><path d="M14,2H6C4.9,2,4.01,2.9,4.01,4L4,20c0,1.1,0.89,2,1.99,2H18c1.1,0,2-0.9,2-2V8L14,2z M18,20H6V4h7v5h5V20z"/></svg>
-
                         <span>MEMO</span>
-
                     </button>
-
                 </div>
-
             </div>
-
         </div>
-
-
 
         <div class="calendar-body">
-
             <div id="calendarMain" class="calendar-main">
-
                 <div class="calendar-grid" id="calendarGrid"></div>
-
             </div>
-
+            
             <div id="memoPanel" class="memo-panel-container">
-
                 <div class="memo-panel-header">
-
                     <div class="memo-tabs">
-
                         <button class="memo-tab memo-tab-active" data-tab="컨텐츠" onclick="selectMemoTab('컨텐츠')">컨텐츠</button>
-
                         <button class="memo-tab" data-tab="LCK" onclick="selectMemoTab('LCK')">LCK</button>
-
                         <button class="memo-tab" data-tab="시네티" onclick="selectMemoTab('시네티')">시네티</button>
-
                     </div>
-
                     <button id="memoAddBtn" class="memo-add-button admin-only-btn" onclick="openMemoInput()">+</button>
-
                 </div>
-
                 <div id="memoInputArea" class="memo-input-area hidden">
-
                     <textarea id="memoItemText" class="memo-item-input" placeholder="메모 내용을 입력하세요"></textarea>
-
                     <div class="memo-input-actions">
-
                         <button class="btn btn-cancel" onclick="closeMemoInput()">취소</button>
-
                         <button class="btn btn-save" onclick="saveMemoItem()">추가하기</button>
-
                     </div>
-
                 </div>
-
                 <div id="memoList" class="memo-list"></div>
-
             </div>
-
         </div>
-
-
 
         <div id="songbookSection" class="songbook-section">
-
             <div class="songbook-sidebar">
+                
+                <!-- 사이드바로 들어온 즐겨찾기 플레이어 패널 -->
+                <div id="favoritePlayerPanel" class="fav-player-panel">
+                    <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
+                    <div id="panelContent">
+                        <h4 class="font-black text-xl mb-4 flex items-center gap-2">
+                            플레이어
+                        </h4>
+                        <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
 
-                <div class="songbook-info-box">
+                        <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
+                        <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
 
-                    🐤 HTVVI Song Book<br> <b>공개 목록: <span id="songCount">0</span></b>
+                        <div id="visualizer" class="wave-container" style="display: none;">
+                            <div class="wave"></div>
+                        </div>
 
+                        <div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
+                            <button class="ctrl-btn" id="btnMin" onclick="toggleMinimize()" title="접기/펼치기">
+                                <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
+                            <!-- 재생 버튼 (클릭 시 자동재생) -->
+                            <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
+                            <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- 아티스트 목록 -->
                 <div class="artist-grid" id="artistList"></div>
-
             </div>
 
-
-
+            <!-- 메인 노래 목록 -->
             <div class="songbook-main-content">
-
                 <div class="songbook-header">
-
                     <input id="songbookSearch" class="songbook-search" type="text" placeholder="노래 제목 또는 가수를 검색하세요" oninput="renderSongbook()">
-
                     <button id="songbookAddBtn" class="add-song-btn" type="button" onclick="document.getElementById('adminSongForm').classList.add('visible'); document.getElementById('newSongTitle').focus();">+</button>
-
                 </div>
-
-
 
                 <div id="adminSongForm" class="admin-song-form">
-
                     <div class="admin-form-row">
-
                         <input id="newSongTitle" class="admin-input" type="text" placeholder="노래 제목">
-
                         <input id="newSongArtist" class="admin-input" type="text" placeholder="가수명">
-
                         <input id="newSongUrl" class="admin-input" type="text" placeholder="유튜브 또는 링크 주소 (선택)">
-
                         <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-dark); padding: 4px 8px; cursor: pointer;">
-
                             <input type="checkbox" id="isConditionSong" style="width: 18px; height: 18px; accent-color: #F48FB1; cursor: pointer;">
-
                             컨디션곡 (목 상태에 따라 부르는 곡)
-
                         </label>
-
                     </div>
-
                     <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-
                         <button class="admin-add-btn" type="button" onclick="addSong()" id="addSongBtn">노래 추가</button>
-
                         <button class="admin-add-btn" type="button" onclick="cancelEdit()" style="background: #e5e7eb; color: #6b7280;">취소</button>
-
                     </div>
-
                 </div>
-
-
 
                 <div id="songList" class="songbook-content"></div>
-
             </div>
-
         </div>
 
-
-
+        <!-- 브라우저 모달 -->
         <div id="browserModal" class="songbook-modal">
-
             <div class="browser-container">
-
                 <div class="browser-header">
-
                     <span id="browserTitle" style="font-weight: 800; color: #4E4942;">HTVVI 브라우저</span>
-
                     <button class="close-browser" onclick="closeBrowser()">닫기</button>
-
                 </div>
-
                 <div class="browser-content-wrapper">
-
-                    <iframe id="browserIframe" class="browser-iframe" allowfullscreen></iframe>
-
+                    <iframe id="browserIframe" class="browser-iframe" allow="autoplay; clipboard-write; web-share;" allowfullscreen="true"></iframe>
                 </div>
-
                 <div class="browser-footer">
-
                     <button id="modalFavoriteBtn" class="modal-favorite-btn" onclick="toggleModalFavorite()">☆ 즐겨찾기 추가</button>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-
-
+    <!-- 우측 하단 관리자 메뉴 -->
     <div class="site-admin-actions">
-
         <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
-
             <svg viewBox="0 0 24 24" width="26" style="fill: #4E4942;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-
         </button>
-
         <button id="adminBtn" class="icon-circle-btn" title="관리자 모드" onclick="promptAdmin()">
-
             <svg viewBox="0 0 24 24" width="26" style="fill: #4E4942;"><path d="M12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6zM19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.21.07-.47-.12-.61l-2.01-1.58z"/></svg>
-
         </button>
-
     </div>
 
-
-
+    <!-- 일정 모달 -->
     <div id="eventModal" class="modal">
-
         <div class="modal-content">
-
             <h2 id="modalTitle" class="modal-title">일정 관리</h2>
-
             <input type="hidden" id="editIndex">
-
             <div class="form-group"><label>제목</label><input type="text" id="eventTitle" placeholder="일정 제목을 입력하세요"></div>
-
             <div class="form-group">
-
                 <label>시간 설정</label>
-
                 <div class="custom-time-picker">
-
                     <div class="ampm-toggle">
-
                         <button type="button" id="ampmAM" class="ampm-btn" onclick="setAMPM('오전')">오전</button>
-
                         <button type="button" id="ampmPM" class="ampm-btn" onclick="setAMPM('오후')">오후</button>
-
                     </div>
-
                     <div class="time-input-container">
-
                         <div class="time-field">
-
                             <span>시 (1~12)</span>
-
                             <input type="number" id="timeHour" min="1" max="12" placeholder="12">
-
                         </div>
-
                         <span class="time-colon">:</span>
-
                         <div class="time-field">
-
                             <span>분 (0~59)</span>
-
                             <input type="number" id="timeMin" min="0" max="59" placeholder="00">
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
             <div class="form-group">
-
                 <label>유형</label>
-
                 <select id="eventType">
-
                     <option value="개인방송">개인방송</option>
-
                     <option value="합방">합방</option>
-
                     <option value="휴방">휴방</option>
-
                     <option value="미확정">미확정</option>
-
                 </select>
-
             </div>
-
             <div class="form-group">
-
                 <label>일정 이미지</label>
-
                 <div class="file-upload-row">
-
                     <input type="text" id="eventImageUrl" class="flex-1 w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]" placeholder="이미지 주소 (또는 업로드)">
-
                     <button class="image-upload-btn mt-2" onclick="document.getElementById('eventImgFile').click()">파일 선택</button>
-
                 </div>
-
                 <input type="file" id="eventImgFile" hidden accept="image/*" onchange="handleEventImgUpload(this)">
-
             </div>
-
             <div class="form-group"><label>참여 멤버 (쉼표 구분)</label><input type="text" id="eventMembers" placeholder="멤버A, 멤버B"></div>
-
             <div class="form-group"><label>공지 링크</label><input type="text" id="eventNoticeLink" placeholder="https://..." class="w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]"></div>
-
             <div class="btn-group">
-
                 <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()">삭제</button>
-
                 <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
-
                 <button class="btn btn-save" onclick="saveEvent()">저장하기</button>
-
             </div>
-
         </div>
-
     </div>
 
-
-
+    <!-- 정보 모달 -->
     <div id="infoModal" class="modal">
-
         <div class="modal-content">
-
             <h3 id="infoTitle" class="info-title"></h3>
-
             <div class="info-block">
-
                 <div id="infoTime" class="time-badge"></div>
-
                 <div id="infoImageContainer" class="info-image-container"></div>
-
                 <div id="infoMemberContainer" class="w-full mt-4">
-
                     <div id="infoProfiles" class="profile-list"></div>
-
                 </div>
-
             </div>
-
             <button id="infoNoticeBtn" class="btn btn-save w-full mt-3" style="display:none;" type="button">공지</button>
-
             <button class="btn btn-cancel w-full mt-3" onclick="closeModal('infoModal')">닫기</button>
-
         </div>
-
     </div>
-
     
-
+    <!-- 비밀번호 모달 -->
     <div id="pwModal" class="modal">
-
         <div class="modal-content pw-modal">
-
             <h3 class="text-center font-black mb-5">관리자 인증</h3>
-
             <input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()">
-
             <p id="pwError" class="pw-error hidden">틀렸습니다.</p>
-
             <div class="btn-group">
-
                 <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>
-
                 <button class="btn btn-save" onclick="loginAdmin()">확인</button>
-
             </div>
-
         </div>
-
     </div>
-
     
-
+    <!-- 멤버 DB 모달 -->
     <div id="memberModal" class="modal">
-
         <div class="modal-content">
-
             <h2 class="modal-title">멤버 DB 관리</h2>
-
             <div id="memberList" class="member-list"></div>
-
             <div class="member-add-box">
-
                 <h4 class="font-black mb-3">새 멤버 등록</h4>
-
                 <input type="text" id="newMemberName" class="member-input" placeholder="닉네임">
-
                 <div class="member-upload-row">
-
                     <input type="text" id="newMemberImg" class="member-input flex-1" placeholder="프사 URL (또는 업로드)">
-
                     <button class="member-upload-btn" onclick="document.getElementById('memberImgFile').click()">파일 선택</button>
-
                     <input type="file" id="memberImgFile" hidden accept="image/*" onchange="handleMemberImgUpload(this)">
-
                 </div>
-
                 <button class="btn btn-save w-full" onclick="addMember()">멤버 추가하기</button>
-
             </div>
-
             <button class="btn btn-cancel w-full mt-4" onclick="closeModal('memberModal')">닫기</button>
-
         </div>
-
     </div>
 
-
-
+    <!-- 삭제 확인 모달 -->
     <div id="confirmModal" class="modal">
-
         <div class="modal-content confirm-modal">
-
             <h3 class="font-black mb-4" id="confirmMessage">정말 삭제하시겠습니까?</h3>
-
             <div class="btn-group">
-
                 <button class="btn btn-cancel" onclick="closeModal('confirmModal')">취소</button>
-
                 <button id="confirmBtn" class="btn btn-danger">삭제</button>
-
             </div>
-
         </div>
-
     </div>
 
-
-
+    <!-- 월 선택 모달 -->
     <div id="monthPickerModal" class="modal">
-
         <div class="modal-content" style="max-width: 380px;">
-
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-
                 <button class="nav-btn" onclick="changePickerYear(-1)">◀</button>
-
                 <h3 id="pickerYearDisplay" class="text-2xl font-black"></h3>
-
                 <button class="nav-btn" onclick="changePickerYear(1)">▶</button>
-
             </div>
-
             <div class="month-picker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
-
             <button class="btn btn-cancel w-full mt-5" onclick="closeModal('monthPickerModal')">닫기</button>
-
         </div>
-
     </div>
 
-
-
+    <!-- 토스트 메시지 -->
     <div id="toastMessage"></div>
 
-
-
     <script type="module">
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-
         import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, addDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
-
-
+        // 사용자의 Firebase 설정 유지
         const firebaseConfig = {
-
             apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
-
             authDomain: "htvvi-calendar.firebaseapp.com",
-
             projectId: "htvvi-calendar",
-
             storageBucket: "htvvi-calendar.firebasestorage.app",
-
             messagingSenderId: "629395623347",
-
             appId: "1:629395623347:web:64b75d50633ac275c58fc6",
-
             measurementId: "G-QECSWX905Y",
-
             databaseURL: "https://htvvi-calendar-default-rtdb.firebaseio.com"
-
         };
-
-
 
         const app = initializeApp(firebaseConfig);
-
         const analytics = getAnalytics(app);
-
         const db = getFirestore(app);
-
         const storage = getStorage(app);
 
-
-
         let isAdmin = false;
-
         let currentDate = new Date();
-
         let events = {};
-
         let members = {};
-
         let currentAMPM = '오전';
-
         let activeMemoTab = '컨텐츠';
-
         let activeDateId = '';
-
         let pickerYear = currentDate.getFullYear();
-
         let memoTimeout = null; 
-
         let memoLoadToken = 0;
-
+        
         let favPlaylist = [];
-
         let currentFavIndex = 0;
+        let isPlaying = false; 
 
         window.extractYtId = function(url) {
-
             if(!url) return null;
-
             const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-
             const match = url.match(regExp);
-
             return (match && match[7].length == 11) ? match[7] : null;
+        };
+        const extractYtId = window.extractYtId;
 
+        function updateFavPlayerPlaylist() {
+            const favorites = getFavorites();
+            favPlaylist = songbookSongs.filter(s => favorites.includes(s.id));
+            
+            const playerTitle = document.getElementById('playerTrackTitle');
+            const playerArtist = document.getElementById('playerTrackArtist');
+            const playerWrapper = document.getElementById('playerWrapper');
+            const btn = document.getElementById('playPauseBtn');
+            const visualizer = document.getElementById('visualizer');
+            
+            if (favPlaylist.length === 0) {
+                if(playerTitle) playerTitle.innerText = "재생할 곡이 없습니다";
+                if(playerArtist) playerArtist.innerText = "곡을 즐겨찾기 해보세요.";
+                if(playerWrapper) playerWrapper.innerHTML = "";
+                if(btn) btn.innerText = "▶";
+                if(visualizer) visualizer.style.display = 'none';
+                isPlaying = false;
+                return;
+            }
+            
+            if (currentFavIndex >= favPlaylist.length) currentFavIndex = 0;
+            
+            if(playerTitle) playerTitle.innerText = favPlaylist[currentFavIndex].title;
+            if(playerArtist) playerArtist.innerText = favPlaylist[currentFavIndex].artist;
+        }
+        window.updateFavPlayerPlaylist = updateFavPlayerPlaylist;
+
+        window.toggleFavPlay = function() {
+            if (favPlaylist.length === 0) return;
+            
+            const playerWrapper = document.getElementById('playerWrapper');
+            const btn = document.getElementById('playPauseBtn'); 
+            const visualizer = document.getElementById('visualizer');
+            const currentSong = favPlaylist[currentFavIndex];
+
+            if (isPlaying) {
+                playerWrapper.innerHTML = ""; 
+                btn.innerText = "▶";
+                visualizer.style.display = 'none';
+                isPlaying = false;
+                showToast("정지되었습니다.");
+            } else {
+                let src = "";
+                let iframeCode = "";
+
+                if (currentSong.url.includes("sooplive.com/player/")) {
+                    // 링크에 파라미터가 섞여 있어도 영상 ID만 정확히 추출
+                    const match = currentSong.url.match(/player\/(\d+)/);
+                    const videoId = match ? match[1] : currentSong.url.split('/').pop().split('?')[0];
+                    src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
+                    iframeCode = `<iframe id="soop_player_video" width="100%" height="100%" src="${src}" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; web-share;"></iframe>`;
+                } else if (extractYtId(currentSong.url)) {
+                    const videoId = extractYtId(currentSong.url);
+                    src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                    iframeCode = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
+                } else {
+                    src = currentSong.url;
+                    iframeCode = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
+                }
+
+                playerWrapper.innerHTML = iframeCode;
+                btn.innerText = "■";
+                visualizer.style.display = 'block'; // 재생 시 물결 보임
+                isPlaying = true;
+            }
         };
 
+        window.nextFavSong = function() {
+            if (favPlaylist.length === 0) return;
+            currentFavIndex = (currentFavIndex + 1) % favPlaylist.length;
+            isPlaying = false; 
+            updateFavPlayerPlaylist();
+            toggleFavPlay(); 
+        };
 
+        window.prevFavSong = function() {
+            if (favPlaylist.length === 0) return;
+            currentFavIndex = (currentFavIndex - 1 + favPlaylist.length) % favPlaylist.length;
+            isPlaying = false;
+            updateFavPlayerPlaylist();
+            toggleFavPlay(); 
+        };
 
-        // --- 기존 ytPlayer 관련 코드 삭제 후 아래 코드로 교체 ---
+        window.updateFavPlayerUIAndPlay = function() {
+            updateFavPlayerPlaylist();
+        };
 
-window.updateFavPlayerPlaylist = function() {
-    const favorites = getFavorites();
-    // 유튜브 링크 여부와 관계없이 즐겨찾기 목록을 필터링합니다.
-    favPlaylist = songbookSongs.filter(s => favorites.includes(s.id));
-    
-    if (favPlaylist.length === 0) {
-        document.getElementById('playerTrackTitle').innerText = "재생할 곡이 없습니다";
-        document.getElementById('playerTrackArtist').innerText = "곡을 즐겨찾기 해보세요.";
-        return;
-    }
-    
-    if (currentFavIndex >= favPlaylist.length) currentFavIndex = 0;
-    
-    document.getElementById('playerTrackTitle').innerText = favPlaylist[currentFavIndex].title;
-    document.getElementById('playerTrackArtist').innerText = favPlaylist[currentFavIndex].artist;
-};
+        let isMinimized = false;
 
-let isPlaying = false; 
+        window.toggleMinimize = function() {
+            const playerWrapper = document.getElementById('playerWrapper');
+            const visualizer = document.getElementById('visualizer');
+            const btnMin = document.getElementById('btnMin');
 
-window.toggleFavPlay = function() {
-    if (favPlaylist.length === 0) return;
-    
-    const playerWrapper = document.getElementById('playerWrapper');
-    const btn = document.getElementById('playPauseBtn'); 
-    const visualizer = document.getElementById('visualizer');
-    const currentSong = favPlaylist[currentFavIndex];
-
-    if (isPlaying) {
-        playerWrapper.innerHTML = ""; 
-        btn.innerText = "▶";
-        visualizer.style.display = 'none';
-        isPlaying = false;
-        showToast("정지되었습니다.");
-    } else {
-        let src = "";
-        if (currentSong.url.includes("sooplive.com/player/")) {
-            const parts = currentSong.url.split('/');
-            const videoId = parts[parts.length - 1];
-            src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
-        } else if (extractYtId(currentSong.url)) {
-            const videoId = extractYtId(currentSong.url);
-            src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-        } else src = currentSong.url;
-
-        playerWrapper.innerHTML = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
-        btn.innerText = "■";
-        visualizer.style.display = 'block'; // 재생 시 물결 보임
-        isPlaying = true;
-    }
-};
-
-window.nextFavSong = function() {
-    if (favPlaylist.length === 0) return;
-    currentFavIndex = (currentFavIndex + 1) % favPlaylist.length;
-    isPlaying = false; // 상태를 강제 초기화하여 새로운 재생을 준비
-    updateFavPlayerPlaylist();
-    toggleFavPlay(); // 새로운 곡 재생
-};
-
-window.prevFavSong = function() {
-    if (favPlaylist.length === 0) return;
-    currentFavIndex = (currentFavIndex - 1 + favPlaylist.length) % favPlaylist.length;
-    isPlaying = false;
-    updateFavPlayerPlaylist();
-    toggleFavPlay(); // 새로운 곡 재생
-};
-
-window.updateFavPlayerUIAndPlay = function() {
-    // 단순히 플레이어 정보만 갱신합니다.
-    updateFavPlayerPlaylist();
-};
-
-let isMinimized = false;
-
-window.toggleMinimize = function() {
-    const playerWrapper = document.getElementById('playerWrapper');
-    const visualizer = document.getElementById('visualizer');
-    const btnMin = document.getElementById('btnMin');
-
-    if (isMinimized) {
-        // [펼치기]
-        playerWrapper.style.display = "block";
-        // 펼쳤을 때 재생 중이면 물결 다시 보여줌
-        if (isPlaying) visualizer.style.display = "block";
-        
-        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        isMinimized = false;
-    } else {
-        // [접기]
-        playerWrapper.style.display = "none";
-        
-        // 접었을 때도 재생 중이라면 물결은 계속 보여줌!
-        if (isPlaying) {
-            visualizer.style.display = "block"; 
-        } else {
-            visualizer.style.display = "none";
-        }
-        
-        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        isMinimized = true;
-    }
-};
-
-// --- 플레이어 컨트롤 버튼도 '열기' 용도로 수정 ---
-// HTML 파일 내 <button id="playPauseBtn" ...>▶</button> 부분을 아래와 같이 바꾸는 것을 권장합니다.
-// <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()" title="열기">🌐</button>
-
-
+            if (isMinimized) {
+                // 펼치기
+                playerWrapper.style.display = "block";
+                if (isPlaying) visualizer.style.display = "block";
+                btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+                isMinimized = false;
+            } else {
+                // 접기
+                playerWrapper.style.display = "none";
+                if (isPlaying) {
+                    visualizer.style.display = "block"; 
+                } else {
+                    visualizer.style.display = "none";
+                }
+                btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+                isMinimized = true;
+            }
+        };
 
         function getFavorites() {
-
             try { return JSON.parse(localStorage.getItem('htvvi_favorites')) || []; } 
-
             catch(e) { return []; }
-
         }
 
-
-
+        // --- 기타 로직 함수 ---
         function getWeekOfMonth(date) {
-
             const target = new Date(date);
-
             const day = target.getDay();
-
             const diff = target.getDate() - day + (day === 0 ? -6 : 1);
-
             const monday = new Date(target.setDate(diff));
-
             
-
             const year = monday.getFullYear();
-
             const month = monday.getMonth();
-
-            
-
             const firstDay = new Date(year, month, 1);
-
             const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
-            
-
             let firstMonday = new Date(year, month, 1 - firstDayOfWeek);
-
             
-
             const diffTime = monday.getTime() - firstMonday.getTime();
-
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
             const weekNo = Math.floor(diffDays / 7) + 1;
-
             
-
             return { month: month + 1, week: weekNo };
-
         }
-
-
 
         function toggleFavorite(event, id) {
-
             event.stopPropagation(); 
-
             let favorites = getFavorites();
-
             if (favorites.includes(id)) {
-
                 favorites = favorites.filter(favId => favId !== id);
-
             } else {
-
                 favorites.push(id);
-
             }
-
             localStorage.setItem('htvvi_favorites', JSON.stringify(favorites));
-
             renderSongbook(); 
-
             updateFavPlayerPlaylist(); 
-
         }
-
-
 
         async function handleEventImgUpload(input) {
-
             if (input.files && input.files[0]) {
-
                 try {
-
                     const file = input.files[0];
-
                     showToast('일정 이미지를 업로드 중입니다...');
-
                     const url = await uploadFileToStorage(file, `event-images/${Date.now()}_${file.name}`);
-
                     document.getElementById('eventImageUrl').value = url;
-
                     showToast('일정 이미지가 Firebase에 업로드되었습니다.');
-
                 } catch (error) { console.error(error); showToast('일정 이미지 업로드에 실패했습니다.'); }
-
             }
-
         }
-
-
 
         async function handleMemberImgUpload(input) {
-
             if (input.files && input.files[0]) {
-
                 try {
-
                     const file = input.files[0];
-
                     showToast('멤버 이미지를 업로드 중입니다...');
-
                     const url = await uploadFileToStorage(file, `member-images/${Date.now()}_${file.name}`);
-
                     document.getElementById('newMemberImg').value = url;
-
                     showToast('멤버 이미지가 Firebase에 업로드되었습니다.');
-
                 } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); }
-
             }
-
         }
-
-
 
         async function addMember() {
-
             const name = document.getElementById('newMemberName').value.trim();
-
             let img = document.getElementById('newMemberImg').value.trim();
-
             if (!name) return showToast('닉네임을 입력해주세요.');
-
             const fileInput = document.getElementById('memberImgFile');
-
             if (!img && fileInput.files && fileInput.files[0]) {
-
                 try {
-
                     showToast('이미지 업로드 중...');
-
                     img = await uploadFileToStorage(fileInput.files[0], `member-images/${Date.now()}_${fileInput.files[0].name}`);
-
                 } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); return; }
-
             }
-
             const id = `member_${encodeURIComponent(name)}`;
-
             const data = { name, img: img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(name[0] || '')}` };
-
             try {
-
                 await setDoc(doc(db, 'members', id), data);
-
                 await loadMembersFromFirebase();
-
                 document.getElementById('newMemberName').value = '';
-
                 document.getElementById('newMemberImg').value = '';
-
                 fileInput.value = '';
-
                 renderMemberList();
-
                 showToast(`${name} 멤버가 추가되었습니다.`);
-
             } catch (error) { console.error(error); showToast(`멤버 저장 실패: ${error.message}`); }
-
         }
-
-
 
         function deleteMember(name) {
-
             const btn = document.getElementById('confirmBtn');
-
             document.getElementById('confirmMessage').innerText = `[${name}] 멤버를 삭제할까요?`;
-
             btn.onclick = async () => {
-
                 try {
-
                     await deleteDoc(doc(db, 'members', `member_${encodeURIComponent(name)}`));
-
                     delete members[name];
-
                     renderMemberList();
-
                     closeModal('confirmModal');
-
                     showToast(`${name} 멤버가 삭제되었습니다.`);
-
                 } catch (error) { console.error(error); showToast('멤버 삭제에 실패했습니다.'); }
-
             };
-
             document.getElementById('confirmModal').style.display = 'flex';
-
         }
-
-
 
         function openMemberManager() { renderMemberList(); document.getElementById('memberModal').style.display = 'flex'; }
 
-
-
         function renderMemberList() {
-
             const list = document.getElementById('memberList');
-
             list.innerHTML = '';
-
             Object.values(members).forEach(m => {
-
                 const item = document.createElement('div');
-
                 item.className = 'member-list-item';
-
                 item.innerHTML = `<img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'"><div style="flex:1; font-weight:800;">${m.name}</div><button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>`;
-
                 list.appendChild(item);
-
             });
-
         }
-
-
 
         function showToast(msg) {
-
             const toast = document.getElementById('toastMessage');
-
             toast.innerText = msg; toast.style.display = 'block';
-
             clearTimeout(showToast.timeout);
-
             showToast.timeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
-
         }
-
-
 
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
         
-
         function formatTime12h(timeStr) {
-
             if (!timeStr) return '';
-
             const [h, m] = timeStr.split(':').map(Number);
-
             return `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${m.toString().padStart(2, '0')}`;
-
         }
-
         
-
         function setAMPM(val) {
-
             currentAMPM = val;
-
             document.getElementById('ampmAM').classList.toggle('active', val === '오전');
-
             document.getElementById('ampmPM').classList.toggle('active', val === '오후');
-
         }
-
-
 
         async function uploadFileToStorage(file, path) {
-
             const storageRef = ref(storage, path);
-
             await uploadBytes(storageRef, file);
-
             return await getDownloadURL(storageRef);
-
         }
-
         
-
         async function loadMembersFromFirebase() {
-
             members = {};
-
             const snapshot = await getDocs(collection(db, 'members'));
-
             snapshot.forEach(docSnap => {
-
                 const data = docSnap.data();
-
                 if (!data || !data.name) return;
-
                 members[data.name] = { name: data.name, img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` };
-
             });
-
         }
-
         
-
         async function loadEventsFromFirebase() {
-
             events = {};
-
             const snapshot = await getDocs(collection(db, 'events'));
-
             const docs = [];
-
             snapshot.forEach(docSnap => {
-
                 const data = docSnap.data();
-
                 if (!data || !data.dateId) return;
-
                 docs.push({ ...data, id: docSnap.id });
-
             });
-
             docs.sort((a, b) => {
-
                 const [ay, am, ad] = a.dateId.split('-').map(Number);
-
                 const [by, bm, bd] = b.dateId.split('-').map(Number);
-
                 const adate = new Date(ay, am - 1, ad).getTime();
-
                 const bdate = new Date(by, bm - 1, bd).getTime();
-
                 if (adate !== bdate) return adate - bdate;
-
                 if (!a.time) return b.time ? 1 : 0;
-
                 if (!b.time) return a.time ? -1 : 0;
-
                 return a.time.localeCompare(b.time);
-
             });
-
             docs.forEach(data => {
-
                 if (!events[data.dateId]) events[data.dateId] = [];
-
                 events[data.dateId].push(data);
-
             });
-
         }
-
-
 
         async function loadData() {
-
             try { await Promise.all([loadMembersFromFirebase(), loadEventsFromFirebase(), loadMemos(), loadSongbookSongs()]); }
-
             catch (error) { console.error(error); }
-
             finally { renderCalendar(); }
-
         }
-
-
 
         function openAddModal(id) {
-
             activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
-
             document.getElementById('editIndex').value = '-1';
-
             document.getElementById('eventTitle').value = '';
-
             document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
-
             document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
-
             document.getElementById('eventMembers').value = ''; document.getElementById('eventNoticeLink').value = ''; document.getElementById('eventType').value = '개인방송';
-
             setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
-
             document.getElementById('eventModal').style.display = 'flex';
-
         }
-
-
 
         function openEditModal(id, idx) {
-
             activeDateId = id;
-
             const ev = events[id][idx];
-
             document.getElementById('modalTitle').innerText = '일정 수정';
-
             document.getElementById('editIndex').value = idx;
-
             document.getElementById('eventTitle').value = ev.title;
-
             document.getElementById('eventType').value = ev.type;
-
             document.getElementById('eventMembers').value = ev.members || '';
-
             document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-
             document.getElementById('eventImageUrl').value = ev.imageUrl || '';
-
             if (ev.time) {
-
                 const [h, m] = ev.time.split(':').map(Number);
-
                 setAMPM(h >= 12 ? '오후' : '오전');
-
                 document.getElementById('timeHour').value = h % 12 || 12;
-
                 document.getElementById('timeMin').value = m.toString().padStart(2, '0');
-
             }
-
             document.getElementById('delBtn').style.display = 'block';
-
             document.getElementById('eventModal').style.display = 'flex';
-
         }
-
-
 
         async function saveEvent() {
-
             const title = document.getElementById('eventTitle').value.trim();
-
             if (!title) return showToast('제목을 입력하세요.');
-
             const hRaw = document.getElementById('timeHour').value;
-
             const mRaw = document.getElementById('timeMin').value;
-
             let timeStr = '';
-
             if (hRaw !== '') {
-
                 let h = parseInt(hRaw, 10);
-
                 const m = parseInt(mRaw || '0', 10);
-
                 if (currentAMPM === '오후' && h < 12) h += 12;
-
                 if (currentAMPM === '오전' && h === 12) h = 0;
-
                 timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-
             }
-
             const data = {
-
                 title, time: timeStr, type: document.getElementById('eventType').value,
-
                 members: document.getElementById('eventMembers').value,
-
                 noticeLink: document.getElementById('eventNoticeLink').value.trim(),
-
                 imageUrl: document.getElementById('eventImageUrl').value, dateId: activeDateId
-
             };
-
             const idx = parseInt(document.getElementById('editIndex').value, 10);
-
             try {
-
                 if (idx === -1) await setDoc(doc(collection(db, 'events')), data);
-
                 else {
-
                     const existingEvent = events[activeDateId][idx];
-
                     if (existingEvent && existingEvent.id) await setDoc(doc(db, 'events', existingEvent.id), data);
-
                     else await setDoc(doc(collection(db, 'events')), data);
-
                 }
-
                 await loadEventsFromFirebase();
-
                 closeModal('eventModal'); renderCalendar(); showToast('일정이 저장되었습니다.');
-
             } catch (error) { console.error(error); showToast(`일정 저장 실패: ${error.message}`); }
-
         }
-
-
 
         async function deleteEvent() {
-
             const idx = parseInt(document.getElementById('editIndex').value, 10);
-
             if (!confirm('이 일정을 삭제할까요?')) return;
-
             try {
-
                 const existingEvent = events[activeDateId][idx];
-
                 if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
-
                 await loadEventsFromFirebase(); closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
-
             } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
-
         }
-
-
 
         function renderCalendar() {
-
             const grid = document.getElementById('calendarGrid');
-
             grid.innerHTML = '';
-
             
-
             const isMobile = window.innerWidth < 768;
-
             
-
             if (isMobile) {
-
                 grid.className = 'calendar-grid weekly-view';
-
                 
-
                 const target = new Date(currentDate);
-
                 const dayNum = target.getDay();
-
                 const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-
                 const monday = new Date(target.setDate(diff));
-
                 
-
                 const { month, week } = getWeekOfMonth(currentDate);
-
                 document.getElementById('monthDisplay').innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
-
                 
-
                 const yoils = ['월', '화', '수', '목', '금', '토', '일'];
-
                 const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
-
                 
-
                 for (let i = 0; i < 7; i++) {
-
                     const dayDate = new Date(monday);
-
                     dayDate.setDate(monday.getDate() + i);
-
                     
-
                     const num = dayDate.getDate();
-
                     const m = dayDate.getMonth() + 1;
-
                     const y = dayDate.getFullYear();
-
                     const dateId = `${y}-${m}-${num}`;
-
                     
-
                     const row = document.createElement('div');
-
                     row.className = 'week-row';
-
                     if (isAdmin) {
-
                         row.onclick = () => openAddModal(dateId);
-
                     }
-
                     
-
                     const dayLabel = document.createElement('div');
-
                     dayLabel.className = 'week-day-label';
-
                     
-
                     const dayName = document.createElement('span');
-
                     dayName.className = `week-day-name ${yoilColors[i] || ''}`;
-
                     dayName.innerText = yoils[i];
-
                     
-
                     const dayNumber = document.createElement('span');
-
                     const today = new Date();
-
                     const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
-
                     
-
                     if (isToday) {
-
                         dayNumber.className = 'today-circle';
-
                         dayNumber.innerText = num;
-
                     } else {
-
                         dayNumber.className = `week-day-num ${yoilColors[i] || ''}`;
-
                         dayNumber.innerText = num;
-
                     }
-
                     
-
                     dayLabel.appendChild(dayName);
-
                     dayLabel.appendChild(dayNumber);
-
                     
-
                     const eventsDiv = document.createElement('div');
-
                     eventsDiv.className = 'week-events';
-
                     
-
                     if (events[dateId] && events[dateId].length > 0) {
-
                         events[dateId].forEach((ev, idx) => {
-
                             const tag = document.createElement('div');
-
                             tag.className = `event-tag type-${ev.type}`;
-
                             tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-
                             tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
-
                             if (isAdmin) {
-
                                 tag.oncontextmenu = (e) => {
-
                                     e.preventDefault();
-
                                     e.stopPropagation();
-
                                     openEditModal(dateId, idx);
-
                                 };
-
                             }
-
                             eventsDiv.appendChild(tag);
-
                         });
-
                     } else {
-
                         const noEvent = document.createElement('div');
-
                         noEvent.className = 'week-no-event';
-
                         noEvent.innerText = '등록된 일정이 없습니다.';
-
                         eventsDiv.appendChild(noEvent);
-
                     }
-
                     
-
                     row.appendChild(dayLabel);
-
                     row.appendChild(eventsDiv);
-
                     grid.appendChild(row);
-
                 }
-
             } else {
-
                 grid.className = 'calendar-grid';
-
                 grid.innerHTML = `<div class="day-label">월</div><div class="day-label">화</div><div class="day-label">수</div><div class="day-label">목</div><div class="day-label">금</div><div class="day-label text-blue-400">토</div><div class="day-label text-red-400">일</div>`;
-
                 
-
                 const y = currentDate.getFullYear();
-
                 const m = currentDate.getMonth();
-
                 document.getElementById('monthDisplay').innerText = `${y}년 ${m + 1}월`;
-
                 
-
                 const firstDay = new Date(y, m, 1);
-
                 const lastDay = new Date(y, m + 1, 0);
-
                 const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
                 const prevLastDay = new Date(y, m, 0).getDate();
-
                 
-
                 for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
-
                 for (let i = 1; i <= lastDay.getDate(); i++) createDay(i, true);
-
             }
-
             updateAdminUI(); updateSummary();
-
         }
-
-
 
         function createDay(num, isCurr) {
-
             const dateId = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${num}`;
-
             const div = document.createElement('div');
-
             div.className = 'day' + (isCurr ? '' : ' not-current');
-
             const numDiv = document.createElement('div');
-
             numDiv.className = 'day-num';
-
             const today = new Date();
-
             const isToday = isCurr && today.getDate() === num && today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear();
-
             numDiv.innerHTML = isCurr ? (isToday ? `<span class="today-circle">${num}</span>` : num) : '';
-
             div.appendChild(numDiv);
-
             const evCont = document.createElement('div');
-
             evCont.className = 'event-container';
-
             if (isCurr && events[dateId]) {
-
                 events[dateId].forEach((ev, idx) => {
-
                     const tag = document.createElement('div');
-
                     tag.className = `event-tag type-${ev.type}`;
-
                     tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-
                     tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
-
                     if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
-
                     evCont.appendChild(tag);
-
                 });
-
             }
-
             div.appendChild(evCont);
-
             if (isCurr && isAdmin) div.onclick = () => openAddModal(dateId);
-
             document.getElementById('calendarGrid').appendChild(div);
-
         }
-
-
 
         function showInfo(id, idx) {
-
             const ev = events[id][idx];
-
             document.getElementById('infoTitle').innerText = ev.title;
-
             document.getElementById('infoTime').innerText = formatTime12h(ev.time) || '시간 미정';
-
             const infoImageContainer = document.getElementById('infoImageContainer');
-
             infoImageContainer.innerHTML = '';
-
             if (ev.imageUrl) {
-
                 const img = document.createElement('img');
-
                 img.src = ev.imageUrl;
-
                 img.alt = ev.title;
-
                 img.className = 'info-image';
-
                 img.onload = () => {
-
                     infoImageContainer.innerHTML = '';
-
                     infoImageContainer.appendChild(img);
-
                 };
-
                 img.onerror = () => {
-
                     infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`;
-
                 };
-
                 infoImageContainer.appendChild(img);
-
             }
-
             const profs = document.getElementById('infoProfiles');
-
             profs.innerHTML = '';
-
             if (ev.members) {
-
                 ev.members.split(',').forEach(nameRaw => {
-
                     const name = nameRaw.trim();
-
                     if (!name) return;
-
                     const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-
                     const card = document.createElement('div');
-
                     card.className = 'profile-card';
-
                     card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-
                     profs.appendChild(card);
-
                 });
-
             }
-
             const noticeBtn = document.getElementById('infoNoticeBtn');
-
             if (ev.noticeLink) {
-
                 noticeBtn.style.display = 'block';
-
                 noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-
             } else {
-
                 noticeBtn.style.display = 'none';
-
             }
-
             document.getElementById('infoModal').style.display = 'flex';
-
         }
-
-
 
         function updateSummary() {
-
             const today = new Date();
-
             const id = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-
             const cont = document.getElementById('summaryContent');
-
             cont.innerHTML = '';
-
             if (events[id] && events[id].length > 0) {
-
                 events[id].forEach((ev, idx) => {
-
                     const item = document.createElement('div');
-
                     item.className = 'summary-item';
-
                     item.onclick = () => showInfo(id, idx);
-
                     item.innerHTML = `<span class="summary-dot type-dot-${ev.type.replace(/\s+/g, '')}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
-
                     cont.appendChild(item);
-
                 });
-
             } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
-
         }
-
-
 
         function toggleMemo() {
-
             const panel = document.getElementById('memoPanel');
-
             panel.classList.toggle('open');
-
             if (panel.classList.contains('open')) {
-
                 updateMemoTabUI();
-
                 loadMemos();
-
             }
-
         }
-
-
 
         function selectMemoTab(tab) {
-
             activeMemoTab = tab;
-
             updateMemoTabUI();
-
             loadMemos();
-
         }
-
-
 
         function updateMemoTabUI() {
-
             document.querySelectorAll('.memo-tab').forEach(btn => {
-
                 btn.classList.toggle('memo-tab-active', btn.dataset.tab === activeMemoTab);
-
             });
-
         }
-
-
 
         function openMemoInput() {
-
             if (!isAdmin) return;
-
             document.getElementById('memoInputArea').classList.remove('hidden');
-
             document.getElementById('memoItemText').focus();
-
         }
-
-
 
         function closeMemoInput() {
-
             const input = document.getElementById('memoItemText');
-
             if (input) input.value = '';
-
             document.getElementById('memoInputArea').classList.add('hidden');
-
         }
-
-
 
         async function saveMemoItem() {
-
             if (!isAdmin) return;
-
             const input = document.getElementById('memoItemText');
-
             const text = input.value.trim();
-
             if (!text) return showToast('메모 내용을 입력하세요.');
-
             try {
-
                 await addDoc(collection(db, 'memos_list'), { text, tab: activeMemoTab, createdAt: new Date() });
-
                 input.value = '';
-
                 closeMemoInput();
-
                 loadMemos();
-
                 showToast('메모가 추가되었습니다.');
-
             } catch (error) {
-
                 console.error('메모 추가 실패:', error);
-
                 showToast('메모 추가에 실패했습니다.');
-
             }
-
         }
-
-
 
         async function loadMemos() {
-
             const list = document.getElementById('memoList');
-
             list.innerHTML = '';
-
             const currentLoad = ++memoLoadToken;
-
             const q = query(collection(db, "memos_list"), orderBy("createdAt", "desc"));
-
             const snapshot = await getDocs(q);
-
             if (currentLoad !== memoLoadToken) return;
-
             snapshot.forEach(docSnap => {
-
                 const data = docSnap.data();
-
                 if (data.tab !== activeMemoTab) return;
-
                 const entry = document.createElement('div');
-
                 entry.className = 'memo-item-entry';
-
                 entry.innerHTML = `<div class="emoji">📌</div><span>${data.text}</span>${isAdmin ? `<button class="memo-item-delete" onclick="deleteMemo('${docSnap.id}')">✕</button>` : ''}`;
-
                 list.appendChild(entry);
-
             });
-
         }
-
-
 
         window.openAddMemoModal = () => document.getElementById('memoModal').style.display = 'flex';
 
-
-
         window.saveNewMemo = async () => {
-
             const text = document.getElementById('newMemoText').value;
-
             if(!text) return;
-
             await addDoc(collection(db, "memos_list"), { text, createdAt: new Date() });
-
             document.getElementById('newMemoText').value = '';
-
             closeModal('memoModal');
-
             loadMemos();
-
         };
-
-
 
         window.deleteMemo = async (id) => {
-
             if (!isAdmin) {
-
                 showToast('관리자만 삭제할 수 있습니다.');
-
                 return;
-
             }
-
             if(confirm('이 메모를 삭제하시겠습니까?')) {
-
                 try {
-
                     await deleteDoc(doc(db, "memos_list", id));
-
                     loadMemos();
-
                     showToast('메모가 삭제되었습니다.');
-
                 } catch (error) {
-
                     console.error('메모 삭제 실패:', error);
-
                     showToast('메모 삭제에 실패했습니다.');
-
                 }
-
             }
-
         };
 
-
-
         function moveMonth(v) {
-
             const isMobile = window.innerWidth < 768;
-
             if (isMobile) {
-
                 const target = new Date(currentDate);
-
                 const dayNum = target.getDay();
-
                 const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-
                 const monday = new Date(target.setDate(diff));
-
                 monday.setDate(monday.getDate() + (v * 7));
-
                 currentDate = monday;
-
             } else {
-
                 currentDate.setMonth(currentDate.getMonth() + v);
-
             }
-
             renderCalendar();
-
         }
-
-
 
         function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
-
         
-
         function updatePickerUI() {
-
             document.getElementById('pickerYearDisplay').innerText = `${pickerYear}년`;
-
             const grid = document.querySelector('.month-picker-grid');
-
             grid.innerHTML = '';
-
             for (let i = 0; i < 12; i++) {
-
                 const btn = document.createElement('button');
-
                 btn.className = 'month-btn';
-
                 btn.innerText = `${i + 1}월`;
-
                 if (pickerYear === currentDate.getFullYear() && i === currentDate.getMonth()) btn.classList.add('active');
-
                 btn.onclick = () => selectMonth(i);
-
                 grid.appendChild(btn);
-
             }
-
         }
-
-
 
         function changePickerYear(offset) { pickerYear += offset; updatePickerUI(); }
-
         function selectMonth(m) { currentDate.setFullYear(pickerYear); currentDate.setMonth(m); closeModal('monthPickerModal'); renderCalendar(); }
-
         
-
         function promptAdmin() {
-
             if (isAdmin) { isAdmin = false; updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제'); }
-
             else {
-
                 document.getElementById('adminPw').value = '';
-
                 document.getElementById('pwError').classList.add('hidden');
-
                 document.getElementById('pwModal').style.display = 'flex';
-
             }
-
         }
-
-
 
         function loginAdmin() {
-
             if (document.getElementById('adminPw').value === '0112') {
-
                 isAdmin = true; closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
-
             } else document.getElementById('pwError').classList.remove('hidden');
-
         }
-
-
 
         function updateMemoEditState() {
-
             const memoInput = document.getElementById('memoItemText');
-
             if (!memoInput) return;
-
             memoInput.disabled = !isAdmin;
-
         }
-
-
 
         function updateAdminUI() {
-
             document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
-
             document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
-
             updateMemoEditState();
-
             updateSongbookAdminUI();
-
             const memoPanel = document.getElementById('memoPanel');
-
             if (memoPanel && memoPanel.classList.contains('open')) {
-
                 loadMemos();
-
             }
-
         }
-
-
 
         let songbookSongs = [];
-
         let songbookCurrentFilter = 'All';
-
         let songbookSearchTerm = '';
-
         let songbookIsEditing = null;
-
         let currentModalSongId = null;
 
-
-
         async function loadSongbookSongs() {
-
             songbookSongs = [];
-
             try {
-
                 const snapshot = await getDocs(collection(db, 'songbook_songs'));
-
                 snapshot.forEach(docSnap => {
-
                     const data = docSnap.data();
-
                     if (data && data.title && data.artist) {
-
                         songbookSongs.push({ 
-
                             id: docSnap.id, 
-
                             title: data.title, 
-
                             artist: data.artist, 
-
                             url: data.url || '',
-
                             isConditionSong: data.isConditionSong || false
-
                         });
-
                     }
-
                 });
-
                 songbookSongs.sort((a, b) => {
-
                     const aNum = parseInt(a.id, 10) || 0;
-
                     const bNum = parseInt(b.id, 10) || 0;
-
                     return bNum - aNum;
-
                 });
-
             } catch (error) {
-
                 console.error('노래 데이터 로드 실패:', error);
-
             }
-
         }
 
-
-
         function renderSongbook() {
-
             const songListDiv = document.getElementById('songList');
-
             const artistListDiv = document.getElementById('artistList');
-
             
-
             songListDiv.innerHTML = '';
-
             songbookSearchTerm = document.getElementById('songbookSearch').value.trim().toLowerCase();
-
             
-
             const favorites = getFavorites();
 
-
-
             const filtered = songbookSongs.filter(song => {
-
                 let matchesFilter = false;
-
                 if (songbookCurrentFilter === 'Favorites') {
-
                     matchesFilter = favorites.includes(song.id);
-
                 } else {
-
                     matchesFilter = songbookCurrentFilter === 'All' || song.artist === songbookCurrentFilter;
-
                 }
-
                 const matchesSearch = !songbookSearchTerm || song.title.toLowerCase().includes(songbookSearchTerm) || song.artist.toLowerCase().includes(songbookSearchTerm);
-
                 return matchesFilter && matchesSearch;
-
             });
 
-
-
             const starSolid = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
-
             const starOutline = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="28" height="28"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>`;
 
-
-
             filtered.forEach(song => {
-
                 const isFav = favorites.includes(song.id);
-
                 const favIcon = isFav ? starSolid : starOutline;
-
                 const favClass = isFav ? 'is-favorite' : '';
-
                 
-
                 const safeUrl = song.url ? song.url.replace(/'/g, "\\'") : '';
-
                 const safeTitle = song.title ? song.title.replace(/'/g, "\\'") : '';
-
-
 
                 const conditionBadge = song.isConditionSong ? `<span class="condition-badge">컨디션곡</span>` : '';
 
-
-
                 songListDiv.innerHTML += `
-
                     <div class="song-item" oncontextmenu="editSong(event, '${song.id}')">
-
                         <div class="song-item-left">
-
                             <button class="favorite-btn ${favClass}" onclick="toggleFavorite(event, '${song.id}')" title="즐겨찾기">${favIcon}</button>
-
                         </div>
-
                         <div class="song-clickable" onclick="openBrowser('${safeUrl}', '${song.id}', '${safeTitle}')" style="align-items: flex-start; justify-content: center; overflow: hidden;">
-
                             <div style="display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden;">
-
                                 <span class="song-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; flex: 0 1 auto;">${song.title}</span>
-
                                 ${conditionBadge}
-
                             </div>
-
                             <span class="song-artist" style="text-align: left;">${song.artist}</span>
-
                         </div>
-
                         ${isAdmin ? `<button class="song-delete-btn" type="button" onclick="deleteSong('${song.id}')" title="삭제">✕</button>` : ''}
-
                     </div>
-
                 `;
-
             });
-
-
 
             const headerDiv = document.querySelector('.songbook-header');
-
             if (headerDiv) {
-
                 const addBtn = headerDiv.querySelector('.add-song-btn');
-
                 if (isAdmin && !addBtn) {
-
                     const btn = document.createElement('button');
-
                     btn.className = 'add-song-btn';
-
                     btn.type = 'button';
-
                     btn.textContent = '+';
-
                     btn.onclick = () => {
-
                         document.getElementById('adminSongForm').classList.add('visible');
-
                         document.getElementById('newSongTitle').focus();
-
                     };
-
                     headerDiv.appendChild(btn);
-
                 } else if (!isAdmin && addBtn) {
-
                     addBtn.remove();
-
                 }
-
             }
-
-
 
             const filterStarSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="margin: 0 auto;"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
-
             const uniqueArtists = [...new Set(songbookSongs.map(s => s.artist))].sort();
-
             
-
             artistListDiv.innerHTML = '';
-
             
-
             const allActive = songbookCurrentFilter === 'All' ? 'active' : '';
-
             artistListDiv.innerHTML += `<button class="artist-btn ${allActive}" onclick="setSongbookFilter('All')" type="button">All</button>`;
-
             
-
             const favActive = songbookCurrentFilter === 'Favorites' ? 'active' : '';
-
             artistListDiv.innerHTML += `<button class="artist-btn ${favActive}" onclick="setSongbookFilter('Favorites')" type="button" style="color: #FBBF24; padding: 10px 0; display:flex; align-items:center; justify-content:center;" title="즐겨찾기">${filterStarSVG}</button>`;
 
-
-
             uniqueArtists.forEach(a => {
-
                 const active = songbookCurrentFilter === a ? 'active' : '';
-
                 artistListDiv.innerHTML += `<button class="artist-btn ${active}" onclick="setSongbookFilter('${a}')" type="button">${a}</button>`;
-
             });
-
-
-
-            document.getElementById('songCount').innerText = songbookSongs.length;
-
         }
 
-
-
+        // 브라우저 팝업 열기 (자동 재생 URL 사용)
         function openBrowser(url, id, title) {
-
             if(!url) {
-
                 showToast("등록된 링크가 없습니다.");
-
                 return;
-
             }
-
             currentModalSongId = id;
-
             document.getElementById('browserTitle').innerText = title ? title : 'HTVVI 브라우저';
-
             document.getElementById('browserModal').classList.add('visible');
-
-            document.getElementById('browserIframe').src = url;
-
             
-
-            const btn = document.getElementById('modalFavoriteBtn');
-
-            if(id) {
-
-                btn.style.display = 'flex';
-
-                updateModalFavoriteBtn();
-
-            } else {
-
-                btn.style.display = 'none';
-
+            let src = url;
+            if (url.includes("sooplive.com/player/")) {
+                const match = url.match(/player\/(\d+)/);
+                const videoId = match ? match[1] : url.split('/').pop().split('?')[0];
+                src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
+            } else if (extractYtId(url)) {
+                const videoId = extractYtId(url);
+                src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
             }
-
+            
+            document.getElementById('browserIframe').src = src;
+            
+            const btn = document.getElementById('modalFavoriteBtn');
+            if(id) {
+                btn.style.display = 'flex';
+                updateModalFavoriteBtn();
+            } else {
+                btn.style.display = 'none';
+            }
         }
-
-
 
         function updateModalFavoriteBtn() {
-
             if(!currentModalSongId) return;
-
             const btn = document.getElementById('modalFavoriteBtn');
-
             const favorites = getFavorites();
-
             
-
             const starSolidModal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
-
             const starOutlineModal = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>`;
 
-
-
             if(favorites.includes(currentModalSongId)) {
-
                 btn.classList.add('active');
-
                 btn.innerHTML = `${starSolidModal} 즐겨찾기 해제`;
-
             } else {
-
                 btn.classList.remove('active');
-
                 btn.innerHTML = `${starOutlineModal} 즐겨찾기 추가`;
-
             }
-
         }
-
-
 
         function toggleModalFavorite() {
-
             if(!currentModalSongId) return;
-
             const fakeEvent = { stopPropagation: () => {} };
-
             toggleFavorite(fakeEvent, currentModalSongId);
-
             updateModalFavoriteBtn();
-
             updateFavPlayerPlaylist(); 
-
         }
-
-
 
         function closeBrowser() {
-
             document.getElementById('browserModal').classList.remove('visible');
-
             document.getElementById('browserIframe').src = '';
-
             currentModalSongId = null;
-
         }
-
-
 
         function editSong(event, id) {
-
             if (!isAdmin) return true;
-
             event.preventDefault();
-
             const song = songbookSongs.find(item => item.id === id);
-
             if (!song) return false;
-
             document.getElementById('newSongTitle').value = song.title;
-
             document.getElementById('newSongArtist').value = song.artist;
-
             document.getElementById('newSongUrl').value = song.url;
-
             document.getElementById('isConditionSong').checked = song.isConditionSong || false;
-
             document.getElementById('adminSongForm').classList.add('visible');
-
             songbookIsEditing = id;
-
             document.getElementById('addSongBtn').textContent = '수정 저장';
-
             return false;
-
         }
-
-
 
         function updateSongbookAdminUI() {
-
             document.getElementById('adminSongForm').classList.toggle('visible', isAdmin);
-
             document.getElementById('addSongBtn').textContent = '노래 추가';
-
             renderSongbook();
-
         }
-
-
 
         async function addSong() {
-
             const titleInput = document.getElementById('newSongTitle');
-
             const artistInput = document.getElementById('newSongArtist');
-
             const urlInput = document.getElementById('newSongUrl');
-
             const conditionCheckbox = document.getElementById('isConditionSong');
-
             
-
             const title = titleInput.value.trim();
-
             const artist = artistInput.value.trim();
-
             const url = urlInput.value.trim();
-
             const isConditionSong = conditionCheckbox.checked;
-
             
-
             if (!title || !artist) {
-
                 showToast('노래 제목과 가수명을 입력해주세요.');
-
                 return;
-
             }
-
             try {
-
                 if (songbookIsEditing !== null) {
-
                     await setDoc(doc(db, 'songbook_songs', songbookIsEditing), {
-
                         title, artist, url, isConditionSong
-
                     });
-
                     songbookIsEditing = null;
-
                 } else {
-
                     const newDocRef = await addDoc(collection(db, 'songbook_songs'), {
-
                         title, artist, url, isConditionSong
-
                     });
-
                 }
-
                 titleInput.value = '';
-
                 artistInput.value = '';
-
                 urlInput.value = '';
-
                 conditionCheckbox.checked = false;
-
                 document.getElementById('addSongBtn').textContent = '노래 추가';
-
                 await loadSongbookSongs();
-
                 renderSongbook();
-
                 showToast('노래가 저장되었습니다.');
-
             } catch (error) {
-
                 console.error('노래 저장 실패:', error);
-
                 showToast('노래 저장에 실패했습니다.');
-
             }
-
         }
-
-
 
         function cancelEdit() {
-
             document.getElementById('newSongTitle').value = '';
-
             document.getElementById('newSongArtist').value = '';
-
             document.getElementById('newSongUrl').value = '';
-
             document.getElementById('isConditionSong').checked = false;
-
             songbookIsEditing = null;
-
             document.getElementById('addSongBtn').textContent = '노래 추가';
-
         }
-
-
 
         async function deleteSong(id) {
-
             if (!isAdmin) return;
-
             if (!confirm('이 노래를 삭제하시겠습니까?')) return;
-
             try {
-
                 await deleteDoc(doc(db, 'songbook_songs', id));
-
                 await loadSongbookSongs();
-
                 renderSongbook();
-
                 showToast('노래가 삭제되었습니다.');
-
             } catch (error) {
-
                 console.error('노래 삭제 실패:', error);
-
                 showToast('노래 삭제에 실패했습니다.');
-
             }
-
         }
-
-
 
         function setSongbookFilter(a) { 
-
             songbookCurrentFilter = a; 
-
             renderSongbook(); 
-
         }
 
-
-
+        // 탭 전환 기능
         function showTab(tab) {
-
             document.querySelectorAll('.tab-button').forEach(btn => {
-
                 btn.classList.toggle('active', btn.dataset.tab === tab);
-
             });
-
             const calendarTop = document.querySelector('.calendar-top');
-
             const calendarBody = document.querySelector('.calendar-body');
-
             const songbookSection = document.getElementById('songbookSection');
-
             
-
             const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-
             const favoritePlayerPanel = document.getElementById('favoritePlayerPanel');
 
-
-
             if (tab === 'songbook') {
-
                 calendarTop.style.display = 'none';
-
                 calendarBody.style.display = 'none';
-
                 songbookSection.classList.add('visible');
-
                 
-
                 if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
-
-                if(favoritePlayerPanel) favoritePlayerPanel.style.display = 'block';
-
                 
-
                 renderSongbook();
-
                 updateFavPlayerPlaylist();
-
                 window.location.hash = '#songbook';
-
             } else {
-
                 calendarTop.style.display = 'flex';
-
                 calendarBody.style.display = 'flex';
-
                 songbookSection.classList.remove('visible');
-
                 
-
                 if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
-
-                if(favoritePlayerPanel) favoritePlayerPanel.style.display = 'none';
-
                 
-
                 window.location.hash = '#schedule';
-
             }
-
         }
 
-
-
+        // 글로벌 스코프에 노출
         Object.assign(window, {
-
             handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
-
             openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
-
             setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
-
             toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, moveMonth, openMonthPicker, changePickerYear,
-
             selectMonth, promptAdmin, loginAdmin,
-
             showTab, renderSongbook, openBrowser, closeBrowser,
-
             editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
-
             updateSongbookAdminUI, toggleFavorite, toggleModalFavorite
-
         });
 
-
-
+        // 초기화
         window.onload = async () => {
-
             await loadData();
-
             const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
-
             showTab(initialTab);
-
             window.addEventListener('resize', () => {
-
                 if (window.location.hash !== '#songbook') renderCalendar();
-
             });
-
         };
-
     </script>
-    
-<div id="favoritePlayerPanel" class="fav-player-panel">
-    <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
-
-    <div id="panelContent">
-        <h4 class="font-black text-xl mb-4 flex items-center gap-2">
-            <span class="w-2 h-5 bg-pink-400 rounded-full"></span>플레이어
-        </h4>
-        <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
-
-        <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
-        <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
-
-        <div id="visualizer" class="wave-container" style="display: none;">
-            <div class="wave"></div>
-        </div>
-
-        <div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
-            <button class="ctrl-btn" id="btnMin" onclick="toggleMinimize()" title="접기/펼치기" 
-                    style="position: absolute; left: 0; bottom: 0; width: 30px; height: 30px; border-radius: 50%; background: #E5E7EB; color: #4B5563; display: flex; align-items: center; justify-content: center;">
-                <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </button>
-            <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
-            <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
-            <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
-        </div>
-    </div>
-</div>
 </body>
-
 </html>
