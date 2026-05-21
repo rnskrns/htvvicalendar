@@ -216,7 +216,7 @@
         .songbook-sidebar { flex: 0 0 40%; max-width: 480px; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 260px); }
         .songbook-main-content { flex: 1 1 60%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
         .fav-player-panel { position: sticky; top: 25px; z-index: 2; margin-bottom: 20px; }
-        .artist-list-wrapper { flex: 1 1 0; min-height: 0; /* height: 0; */ margin-top: 20px; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; max-height: 760px; }
+        .artist-list-wrapper { flex: 1 1 0; min-height: 0; height: 0; margin-top: 20px; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; max-height: 760px; }
         .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 0; grid-auto-rows: minmax(0, auto); }
         
         /* 공통 스크롤바 설정 (화살표 완벽 제거, 배경 흰색, 둥근 모서리) */
@@ -528,47 +528,13 @@
             
             .songbook-section { flex-direction: column; height: auto; max-height: none; overflow: visible; gap: 16px; }
             .songbook-section.visible { height: auto; max-height: none; }
-            .songbook-sidebar {
-                flex: 0 0 auto;
-                border-right: none;
-                border-bottom: 1px solid #F5F5F5;
-                padding: 16px;
-                display: flex;
-                flex-direction: column;
-                height: 360px; /* 사이드바 전체 높이 고정 (플레이어+가수목록 합산) */
-            }
-
-            .fav-player-panel {
-                flex: 1; /* 가용 공간의 절반 */
-                margin-bottom: 10px;
-                overflow: hidden;
-            }
-
-            .artist-list-wrapper {
-                flex: 1; /* 가용 공간의 절반 */
-                overflow-y: auto; /* 6개 이상일 때 세로 스크롤 */
-                border: 1px solid #F0E68C;
-                border-radius: 12px;
-                background: #FFFDF0;
-                padding: 8px;
-            }
-
-            .artist-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr); /* 한 줄에 3개씩 */
-                gap: 6px;
-            }
-
-            .artist-btn {
-                padding: 6px 2px;
-                font-size: 0.75rem;
-                height: 32px; /* 버튼 높이 강제 지정으로 찌그러짐 방지 */
-            }
-
+            .songbook-sidebar { flex: 0 0 auto; border-right: none; border-bottom: 1px solid #F5F5F5; padding: 20px; height: auto; max-height: none; overflow: visible; }
+            .artist-list-wrapper { max-height: 680px; min-height: auto; height: auto; overflow-y: auto; overflow-x: hidden; }
             .songbook-main-content { flex: 1; padding: 20px; overflow: visible; }
             .songbook-header { flex-direction: column; align-items: stretch; }
             .songbook-search { width: 100%; }
             .songbook-content { overflow: visible; }
+            .artist-grid { grid-template-columns: repeat(2, 1fr); }
             .song-item { flex-wrap: wrap; gap: 12px; }
             .song-item-left { min-width: auto; }
 
@@ -661,8 +627,6 @@
                 
                 <!-- 사이드바로 들어온 즐겨찾기 플레이어 패널 -->
                 <div id="favoritePlayerPanel" class="fav-player-panel">
-                    <!-- 펼치기 버튼 (모바일용) -->
-                    <button id="mobilePlayerBtn" class="mobile-float-btn" onclick="openPlayerModal()">🎵</button>
                     <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
                     <div id="panelContent">
                         <h4 class="font-black text-xl mb-4 flex items-center gap-2">
@@ -698,12 +662,15 @@
             </div>
 
             <!-- 메인 노래 목록 -->
-            <div class="songbook-main-content">
+<div class="songbook-main-content">
                 <div class="songbook-header">
+                    <!-- 즐겨찾기 버튼이 이쪽으로 이동 -->
+                    <button id="favFilterBtn" class="artist-btn" onclick="setSongbookFilter('Favorites')" type="button" style="color: #FBBF24; padding: 10px 15px; display:flex; align-items:center; justify-content:center;" title="즐겨찾기">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+                    </button>
                     <input id="songbookSearch" class="songbook-search" type="text" placeholder="노래 제목 또는 가수를 검색하세요" oninput="renderSongbook()">
                     <button id="songbookAddBtn" class="add-song-btn" type="button" onclick="document.getElementById('adminSongForm').classList.add('visible'); document.getElementById('newSongTitle').focus();">+</button>
                 </div>
-
                 <div id="adminSongForm" class="admin-song-form">
                     <div class="admin-form-row">
                         <input id="newSongTitle" class="admin-input" type="text" placeholder="노래 제목">
@@ -1034,27 +1001,6 @@
                 btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
                 isMinimized = true;
             }
-        };
-
-        window.openPlayerModal = function() {
-            const panelContent = document.getElementById('panelContent');
-            if (!panelContent) return;
-
-            const modal = document.createElement('div');
-            modal.className = 'songbook-modal visible';
-            modal.style.zIndex = '3000';
-            modal.innerHTML = `
-                <div class="browser-container" style="max-height: 80vh; width: min(90%, 480px);">
-                    <div class="browser-header">
-                        <span style="font-weight: 800; color: #4E4942;">뮤직 플레이어</span>
-                        <button class="close-browser" onclick="this.closest('.songbook-modal').remove()">닫기</button>
-                    </div>
-                    <div class="browser-content-wrapper" style="padding: 16px;">
-                        ${panelContent.innerHTML}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
         };
 
         function getFavorites() {
@@ -1770,19 +1716,16 @@
             const filterStarSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="margin: 0 auto;"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
             const uniqueArtists = [...new Set(songbookSongs.map(s => s.artist))].sort((a, b) => a.localeCompare(b, 'ko', { sensitivity: 'base' }));
             
-            artistListDiv.innerHTML = '';
-            
-            const allActive = songbookCurrentFilter === 'All' ? 'active' : '';
-            artistListDiv.innerHTML += `<button class="artist-btn ${allActive}" onclick="setSongbookFilter('All')" type="button">All</button>`;
-            
-            const favActive = songbookCurrentFilter === 'Favorites' ? 'active' : '';
-            artistListDiv.innerHTML += `<button class="artist-btn ${favActive}" onclick="setSongbookFilter('Favorites')" type="button" style="color: #FBBF24; padding: 10px 0; display:flex; align-items:center; justify-content:center;" title="즐겨찾기">${filterStarSVG}</button>`;
+artistListDiv.innerHTML = '';
 
-            uniqueArtists.forEach(a => {
-                const active = songbookCurrentFilter === a ? 'active' : '';
-                artistListDiv.innerHTML += `<button class="artist-btn ${active}" onclick="setSongbookFilter('${a}')" type="button">${a}</button>`;
-            });
-        }
+const allActive = songbookCurrentFilter === 'All' ? 'active' : '';
+artistListDiv.innerHTML += `<button class="artist-btn ${allActive}" onclick="setSongbookFilter('All')" type="button">All</button>`;
+
+// 즐겨찾기 버튼 제거 (가수 목록에서 제거됨)
+uniqueArtists.forEach(a => {
+    const active = songbookCurrentFilter === a ? 'active' : '';
+    artistListDiv.innerHTML += `<button class="artist-btn ${active}" onclick="setSongbookFilter('${a}')" type="button">${a}</button>`;
+});        }
 
         // 브라우저 팝업 열기 (자동 재생 URL 사용)
         function openBrowser(url, id, title) {
