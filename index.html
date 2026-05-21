@@ -1793,8 +1793,15 @@
             await loadData();
             const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
             showTab(initialTab);
+            
+            // 모바일 스크롤 시 상하단 주소창 숨김/표시에 의한 리사이즈(초기화 현상) 방지
+            let lastWidth = window.innerWidth;
             window.addEventListener('resize', () => {
-                if (window.location.hash !== '#songbook') renderCalendar();
+                // 가로 너비가 변경되었을 때만(기기 회전, PC 화면 조절 등) 캘린더를 다시 그림
+                if (window.innerWidth !== lastWidth) {
+                    lastWidth = window.innerWidth;
+                    if (window.location.hash !== '#songbook') renderCalendar();
+                }
             });
         };
     </script>
