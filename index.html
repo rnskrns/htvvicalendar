@@ -317,8 +317,11 @@
 
 
 
+/* 기본 상태 (PC): 항상 펼쳐져 있음 */
 .fav-player-panel {
-    position: fixed;
+    /* 기존 position: fixed; 삭제 */
+    position: absolute; 
+    /* 기존 bottom, right 값은 부모 컨테이너 기준이 됨 */
     bottom: 20px;
     right: 20px;
     z-index: 1000;
@@ -331,17 +334,39 @@
     display: none; /* 기본 숨김 */
 }
 
-/* 물결 컨테이너를 버튼 위쪽으로 이동 및 스타일 최적화 */
-.wave-container {
-    position: relative;
-    width: 100%;
-    height: 8px; /* 버튼 위라 너무 두껍지 않게 조절 */
-    overflow: hidden;
-    background: transparent;
-    border-radius: 4px;
+/* 768px 이하 모바일 화면일 때만 최소화 모드 동작 */
+@media screen and (max-width: 768px) {
+    .minimized-mode {
+        width: 60px !important;
+        height: 60px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: var(--point-yellow) !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* 접혔을 때 내부 요소 숨기기 */
+    .minimized-mode #panelContent {
+        display: none !important;
+    }
+    
+    /* 음표 버튼을 최소화 모드일 때만 표시 */
+    .minimized-mode .music-note-btn {
+        display: block !important;
+    }
+    .fav-player-panel {
+        position: relative; /* 모바일에서는 흐름에 따라 배치 */
+        bottom: auto;
+        right: auto;
+        width: 100%;
+        margin-top: 20px;
+    }
 }
 
-/* 아주 자연스럽게 흐르는 애니메이션 */
 .wave {
     width: 200%;
     height: 100%;
@@ -2085,22 +2110,21 @@
 
         }
 
-        .wave-container {
-    display: flex; align-items: center; justify-content: center; gap: 4px; height: 20px; margin-top: 10px;
+.wave-container {
+    width: 100%; height: 12px; margin: 10px 0; overflow: hidden; background: #F8F8F8; border-radius: 6px;
 }
-.wave-bar {
-    width: 4px; height: 20%; background-color: #FBBF24; animation: wave-animation 1s infinite ease-in-out;
+.wave {
+    width: 200%; height: 100%;
+    background: linear-gradient(90deg, rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4), rgba(255, 243, 176, 0.9), rgba(255, 243, 176, 0.4));
+    background-size: 50% 100%; animation: wave-move 3s linear infinite;
 }
-@keyframes wave-animation {
-    0%, 100% { height: 20%; }
-    50% { height: 100%; }
-}
-.wave-bar:nth-child(1) { animation-delay: 0.1s; }
-.wave-bar:nth-child(2) { animation-delay: 0.3s; }
-.wave-bar:nth-child(3) { animation-delay: 0.5s; }
-.wave-bar:nth-child(4) { animation-delay: 0.3s; }
-.wave-bar:nth-child(5) { animation-delay: 0.1s; }
+@keyframes wave-move { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%); } }
 
+@media screen and (max-width: 768px) {
+    .minimized-mode { width: 60px !important; height: 60px !important; padding: 10px !important; border-radius: 50% !important; background: var(--point-yellow) !important; }
+    .minimized-mode #panelContent { display: none !important; }
+    .minimized-mode .music-note-btn { display: block !important; }
+}
     </style>
 
 </head>
@@ -4627,31 +4651,33 @@ window.toggleMinimize = function() {
     </script>
     
 <div id="favoritePlayerPanel" class="fav-player-panel">
-    <h4 class="font-black text-xl mb-4 flex items-center gap-2">
-        <span class="w-2 h-5 bg-pink-400 rounded-full"></span>플레이어
-    </h4>
-    
-    <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
+    <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
 
-    <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
-    <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
+    <div id="panelContent">
+        <h4 class="font-black text-xl mb-4 flex items-center gap-2">
+            <span class="w-2 h-5 bg-pink-400 rounded-full"></span>플레이어
+        </h4>
+        <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
 
-    <div id="visualizer" class="wave-container" style="display: none; margin-top: 10px; margin-bottom: 5px;">
-        <div class="wave"></div>
+        <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
+        <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
+
+        <div id="visualizer" class="wave-container" style="display: none;">
+            <div class="wave"></div>
+        </div>
+
+        <div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
+            <button class="ctrl-btn" id="btnMin" onclick="toggleMinimize()" title="접기/펼치기" 
+                    style="position: absolute; left: 0; bottom: 0; width: 30px; height: 30px; border-radius: 50%; background: #E5E7EB; color: #4B5563; display: flex; align-items: center; justify-content: center;">
+                <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+            <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
+            <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
+            <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+        </div>
     </div>
-
-<div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
-    <button class="ctrl-btn" id="btnMin" onclick="toggleMinimize()" title="접기/펼치기" 
-            style="position: absolute; left: 0; bottom: 0; width: 30px; height: 30px; border-radius: 50%; background: #E5E7EB; color: #4B5563; display: flex; align-items: center; justify-content: center;">
-        <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-    </button>
-
-    <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
-    <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
-    <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
-</div>
 </div>
 </body>
 
