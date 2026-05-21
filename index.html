@@ -242,15 +242,15 @@
         .add-song-btn { background: var(--point-yellow); color: var(--text-dark); border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-weight: 900; font-size: 28px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.2s, opacity 0.2s; }
         .add-song-btn:hover { transform: scale(1.1); opacity: 0.95; }
 
-        .songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .songbook-modal.visible { display: flex; }
 
-        .browser-container { width: 95%; height: 90%; background: white; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
+        .browser-container { width: min(90%, 1080px); max-height: 92vh; background: white; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
         .browser-header { background: #f3f4f6; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; }
         .close-browser { background: #81D4FA; color: #01579B; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
         .close-browser:hover { background: #4FC3F7; }
         .browser-content-wrapper { flex: 1; padding: 24px; background: #FFFDF5; display: flex; flex-direction: column; min-height: 0; }
-        .browser-iframe { flex: 1; width: 100%; height: 100%; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #000; }
+        .browser-iframe { width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #000; }
         .browser-footer { padding: 16px 24px; background: white; border-top: 1px solid #E5E7EB; display: flex; justify-content: center; align-items: center; }
         .modal-favorite-btn { padding: 12px 30px; border-radius: 999px; border: 2px solid #E5E7EB; background: white; color: #7A7A7A; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
         .modal-favorite-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
@@ -500,7 +500,7 @@
                         <h4 class="font-black text-xl mb-4 flex items-center gap-2">
                             플레이어
                         </h4>
-                        <div id="playerWrapper" style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
+                        <div id="playerWrapper" style="width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
 
                         <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
                         <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
