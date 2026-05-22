@@ -6,6 +6,7 @@
     <title>HTVVI Schedule Manager</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root {
             --point-yellow: #FFF3B0;
@@ -130,19 +131,6 @@
         .type-dot-휴방 { background: #B0BEC5; }
         .type-dot-미확정 { background: #CE93D8; }
 
-        .fav-player-panel {
-            position: sticky;
-            top: 25px;
-            z-index: 1;
-            background: var(--white);
-            padding: 20px;
-            border-radius: var(--radius-lg);
-            width: 100%;
-            box-shadow: none;
-            border: 1px solid #F5F5F5;
-            margin-bottom: 20px;
-        }
-
         .wave-container {
             width: 100%; height: 12px; margin: 10px 0; overflow: hidden; background: #F8F8F8; border-radius: 6px;
         }
@@ -215,8 +203,17 @@
         .songbook-section.visible { display: flex; max-height: calc(100vh - 260px); height: calc(100vh - 260px); }
         .songbook-sidebar { flex: 0 0 40%; max-width: 480px; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 260px); }
         .songbook-main-content { flex: 1 1 60%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
-        .fav-player-panel { position: sticky; top: 25px; z-index: 2; margin-bottom: 20px; }
-        .artist-list-wrapper { flex: 1 1 0; min-height: 0; height: 0; margin-top: 20px; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; max-height: 760px; }
+        .fav-player-panel {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            box-shadow: none;
+            border: 1px solid #F5F5F5;
+            margin-bottom: 20px;
+            flex: 0 0 auto;
+        }
+        .artist-list-wrapper { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 24px; max-height: 760px; }
         .artist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; min-height: 0; grid-auto-rows: minmax(0, auto); }
         
         /* 공통 스크롤바 설정 (화살표 완벽 제거, 배경 흰색, 둥근 모서리) */
@@ -242,9 +239,33 @@
         /* 파이어폭스 스크롤 대응 */
         * { scrollbar-color: #FDE047 #FFFFFF; scrollbar-width: thin; }
 
-        .artist-btn { padding: 10px; border: 1px solid #F0E68C; background: #FFFDF0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-        .artist-btn:hover { background: var(--point-yellow); }
-        .artist-btn.active { background: #B3E5FC; border-color: #38bdf8; color: #0369a1; font-weight: bold; }
+        .artist-btn { padding: 10px 18px; border: 1.5px solid #FDE047; background: #FFFDF0; border-radius: 12px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: #7A5A2F; font-weight: 600; }
+        .artist-btn:hover { background: #FFF9C4; border-color: #FDE047; color: #5D4037; }
+        .artist-btn.active { background: #E1F5FE; border-color: #B3E5FC; color: #0288D1; font-weight: bold; }
+
+        #favFilterBtn {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #FDE047;
+            background: white;
+            color: #FBBF24;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        #favFilterBtn:hover {
+            background: #FFFBEA;
+            border-color: #FDE047;
+        }
+        #favFilterBtn.active {
+            background: #B3E5FC;
+            border-color: #81D4FA;
+            color: #0288D1;
+        }
 
         .songbook-main-content { flex: 1 1 66.6667%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
         .songbook-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
@@ -298,27 +319,107 @@
         .week-day-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .week-day-name { font-weight: 800; font-size: 13px; color: #A09586; margin-bottom: 2px; }
         .week-day-num { font-size: 20px; font-weight: 900; color: var(--text-dark); }
-        .week-events { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        .event-container {
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important;
+            gap: 4px;
+            padding: 4px;
+        }
+        .week-events {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px;
+        }
         .week-no-event { color: #A1A1AA; font-size: 13px; font-weight: 700; padding: 10px 14px; background: #FAFAFA; border-radius: 12px; border: 1.5px dashed #E4E4E7; }
         
         .day-label { padding-bottom: 15px; text-align: center; font-weight: 900; font-size: 15px; color: #C0B7A9; }
-        .day { background: transparent; min-height: 180px; position: relative; cursor: pointer; display: flex; flex-direction: column; border: 1px dashed #E5E1DA; transition: 0.2s; overflow: hidden; }
+        .day { min-height: 200px; height: auto; display: flex; flex-direction: column; background: transparent; border: 1px dashed #E5E1DA; transition: 0.2s; overflow: hidden; }
         .day:hover { background: #FFFEF5; border-style: solid; border-color: var(--point-yellow); z-index: 10; }
         .day.not-current { pointer-events: none; border-color: #F0F0F0; }
         .day-num { padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
         
-        .event-container { flex: 1; display: flex; flex-direction: column; width: 100%; padding: 4px; gap: 4px; }
-        .event-tag { position: relative; flex: 1; width: 100%; padding: 8px 10px; font-size: var(--font-event); font-weight: 800; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; transition: 0.2s; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; gap: 4px; }
+.event-tag {
+    position: relative;
+    width: 100%;
+    flex: 1 1 0px;
+    min-height: 45px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-align: center;
+    transition: 0.2s;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    gap: 4px;
+    font-family: 'Pretendard', sans-serif !important;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.3;
+}
         .event-tag:hover { transform: scale(0.98); }
-        .event-time-badge { position: absolute; top: 5px; left: 5px; display: inline-block; border: 1.5px solid #FFFFFF; background-color: #FFFFFF; border-radius: 12px; padding: 3px 7px; font-size: 10px; font-weight: 800; line-height: 1; color: inherit; }
+        .event-time-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            display: inline-block;
+            border: 1.5px solid #FFFFFF;
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            padding: 3px 7px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1;
+            color: inherit;
+            font-family: 'Pretendard', sans-serif !important;
+        }
 
+        .event-tag div {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dragging-ghost {
+            background-color: #FFF3B0 !important;
+            opacity: 0.4;
+            border: 2px dashed #EAB308;
+        }
+
+        /* 기간 긴 일정용 스타일 */
+.event-tag.long-term {
+    font-size: 14px !important; 
+    padding: 4px;
+    white-space: nowrap;
+}
         .type-개인방송 { background-color: var(--color-personal); color: #B45309; }
         .type-합방 { background-color: var(--color-collab); color: #01579B; }
         .type-휴방 { background-color: var(--color-off); color: #616161; }
         .type-미확정 { background-color: var(--color-tbd); color: #4A148C; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: var(--white); width: 90%; max-width: 480px; padding: 40px; border-radius: var(--radius-xl); box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
+.modal-content {
+    background: var(--white);
+    width: 90%;
+    max-width: 480px;
+    padding: 30px; /* 패딩을 약간 줄여 공간 확보 */
+    border-radius: var(--radius-xl);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    /* max-height 제거하거나 높이를 고정하지 않고 내용을 다 보여주게 수정 */
+    height: auto; 
+    max-height: 95vh;
+}
         .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 25px; }
         
         .form-group { margin-bottom: 24px; }
@@ -373,12 +474,14 @@
             background: #E1F5FE; 
             color: #0288D1; 
             border: 2px solid #B3E5FC; 
-            font-size: 18px; 
+            font-size: 15px; 
             font-weight: 800; 
-            padding: 10px 20px; 
+            padding: 8px 15px; 
             border-radius: 30px; 
             margin-bottom: 16px; 
             flex-shrink: 0;
+            text-align: center;
+            word-break: keep-all;
         }
 
         #infoModal .info-image-container { 
@@ -503,7 +606,11 @@
             .calendar-header h2 { font-size: 1.25rem !important; line-height: 1.75rem !important; text-align: center; min-width: 170px !important; }
             .calendar-grid { grid-template-columns: 1fr; gap: 14px; }
             .day-label { text-align: left; padding-left: 15px; font-size: 14px; }
-            .day { min-height: 120px; }
+            .day { min-height: 160px; }
+            .event-tag {
+                font-size: 14px;
+                min-height: 50px;
+            }
             .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
             .main-logo { height: 90px; }
             .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
@@ -531,15 +638,17 @@
             .songbook-sidebar { flex: 0 0 auto; border-right: none; border-bottom: 1px solid #F5F5F5; padding: 20px; height: auto; max-height: none; overflow: visible; }
             .artist-list-wrapper { max-height: 680px; min-height: auto; height: auto; overflow-y: auto; overflow-x: hidden; }
             .songbook-main-content { flex: 1; padding: 20px; overflow: visible; }
-            .songbook-header { flex-direction: column; align-items: stretch; }
-            .songbook-search { width: 100%; }
+            .songbook-header { flex-direction: row !important; align-items: center !important; gap: 8px; }
+            .songbook-search { width: 100% !important; }
+            #favFilterBtn { flex-shrink: 0; }
+            .add-song-btn { flex-shrink: 0; }
             .songbook-content { overflow: visible; }
             .artist-grid { grid-template-columns: repeat(2, 1fr); }
             .song-item { flex-wrap: wrap; gap: 12px; }
             .song-item-left { min-width: auto; }
 
             /* 모바일 최소화 모드 */
-            .minimized-mode { width: 60px !important; height: 60px !important; padding: 0 !important; border-radius: 50% !important; background: var(--point-yellow) !important; display: flex !important; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+            .minimized-mode { width: 60px !important; height: 60px !important; padding: 0 !important; border-radius: 50% !important; background: var(--point-yellow) !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
             .minimized-mode #panelContent { display: none !important; }
             .minimized-mode .music-note-btn { display: block !important; }
             
@@ -626,13 +735,13 @@
             <div class="songbook-sidebar">
                 
                 <!-- 사이드바로 들어온 즐겨찾기 플레이어 패널 -->
-                <div id="favoritePlayerPanel" class="fav-player-panel">
+                <div id="favoritePlayerPanel" class="fav-player-panel is-minimized">
                     <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
                     <div id="panelContent">
                         <h4 class="font-black text-xl mb-4 flex items-center gap-2">
                             플레이어
                         </h4>
-                        <div id="playerWrapper" style="width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden;"></div>
+                        <div id="playerWrapper" style="width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden; display: none;"></div>
 
                         <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
                         <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
@@ -664,9 +773,8 @@
             <!-- 메인 노래 목록 -->
 <div class="songbook-main-content">
                 <div class="songbook-header">
-                    <!-- 즐겨찾기 버튼이 이쪽으로 이동 -->
-                    <button id="favFilterBtn" class="artist-btn" onclick="setSongbookFilter('Favorites')" type="button" style="color: #FBBF24; padding: 10px 15px; display:flex; align-items:center; justify-content:center;" title="즐겨찾기">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+                    <button id="favFilterBtn" class="artist-btn" onclick="setSongbookFilter('Favorites')" type="button" title="즐겨찾기">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" /></svg>
                     </button>
                     <input id="songbookSearch" class="songbook-search" type="text" placeholder="노래 제목 또는 가수를 검색하세요" oninput="renderSongbook()">
                     <button id="songbookAddBtn" class="add-song-btn" type="button" onclick="document.getElementById('adminSongForm').classList.add('visible'); document.getElementById('newSongTitle').focus();">+</button>
@@ -722,8 +830,17 @@
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle" class="modal-title">일정 관리</h2>
-            <input type="hidden" id="editIndex">
+                <input type="hidden" id="editIndex">
+                <input type="hidden" id="editingEventDocId">
             <div class="form-group"><label>제목</label><input type="text" id="eventTitle" placeholder="일정 제목을 입력하세요"></div>
+            <div class="form-group">
+                <label>일정 기간</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" id="eventStartDate" class="w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]">
+                    <span>~</span>
+                    <input type="date" id="eventEndDate" class="w-full p-[15px] rounded-[var(--radius-md)] border-2 border-[#F5F5F5] bg-[#F9F9F9]">
+                </div>
+            </div>
             <div class="form-group">
                 <label>시간 설정</label>
                 <div class="custom-time-picker">
@@ -849,7 +966,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
         // 사용자의 Firebase 설정 유지
@@ -870,6 +987,7 @@
         const storage = getStorage(app);
 
         let isAdmin = false;
+        let modifiedDates = new Set();
         let currentDate = new Date();
         let events = {};
         let members = {};
@@ -977,7 +1095,7 @@
             updateFavPlayerPlaylist();
         };
 
-        let isMinimized = false;
+        let isMinimized = true;
 
         window.toggleMinimize = function() {
             const playerWrapper = document.getElementById('playerWrapper');
@@ -1163,14 +1281,10 @@
                 docs.push({ ...data, id: docSnap.id });
             });
             docs.sort((a, b) => {
-                const [ay, am, ad] = a.dateId.split('-').map(Number);
-                const [by, bm, bd] = b.dateId.split('-').map(Number);
-                const adate = new Date(ay, am - 1, ad).getTime();
-                const bdate = new Date(by, bm - 1, bd).getTime();
-                if (adate !== bdate) return adate - bdate;
-                if (!a.time) return b.time ? 1 : 0;
-                if (!b.time) return a.time ? -1 : 0;
-                return a.time.localeCompare(b.time);
+                const dateA = new Date(a.startDate || a.dateId).getTime();
+                const dateB = new Date(b.startDate || b.dateId).getTime();
+                if (dateA !== dateB) return dateA - dateB;
+                return (a.order ?? 9999) - (b.order ?? 9999);
             });
             docs.forEach(data => {
                 if (!events[data.dateId]) events[data.dateId] = [];
@@ -1191,6 +1305,14 @@
             document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
             document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
             document.getElementById('eventMembers').value = ''; document.getElementById('eventNoticeLink').value = ''; document.getElementById('eventType').value = '개인방송';
+            // 날짜 필드가 있을 경우 활성 날짜로 기본값 설정
+            const pad = (n) => n.toString().padStart(2, '0');
+            if (document.getElementById('eventStartDate')) {
+                const parts = id.split('-');
+                const y = parts[0]; const m = pad(parseInt(parts[1], 10)); const d = pad(parseInt(parts[2], 10));
+                document.getElementById('eventStartDate').value = `${y}-${m}-${d}`;
+                document.getElementById('eventEndDate').value = `${y}-${m}-${d}`;
+            }
             setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
             document.getElementById('eventModal').style.display = 'flex';
         }
@@ -1205,6 +1327,23 @@
             document.getElementById('eventMembers').value = ev.members || '';
             document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
             document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+            // 시작/종료일 반영 (있다면 yyyy-mm-dd 형식으로)
+            if (document.getElementById('eventStartDate')) {
+                if (ev.startDate) {
+                    const s = new Date(ev.startDate);
+                    document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
+                } else if (ev.dateId) {
+                    const parts = ev.dateId.split('-');
+                    document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+                }
+                if (ev.endDate) {
+                    const e = new Date(ev.endDate);
+                    document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
+                } else if (ev.dateId) {
+                    const parts = ev.dateId.split('-');
+                    document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+                }
+            }
             if (ev.time) {
                 const [h, m] = ev.time.split(':').map(Number);
                 setAMPM(h >= 12 ? '오후' : '오전');
@@ -1228,25 +1367,46 @@
                 if (currentAMPM === '오전' && h === 12) h = 0;
                 timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
             }
-            const data = {
-                title, time: timeStr, type: document.getElementById('eventType').value,
-                members: document.getElementById('eventMembers').value,
-                noticeLink: document.getElementById('eventNoticeLink').value.trim(),
-                imageUrl: document.getElementById('eventImageUrl').value, dateId: activeDateId
-            };
+
+            const startStr = document.getElementById('eventStartDate') ? document.getElementById('eventStartDate').value : null;
+            const endStr = document.getElementById('eventEndDate') ? document.getElementById('eventEndDate').value : null;
+
+            const type = document.getElementById('eventType').value;
+            const members = document.getElementById('eventMembers').value;
+            const noticeLink = document.getElementById('eventNoticeLink').value.trim();
+            const imageUrl = document.getElementById('eventImageUrl').value;
+
             const idx = parseInt(document.getElementById('editIndex').value, 10);
+            const editingDocId = document.getElementById('editingEventDocId') ? document.getElementById('editingEventDocId').value : '';
+
             try {
+                // 신규 추가: 기간이 지정되면 범위를 순회하며 각 날짜별로 문서 생성
                 if (idx === -1) {
-                    await addDoc(collection(db, 'events'), data);
-                } else {
-                    const existingEvent = events[activeDateId][idx];
-                    if (existingEvent && existingEvent.id) {
-                        await setDoc(doc(db, 'events', existingEvent.id), data);
-                    } else {
+                    const sDate = startStr ? new Date(startStr) : new Date(activeDateId);
+                    const eDate = endStr ? new Date(endStr) : new Date(activeDateId);
+                    for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
+                        const dateId = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                        const data = { title, time: timeStr, type, members, noticeLink, imageUrl, dateId, startDate: startStr || dateId, endDate: endStr || dateId };
                         await addDoc(collection(db, 'events'), data);
                     }
+                } else {
+                    // 수정: 우선 문서 ID가 명시되어 있으면 해당 문서 업데이트
+                    const data = { title, time: timeStr, type, members, noticeLink, imageUrl, dateId: activeDateId, startDate: startStr || activeDateId, endDate: endStr || activeDateId };
+                    if (editingDocId) {
+                        await setDoc(doc(db, 'events', editingDocId), data);
+                    } else {
+                        const existingEvent = events[activeDateId] && events[activeDateId][idx];
+                        if (existingEvent && existingEvent.id) {
+                            await setDoc(doc(db, 'events', existingEvent.id), data);
+                        } else {
+                            await addDoc(collection(db, 'events'), data);
+                        }
+                    }
                 }
+
                 await loadEventsFromFirebase();
+                // clear editing doc id
+                if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
                 closeModal('eventModal'); renderCalendar(); showToast('일정이 저장되었습니다.');
             } catch (error) { console.error(error); showToast(`일정 저장 실패: ${error.message}`); }
         }
@@ -1255,9 +1415,16 @@
             const idx = parseInt(document.getElementById('editIndex').value, 10);
             if (!confirm('이 일정을 삭제할까요?')) return;
             try {
-                const existingEvent = events[activeDateId][idx];
-                if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
-                await loadEventsFromFirebase(); closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
+                const editingDocId = document.getElementById('editingEventDocId') ? document.getElementById('editingEventDocId').value : '';
+                if (editingDocId) {
+                    await deleteDoc(doc(db, 'events', editingDocId));
+                } else {
+                    const existingEvent = events[activeDateId] && events[activeDateId][idx];
+                    if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
+                }
+                await loadEventsFromFirebase();
+                if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
+                closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
             } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
         }
 
@@ -1323,8 +1490,9 @@
                     
                     if (events[dateId] && events[dateId].length > 0) {
                         events[dateId].forEach((ev, idx) => {
+                            const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                             const tag = document.createElement('div');
-                            tag.className = `event-tag type-${ev.type}`;
+                            tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`;
                             tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
                             tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
                             if (isAdmin) {
@@ -1361,14 +1529,58 @@
                 const prevLastDay = new Date(y, m, 0).getDate();
                 
                 for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
-                for (let i = 1; i <= lastDay.getDate(); i++) createDay(i, true);
+                for (let i = 1; i <= lastDay.getDate(); i++) {
+                    const d = new Date(y, m, i);
+                    const dateId = `${y}-${m + 1}-${i}`;
+                    const allEvents = Object.values(events).flat();
+                    const todaysEvents = allEvents.filter(ev => {
+                        if (!ev.startDate) return ev.dateId === dateId;
+                        const start = new Date(ev.startDate);
+                        const end = new Date(ev.endDate);
+                        start.setHours(0,0,0,0);
+                        end.setHours(0,0,0,0);
+                        return d >= start && d <= end;
+                    });
+                    createDay(i, true, todaysEvents);
+                }
             }
+            applyDraggable();
             updateAdminUI(); updateSummary();
         }
 
-        function createDay(num, isCurr) {
+        function applyDraggable() {
+            const isDraggable = isAdmin;
+
+            const sortableOptions = {
+                animation: 150,
+                ghostClass: 'dragging-ghost',
+                fallbackOnBody: true,
+                disabled: !isDraggable,
+                onStart: function(evt) {
+                    evt.item.style.height = evt.item.offsetHeight + 'px';
+                },
+                onEnd: function (evt) {
+                    evt.item.style.height = '';
+                    if (!isAdmin) return;
+
+                    const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
+                    if (dateId) modifiedDates.add(dateId);
+                }
+            };
+
+            document.querySelectorAll('.event-container, .week-events').forEach(el => {
+                if (el.sortableInstance) {
+                    el.sortableInstance.option('disabled', !isDraggable);
+                } else {
+                    el.sortableInstance = new Sortable(el, sortableOptions);
+                }
+            });
+        }
+
+        function createDay(num, isCurr, dayEvents = []) {
             const dateId = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${num}`;
             const div = document.createElement('div');
+            div.dataset.dateId = dateId;
             div.className = 'day' + (isCurr ? '' : ' not-current');
             const numDiv = document.createElement('div');
             numDiv.className = 'day-num';
@@ -1378,13 +1590,15 @@
             div.appendChild(numDiv);
             const evCont = document.createElement('div');
             evCont.className = 'event-container';
-            if (isCurr && events[dateId]) {
-                events[dateId].forEach((ev, idx) => {
+            if (isCurr && dayEvents && dayEvents.length > 0) {
+                dayEvents.forEach((ev, idx) => {
+                    const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
-                    tag.className = `event-tag type-${ev.type}`;
+                    tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`;
+                    tag.dataset.id = ev.id;
                     tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-                    tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
-                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
+                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
                     evCont.appendChild(tag);
                 });
             }
@@ -1394,9 +1608,32 @@
         }
 
         function showInfo(id, idx) {
-            const ev = events[id][idx];
+            const ev = events[id]?.[idx];
+            if (!ev) return;
+
             document.getElementById('infoTitle').innerText = ev.title;
-            document.getElementById('infoTime').innerText = formatTime12h(ev.time) || '시간 미정';
+
+            let dateText = '';
+            if (ev.startDate && ev.endDate) {
+                const s = new Date(ev.startDate);
+                const e = new Date(ev.endDate);
+                const startText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}`;
+                const endText = `${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}`;
+                dateText = startText;
+                if (ev.startDate !== ev.endDate) {
+                    dateText = `${startText} - ${endText}`;
+                }
+                if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
+            } else if (ev.dateId) {
+                const parts = ev.dateId.split('-');
+                dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}`;
+                if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
+            } else {
+                dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
+            }
+
+            document.getElementById('infoTime').innerText = dateText;
+
             const infoImageContainer = document.getElementById('infoImageContainer');
             infoImageContainer.innerHTML = '';
             if (ev.imageUrl) {
@@ -1434,6 +1671,92 @@
                 noticeBtn.style.display = 'none';
             }
             document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        // Show modal using an event object directly (for filtered/dayEvents)
+        function showInfoByEvent(ev) {
+            if (!ev) return;
+            document.getElementById('infoTitle').innerText = ev.title;
+            // 날짜 표시: start~end or dateId
+            let dateText = '';
+            if (ev.startDate && ev.endDate) {
+                const s = new Date(ev.startDate); const e = new Date(ev.endDate);
+                dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+                if (ev.startDate !== ev.endDate) dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()} - ${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+            } else if (ev.dateId) {
+                const parts = ev.dateId.split('-');
+                dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+            } else {
+                dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
+            }
+            document.getElementById('infoTime').innerText = dateText;
+            const infoImageContainer = document.getElementById('infoImageContainer');
+            infoImageContainer.innerHTML = '';
+            if (ev.imageUrl) {
+                const img = document.createElement('img');
+                img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
+                img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
+                img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
+                infoImageContainer.appendChild(img);
+            }
+            const profs = document.getElementById('infoProfiles');
+            profs.innerHTML = '';
+            if (ev.members) {
+                ev.members.split(',').forEach(nameRaw => {
+                    const name = nameRaw.trim(); if (!name) return;
+                    const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
+                    const card = document.createElement('div');
+                    card.className = 'profile-card';
+                    card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
+                    profs.appendChild(card);
+                });
+            }
+            const noticeBtn = document.getElementById('infoNoticeBtn');
+            if (ev.noticeLink) {
+                noticeBtn.style.display = 'block';
+                noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
+            } else noticeBtn.style.display = 'none';
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        // Open edit modal using an event object directly
+        function openEditModalByEvent(ev) {
+            if (!ev) return;
+            activeDateId = ev.dateId || (ev.startDate ? ev.startDate : activeDateId);
+            document.getElementById('modalTitle').innerText = '일정 수정';
+            document.getElementById('editIndex').value = '-1';
+            if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
+            document.getElementById('eventTitle').value = ev.title || '';
+            document.getElementById('eventType').value = ev.type || '개인방송';
+            document.getElementById('eventMembers').value = ev.members || '';
+            document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
+            document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+            if (ev.time) {
+                const [h, m] = ev.time.split(':').map(Number);
+                setAMPM(h >= 12 ? '오후' : '오전');
+                document.getElementById('timeHour').value = h % 12 || 12;
+                document.getElementById('timeMin').value = m.toString().padStart(2, '0');
+            } else {
+                setAMPM('오전'); document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
+            }
+            if (document.getElementById('eventStartDate')) {
+                if (ev.startDate) {
+                    const s = new Date(ev.startDate);
+                    document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
+                } else if (ev.dateId) {
+                    const parts = ev.dateId.split('-');
+                    document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+                }
+                if (ev.endDate) {
+                    const e = new Date(ev.endDate);
+                    document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
+                } else if (ev.dateId) {
+                    const parts = ev.dateId.split('-');
+                    document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+                }
+            }
+            document.getElementById('delBtn').style.display = 'block';
+            document.getElementById('eventModal').style.display = 'flex';
         }
 
         function updateSummary() {
@@ -1581,13 +1904,47 @@
         function changePickerYear(offset) { pickerYear += offset; updatePickerUI(); }
         function selectMonth(m) { currentDate.setFullYear(pickerYear); currentDate.setMonth(m); closeModal('monthPickerModal'); renderCalendar(); }
         
-        function promptAdmin() {
-            if (isAdmin) { isAdmin = false; updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제'); }
+        async function promptAdmin() {
+            if (isAdmin) {
+                if (modifiedDates.size > 0) {
+                    if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) {
+                        await saveAllModifiedOrders();
+                    }
+                }
+                isAdmin = false;
+                modifiedDates.clear();
+                updateAdminUI();
+                renderCalendar();
+                showToast('관리자 모드 해제');
+            }
             else {
                 document.getElementById('adminPw').value = '';
                 document.getElementById('pwError').classList.add('hidden');
                 document.getElementById('pwModal').style.display = 'flex';
             }
+        }
+
+        async function saveAllModifiedOrders() {
+            showToast('순서를 서버에 저장 중입니다...');
+            const updatePromises = [];
+
+            for (const dateId of modifiedDates) {
+                const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) ||
+                                  document.querySelector(`[data-date-id="${dateId}"] .week-events`);
+                if (container) {
+                    const items = container.querySelectorAll('.event-tag');
+                    items.forEach((item, index) => {
+                        const docId = item.dataset.id;
+                        if (docId) {
+                            updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
+                        }
+                    });
+                }
+            }
+
+            await Promise.all(updatePromises);
+            modifiedDates.clear();
+            showToast('모든 순서가 저장되었습니다.');
         }
 
         function loginAdmin() {
@@ -1605,6 +1962,7 @@
         function updateAdminUI() {
             document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
             document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
+            applyDraggable();
             updateMemoEditState();
             updateSongbookAdminUI();
             const memoPanel = document.getElementById('memoPanel');
@@ -1711,6 +2069,11 @@
                 } else if (!isAdmin && addBtn) {
                     addBtn.remove();
                 }
+            }
+
+            const favBtn = document.getElementById('favFilterBtn');
+            if (favBtn) {
+                favBtn.classList.toggle('active', songbookCurrentFilter === 'Favorites');
             }
 
             const filterStarSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="margin: 0 auto;"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
@@ -1873,9 +2236,22 @@ uniqueArtists.forEach(a => {
             }
         }
 
-        function setSongbookFilter(a) { 
-            songbookCurrentFilter = a; 
-            renderSongbook(); 
+        window.setSongbookFilter = function(filter) {
+            const favBtn = document.getElementById('favFilterBtn');
+            if (songbookCurrentFilter === filter && filter !== 'All') {
+                songbookCurrentFilter = 'All';
+                if (favBtn) favBtn.classList.remove('active');
+            } else {
+                songbookCurrentFilter = filter;
+                if (favBtn) {
+                    if (filter === 'Favorites') {
+                        favBtn.classList.add('active');
+                    } else {
+                        favBtn.classList.remove('active');
+                    }
+                }
+            }
+            renderSongbook();
         }
 
         function showTab(tab) {
@@ -1927,6 +2303,7 @@ uniqueArtists.forEach(a => {
             await loadData();
             const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
             showTab(initialTab);
+            document.getElementById('btnMin').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
             
             // 모바일 스크롤 시 상하단 주소창 숨김/표시에 의한 리사이즈(초기화 현상) 방지
             let lastWidth = window.innerWidth;
