@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
     <style>
         :root {
             --point-yellow: #FFF3B0;
@@ -124,8 +125,41 @@
             padding: 0 40px;
         }
 
-        .main-logo { height: 120px; object-fit: contain; display: block; }
-        .fallback-logo { font-size: 48px; font-weight: 900; color: var(--text-dark); letter-spacing: -1px; display: none; }
+        .logo-link {
+            display: inline-block;
+            text-decoration: none;
+            outline: none;
+            border-radius: 20px;
+            padding: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo-link:hover .main-logo {
+            transform: scale(1.05) translateY(-2px);
+            /* 연한 파스텔톤 노란색(#FDE047) 필터 적용 */
+            filter: brightness(0) saturate(100%) invert(85%) sepia(24%) saturate(1033%) hue-rotate(354deg) brightness(104%) contrast(102%) drop-shadow(0 10px 15px rgba(253, 224, 71, 0.4));
+        }
+
+        .logo-link:hover .fallback-logo {
+            color: #FDE047;
+            transform: scale(1.05) translateY(-2px);
+        }
+
+        .main-logo { 
+            height: 120px; 
+            object-fit: contain; 
+            display: block; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .fallback-logo { 
+            font-size: 48px; 
+            font-weight: 900; 
+            color: var(--text-dark); 
+            letter-spacing: -1px; 
+            display: none; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
         .today-summary {
             background: var(--white);
@@ -727,10 +761,15 @@
                 </button>
             </nav>
         </div>
+        
+        <!-- 중앙 로고 영역: 링크와 애니메이션 효과 적용 -->
         <div class="header-center">
-            <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='block';">
-            <div id="fallbackLogo" class="fallback-logo">htvvi</div>
+            <a href="https://www.sooplive.com/station/htvv2i" target="_blank" rel="noopener noreferrer" class="logo-link">
+                <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='block';">
+                <div id="fallbackLogo" class="fallback-logo">htvvi</div>
+            </a>
         </div>
+
         <div class="header-right">
             <!-- 오늘 일정 패널 -->
             <div id="todaySchedulePanel" class="today-summary">
