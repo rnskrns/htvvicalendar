@@ -1068,14 +1068,10 @@
             <h2 class="modal-title">멤버 DB 관리</h2>
             <div id="memberList" class="member-list"></div>
             <div class="member-add-box">
-                <h4 class="font-black mb-3">새 멤버 등록</h4>
-                <input type="text" id="newMemberName" class="member-input" placeholder="닉네임">
-                <div class="member-upload-row">
-                    <input type="text" id="newMemberImg" class="member-input flex-1" placeholder="프사 URL (또는 업로드)">
-                    <button class="member-upload-btn" onclick="document.getElementById('memberImgFile').click()">파일 선택</button>
-                    <input type="file" id="memberImgFile" hidden accept="image/*" onchange="handleMemberImgUpload(this)">
-                </div>
-                <button class="btn btn-save w-full" onclick="addMember()">멤버 추가하기</button>
+               <h4 class="font-black mb-3">새 멤버 등록</h4>
+               <input type="text" id="newMemberName" class="member-input" placeholder="닉네임">
+               <input type="text" id="newMemberId" class="member-input" placeholder="SOOP 아이디 (예: htvv2i)">
+               <button class="btn btn-save w-full" onclick="addMember()">멤버 추가하기</button>              
             </div>
             <button class="btn btn-cancel w-full mt-4" onclick="closeModal('memberModal')">닫기</button>
         </div>
@@ -1326,27 +1322,30 @@
 
         async function addMember() {
             const name = document.getElementById('newMemberName').value.trim();
-            let img = document.getElementById('newMemberImg').value.trim();
+            const soopId = document.getElementById('newMemberId').value.trim();
+    
             if (!name) return showToast('닉네임을 입력해주세요.');
-            const fileInput = document.getElementById('memberImgFile');
-            if (!img && fileInput.files && fileInput.files[0]) {
-                try {
-                    showToast('이미지 업로드 중...');
-                    img = await uploadFileToStorage(fileInput.files[0], `member-images/${Date.now()}_${fileInput.files[0].name}`);
-                } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); return; }
-            }
+            if (!soopId) return showToast('SOOP 아이디를 입력해주세요.');
+
+            // SOOP 아이디 기반 이미지 URL 생성
+            const prefix = soopId.substring(0, 2).toLowerCase();
+            const img = `https://stimg.sooplive.com/LOGO/${prefix}/${soopId}/${soopId}.jpg`;
+
             const id = `member_${encodeURIComponent(name)}`;
-            const data = { name, img: img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(name[0] || '')}` };
+            const data = { name, img, soopId };
+
             try {
-                await setDoc(doc(db, 'members', id), data);
-                await loadMembersFromFirebase();
-                document.getElementById('newMemberName').value = '';
-                document.getElementById('newMemberImg').value = '';
-                fileInput.value = '';
-                renderMemberList();
-                showToast(`${name} 멤버가 추가되었습니다.`);
-            } catch (error) { console.error(error); showToast(`멤버 저장 실패: ${error.message}`); }
+            await setDoc(doc(db, 'members', id), data);
+            await loadMembersFromFirebase();
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberId').value = '';
+            renderMemberList();
+            showToast(`${name} 멤버가 추가되었습니다.`);
+        } catch (error) { 
+            console.error(error); 
+            showToast(`멤버 저장 실패: ${error.message}`); 
         }
+    }
 
         function deleteMember(name) {
             const btn = document.getElementById('confirmBtn');
