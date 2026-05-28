@@ -792,8 +792,8 @@ body {
         bottom: 24px;
         right: 24px;
         z-index: 10000;
-        flex-direction: row-reverse;
-        align-items: center;
+        flex-direction: column-reverse;
+        align-items: flex-end;
         gap: 12px;
         pointer-events: none;
     }
@@ -818,16 +818,16 @@ body {
     .mobile-menu-items {
         display: flex;
         gap: 12px;
-        flex-direction: row;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-end;
         opacity: 0;
-        transform: translateX(30px);
+        transform: translateY(30px);
         pointer-events: none;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .mobile-menu-container.open .mobile-menu-items {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
         pointer-events: auto;
     }
     .mobile-menu-item {
