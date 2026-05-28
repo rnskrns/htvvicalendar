@@ -1570,60 +1570,6 @@ window.onload = async () => {
         }
     });
 
-    const calendarMain = document.getElementById('calendarMain');
-    if (calendarMain) {
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
-        let isSwipeActive = false;
-
-        const isCalendarTouch = (target) => target && target.closest && target.closest('#calendarMain');
-
-        const resetSwipeState = () => {
-            isSwipeActive = false;
-        };
-
-        document.addEventListener('touchstart', (e) => {
-            const touchTarget = e.target;
-            if (!isCalendarTouch(touchTarget)) return;
-
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-            touchEndX = touchStartX;
-            touchEndY = touchStartY;
-            isSwipeActive = true;
-        }, { passive: true });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
-
-            const currentX = e.changedTouches[0].screenX;
-            const currentY = e.changedTouches[0].screenY;
-            const xDiff = currentX - touchStartX;
-            const yDiff = currentY - touchStartY;
-
-            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 8) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchend', (e) => {
-            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
-
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-
-            const xDiff = touchEndX - touchStartX;
-            const yDiff = touchEndY - touchStartY;
-
-            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff) * 2) {
-                window.moveMonth(xDiff > 0 ? -1 : 1);
-            }
-
-            resetSwipeState();
-        }, { passive: true });
-    }
 
     setTimeout(() => {
         const loadingOverlay = document.getElementById('loadingOverlay');
