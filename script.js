@@ -1557,23 +1557,38 @@ window.onload = async () => {
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
+        let isHorizontalSwipe = false;
 
         calendarMain.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
+            isHorizontalSwipe = false;
         }, { passive: true });
+
+        calendarMain.addEventListener('touchmove', (e) => {
+            const currentX = e.changedTouches[0].screenX;
+            const currentY = e.changedTouches[0].screenY;
+            const xDiff = currentX - touchStartX;
+            const yDiff = currentY - touchStartY;
+
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 8) {
+                isHorizontalSwipe = true;
+                if (e.cancelable) e.preventDefault();
+            }
+        }, { passive: false });
 
         calendarMain.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             handleSwipe();
+            isHorizontalSwipe = false;
         }, { passive: true });
 
         function handleSwipe() {
             const xDiff = touchEndX - touchStartX;
             const yDiff = touchEndY - touchStartY;
 
-            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
+            if (isHorizontalSwipe && Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
                 if (xDiff > 0) {
                     window.moveMonth(-1);
                 } else {
