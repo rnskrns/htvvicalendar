@@ -287,8 +287,33 @@
         }
         .memo-item-delete { background: transparent; border: none; color: #D32F2F; font-weight: 900; cursor: pointer; padding: 5px; flex-shrink: 0;}
 
-        .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: visible; }
+        .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: visible; position: relative; }
         .songbook-section.visible { display: flex; max-height: calc(100vh - 260px); height: calc(100vh - 260px); }
+        .songbook-loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease;
+            border-radius: inherit;
+        }
+        .songbook-loading.hidden { opacity: 0; pointer-events: none; }
+        .music-notes-loader { display: flex; gap: 20px; margin-bottom: 24px; }
+        .music-notes-loader svg { width: 48px; height: 48px; animation: note-dance 1s infinite ease-in-out alternate; }
+        .music-notes-loader svg:nth-child(1) { fill: #F472B6; animation-delay: 0s; }
+        .music-notes-loader svg:nth-child(2) { fill: #60A5FA; animation-delay: 0.2s; }
+        .music-notes-loader svg:nth-child(3) { fill: #FBBF24; animation-delay: 0.4s; }
+
+        @keyframes note-dance {
+            0% { transform: translateY(0) rotate(-10deg) scale(1); }
+            100% { transform: translateY(-20px) rotate(15deg) scale(1.1); }
+        }
+
         .songbook-sidebar { flex: 0 0 40%; max-width: 480px; background: white; border-right: 1px solid #F5F5F5; padding: 25px; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 260px); }
         .songbook-main-content { flex: 1 1 60%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
         .fav-player-panel {
@@ -864,6 +889,15 @@
         </div>
 
         <div id="songbookSection" class="songbook-section">
+            <div id="songbookLoading" class="songbook-loading hidden">
+                <div class="music-notes-loader">
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                </div>
+                <div style="font-weight: 900; color: var(--text-dark); font-size: 20px;">노래책을 펼치는 중...</div>
+            </div>
+
             <div class="songbook-sidebar">
                 
                 <div id="favoritePlayerPanel" class="fav-player-panel is-minimized">
@@ -2520,11 +2554,19 @@
                 
                 if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
                 
-                // 노래책 최초 1회만 데이터 로딩
+                // 노래책 최초 1회만 데이터 로딩 + 로딩 오버레이 표시
                 if (!isSongbookLoaded) {
-                    showToast('노래책 데이터를 불러오는 중입니다...');
+                    const loadingOverlay = document.getElementById('songbookLoading');
+                    if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+
                     await loadSongbookSongs();
                     isSongbookLoaded = true;
+
+                    if (loadingOverlay) {
+                        setTimeout(() => {
+                            loadingOverlay.classList.add('hidden');
+                        }, 500);
+                    }
                 }
 
                 renderSongbook();
