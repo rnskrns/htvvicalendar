@@ -1426,7 +1426,6 @@ window.showTab = async function(tab) {
         
         // 노래책 최초 1회만 데이터 로딩
         if (!isSongbookLoaded) {
-            showToast('노래책 데이터를 불러오는 중입니다...');
             const loadingOverlay = document.getElementById('songbookLoading');
             if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
