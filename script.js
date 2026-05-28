@@ -1557,45 +1557,53 @@ window.onload = async () => {
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
-        let isHorizontalSwipe = false;
+        let isSwipeActive = false;
 
-        calendarMain.addEventListener('touchstart', (e) => {
+        const isCalendarTouch = (target) => target && target.closest && target.closest('#calendarMain');
+
+        const resetSwipeState = () => {
+            isSwipeActive = false;
+        };
+
+        document.addEventListener('touchstart', (e) => {
+            const touchTarget = e.target;
+            if (!isCalendarTouch(touchTarget)) return;
+
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
-            isHorizontalSwipe = false;
+            touchEndX = touchStartX;
+            touchEndY = touchStartY;
+            isSwipeActive = true;
         }, { passive: true });
 
-        calendarMain.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', (e) => {
+            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
+
             const currentX = e.changedTouches[0].screenX;
             const currentY = e.changedTouches[0].screenY;
             const xDiff = currentX - touchStartX;
             const yDiff = currentY - touchStartY;
 
             if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 8) {
-                isHorizontalSwipe = true;
-                if (e.cancelable) e.preventDefault();
+                e.preventDefault();
             }
         }, { passive: false });
 
-        calendarMain.addEventListener('touchend', (e) => {
+        document.addEventListener('touchend', (e) => {
+            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
+
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
-            handleSwipe();
-            isHorizontalSwipe = false;
-        }, { passive: true });
 
-        function handleSwipe() {
             const xDiff = touchEndX - touchStartX;
             const yDiff = touchEndY - touchStartY;
 
-            if (isHorizontalSwipe && Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
-                if (xDiff > 0) {
-                    window.moveMonth(-1);
-                } else {
-                    window.moveMonth(1);
-                }
+            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
+                window.moveMonth(xDiff > 0 ? -1 : 1);
             }
-        }
+
+            resetSwipeState();
+        }, { passive: true });
     }
 
     setTimeout(() => {
