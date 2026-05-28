@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTVVI</title>
 
-    <!-- 네이버 카페/카카오톡 링크 임베드 설정 (OG 태그) -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="HTVVI">
     <meta property="og:description" content="방송일정 & 노래책">
     <meta property="og:image" content="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png">
     <meta property="og:url" content="https://htvvicalendar.vercel.app/">
 
-    <!-- 트위터/X 공유용 설정 -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="HTVVI">
     <meta name="twitter:description" content="방송일정 & 노래책">
@@ -782,7 +780,6 @@
 </head>
 <body id="mainBody">
 
-    <!-- 텍스트 통통 튀는 로딩 화면 -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="cute-loading-text">
             <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
@@ -803,7 +800,6 @@
             </nav>
         </div>
         
-        <!-- 중앙 로고 영역: 링크와 애니메이션 효과 적용 -->
         <div class="header-center">
             <a href="https://www.sooplive.com/station/htvv2i" target="_blank" rel="noopener noreferrer" class="logo-link">
                 <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='block';">
@@ -812,7 +808,6 @@
         </div>
 
         <div class="header-right">
-            <!-- 오늘 일정 패널 -->
             <div id="todaySchedulePanel" class="today-summary">
                 <h4 class="font-black text-xl mb-4 flex items-center gap-2">
                     <span class="w-2 h-5 bg-amber-400 rounded-full"></span>오늘 일정
@@ -853,7 +848,6 @@
                     </div>
                     <button id="memoAddBtn" class="memo-add-button admin-only-btn" onclick="openMemoInput()">+</button>
                 </div>
-                <!-- 수정된 메모 입력 영역: 날짜 및 시간 입력 추가 -->
                 <div id="memoInputArea" class="memo-input-area hidden">
                     <div style="display: flex; gap: 10px; width: 100%;">
                         <input type="date" id="memoDateInput" class="admin-input" style="flex: 1; padding: 10px; font-size: 14px;" title="일정 날짜">
@@ -872,7 +866,6 @@
         <div id="songbookSection" class="songbook-section">
             <div class="songbook-sidebar">
                 
-                <!-- 사이드바로 들어온 즐겨찾기 플레이어 패널 -->
                 <div id="favoritePlayerPanel" class="fav-player-panel is-minimized">
                     <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
                     <div id="panelContent">
@@ -895,20 +888,17 @@
                                 </svg>
                             </button>
                             <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
-                            <!-- 재생 버튼 (클릭 시 자동재생) -->
                             <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
                             <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 아티스트 목록 -->
                 <div class="artist-list-wrapper">
                     <div class="artist-grid" id="artistList"></div>
                 </div>
             </div>
 
-            <!-- 메인 노래 목록 -->
             <div class="songbook-main-content">
                 <div class="songbook-header">
                     <button id="favFilterBtn" class="artist-btn" onclick="setSongbookFilter('Favorites')" type="button" title="즐겨찾기">
@@ -937,7 +927,6 @@
             </div>
         </div>
 
-        <!-- 브라우저 모달 -->
         <div id="browserModal" class="songbook-modal">
             <div class="browser-container">
                 <div class="browser-header">
@@ -954,7 +943,6 @@
         </div>
     </div>
 
-    <!-- 우측 하단 관리자 메뉴 -->
     <div class="site-admin-actions">
         <button id="memberManagerBtn" class="icon-circle-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
             <svg viewBox="0 0 24 24" width="26" style="fill: #4E4942;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -964,7 +952,6 @@
         </button>
     </div>
 
-    <!-- 일정 모달 -->
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1033,7 +1020,6 @@
         </div>
     </div>
 
-    <!-- 정보 모달 -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <h3 id="infoTitle" class="info-title"></h3>
@@ -1049,7 +1035,6 @@
         </div>
     </div>
     
-    <!-- 비밀번호 모달 -->
     <div id="pwModal" class="modal">
         <div class="modal-content pw-modal">
             <h3 class="text-center font-black mb-5">관리자 인증</h3>
@@ -1062,7 +1047,6 @@
         </div>
     </div>
     
-    <!-- 멤버 DB 모달 -->
     <div id="memberModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">멤버 DB 관리</h2>
@@ -1077,7 +1061,6 @@
         </div>
     </div>
 
-    <!-- 삭제 확인 모달 -->
     <div id="confirmModal" class="modal">
         <div class="modal-content confirm-modal">
             <h3 class="font-black mb-4" id="confirmMessage">정말 삭제하시겠습니까?</h3>
@@ -1088,7 +1071,6 @@
         </div>
     </div>
 
-    <!-- 월 선택 모달 -->
     <div id="monthPickerModal" class="modal">
         <div class="modal-content" style="max-width: 380px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -1101,13 +1083,13 @@
         </div>
     </div>
 
-    <!-- 토스트 메시지 -->
     <div id="toastMessage"></div>
 
     <script type="module">
+        // 🔥 Firestore에 where 임포트 추가!
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -1130,6 +1112,11 @@
         let modifiedDates = new Set();
         let currentDate = new Date();
         let events = {};
+        
+        // 🔥 지연 로딩을 위한 상태 변수 추가
+        let loadedMonths = new Set();
+        let isSongbookLoaded = false;
+        
         let members = {};
         let currentAMPM = '오전';
         let activeMemoTab = '컨텐츠';
@@ -1412,31 +1399,72 @@
             });
         }
         
-        async function loadEventsFromFirebase() {
-            events = {};
-            const snapshot = await getDocs(collection(db, 'events'));
+        // 🔥 특정 연/월의 이벤트만 가져오기 기능으로 교체
+        async function loadEventsForMonth(year, month) {
+            const monthKey = `${year}-${month}`;
+            if (loadedMonths.has(monthKey)) return;
+
+            const q = query(
+                collection(db, 'events'),
+                where('dateId', '>=', `${year}-${month}-`),
+                where('dateId', '<=', `${year}-${month}-\uf8ff`)
+            );
+
+            const snapshot = await getDocs(q);
             const docs = [];
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
                 if (!data || !data.dateId) return;
                 docs.push({ ...data, id: docSnap.id });
             });
+
             docs.sort((a, b) => {
                 const dateA = new Date(a.startDate || a.dateId).getTime();
                 const dateB = new Date(b.startDate || b.dateId).getTime();
                 if (dateA !== dateB) return dateA - dateB;
                 return (a.order ?? 9999) - (b.order ?? 9999);
             });
+
             docs.forEach(data => {
                 if (!events[data.dateId]) events[data.dateId] = [];
-                events[data.dateId].push(data);
+                if (!events[data.dateId].some(e => e.id === data.id)) {
+                    events[data.dateId].push(data);
+                }
             });
+
+            loadedMonths.add(monthKey);
         }
 
+        // 🔥 필요한 월이 로드되었는지 확인하는 함수
+        async function ensureMonthsLoadedForDate(date) {
+            const y = date.getFullYear();
+            const m = date.getMonth() + 1;
+            await loadEventsForMonth(y, m);
+
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                const target = new Date(date);
+                const dayNum = target.getDay();
+                const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
+                const monday = new Date(target.setDate(diff));
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+
+                if (monday.getMonth() !== date.getMonth()) {
+                    await loadEventsForMonth(monday.getFullYear(), monday.getMonth() + 1);
+                }
+                if (sunday.getMonth() !== date.getMonth()) {
+                    await loadEventsForMonth(sunday.getFullYear(), sunday.getMonth() + 1);
+                }
+            }
+        }
+
+        // 🔥 초반에는 노래책과 모든 일정을 가져오지 않도록 수정
         async function loadData() {
-            try { await Promise.all([loadMembersFromFirebase(), loadEventsFromFirebase(), loadMemos(), loadSongbookSongs()]); }
+            try { 
+                await Promise.all([loadMembersFromFirebase(), loadMemos()]); 
+            }
             catch (error) { console.error(error); }
-            finally { renderCalendar(); }
         }
 
         function openAddModal(id) {
@@ -1547,7 +1575,11 @@
                     showToast('일정이 추가되었습니다.');
                 }
 
-                await loadEventsFromFirebase();
+                // 🔥 저장 후 관련 캘린더 캐시 클리어 후 리로드
+                loadedMonths.clear();
+                events = {};
+                await ensureMonthsLoadedForDate(currentDate);
+
                 document.getElementById('editingEventDocId').value = '';
                 document.getElementById('editIndex').value = '-1';
                 closeModal('eventModal'); renderCalendar();
@@ -1565,7 +1597,12 @@
                     const existingEvent = events[activeDateId] && events[activeDateId][idx];
                     if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
                 }
-                await loadEventsFromFirebase();
+                
+                // 🔥 삭제 후 관련 캘린더 캐시 클리어 후 리로드
+                loadedMonths.clear();
+                events = {};
+                await ensureMonthsLoadedForDate(currentDate);
+
                 if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
                 closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
             } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
@@ -2072,7 +2109,8 @@
             }
         };
 
-        function moveMonth(v) {
+        // 🔥 moveMonth 비동기 처리
+        window.moveMonth = async function(v) {
             const isMobile = window.innerWidth < 768;
             if (isMobile) {
                 const target = new Date(currentDate);
@@ -2084,6 +2122,7 @@
             } else {
                 currentDate.setMonth(currentDate.getMonth() + v);
             }
+            await ensureMonthsLoadedForDate(currentDate);
             renderCalendar();
         }
 
@@ -2104,7 +2143,15 @@
         }
 
         function changePickerYear(offset) { pickerYear += offset; updatePickerUI(); }
-        function selectMonth(m) { currentDate.setFullYear(pickerYear); currentDate.setMonth(m); closeModal('monthPickerModal'); renderCalendar(); }
+        
+        // 🔥 selectMonth 비동기 처리
+        window.selectMonth = async function(m) { 
+            currentDate.setFullYear(pickerYear); 
+            currentDate.setMonth(m); 
+            closeModal('monthPickerModal'); 
+            await ensureMonthsLoadedForDate(currentDate);
+            renderCalendar(); 
+        }
         
         async function promptAdmin() {
             if (isAdmin) {
@@ -2454,7 +2501,8 @@
             renderSongbook();
         }
 
-        function showTab(tab) {
+        // 🔥 showTab 비동기 처리 및 노래책 지연 로딩
+        window.showTab = async function(tab) {
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tab);
             });
@@ -2472,6 +2520,13 @@
                 
                 if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
                 
+                // 노래책 최초 1회만 데이터 로딩
+                if (!isSongbookLoaded) {
+                    showToast('노래책 데이터를 불러오는 중입니다...');
+                    await loadSongbookSongs();
+                    isSongbookLoaded = true;
+                }
+
                 renderSongbook();
                 updateFavPlayerPlaylist();
                 window.location.hash = '#songbook';
@@ -2490,19 +2545,32 @@
             handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
             openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
             setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
-            toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, moveMonth, openMonthPicker, changePickerYear,
-            selectMonth, promptAdmin, loginAdmin,
-            showTab, renderSongbook, openBrowser, closeBrowser,
+            toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
+            promptAdmin, loginAdmin,
+            renderSongbook, openBrowser, closeBrowser,
             editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
             updateSongbookAdminUI, toggleFavorite, toggleModalFavorite
         });
 
+        // 🔥 onload 진입 시 지연 로딩 로직 반영
         window.onload = async () => {
-            // 데이터 로드
+            // 멤버, 메모 등 기본 데이터만 로드
             await loadData();
             
             const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
-            showTab(initialTab);
+            
+            // 일정이면 이번 달 데이터 로드
+            if (initialTab === 'schedule') {
+                await ensureMonthsLoadedForDate(currentDate);
+            }
+
+            // 탭 렌더링 (노래책이면 이때 노래책 데이터를 로드함)
+            await window.showTab(initialTab);
+            
+            if (initialTab === 'schedule') {
+                renderCalendar();
+            }
+
             document.getElementById('btnMin').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
             
             let lastWidth = window.innerWidth;
