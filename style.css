@@ -325,6 +325,9 @@ body {
 .artist-list-wrapper::-webkit-scrollbar,
 .songbook-sidebar::-webkit-scrollbar { width: 4px; }
 
+.mobile-player-close { display: none; }
+.mobile-menu-container { display: none; }
+
 * { scrollbar-color: #FDE047 #FFFFFF; scrollbar-width: thin; }
 
 .artist-btn { padding: 10px 18px; border: 1.5px solid #FDE047; background: #FFFDF0; border-radius: 12px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; color: #7A5A2F; font-weight: 600; }
@@ -744,7 +747,9 @@ body {
     .main-logo { height: 90px; }
     .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
     .calendar-main { flex: 1; min-width: 0; width: 100%; }
-    .site-admin-actions { right: 16px; bottom: 16px; gap: 12px; }
+    body { padding-bottom: 90px; }
+    .top-tabs { display: none !important; }
+    .site-admin-actions { right: auto; left: 16px; bottom: 24px; gap: 12px; }
     .site-admin-actions .icon-circle-btn { width: 44px; height: 44px; }
     
     .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px 16px 18px; margin-top: 16px; }
@@ -781,9 +786,114 @@ body {
     .song-item { flex-wrap: wrap; gap: 12px; }
     .song-item-left { min-width: auto; }
 
-    .minimized-mode { width: 60px !important; height: 60px !important; padding: 0 !important; border-radius: 50% !important; background: var(--point-yellow) !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    .minimized-mode #panelContent { display: none !important; }
-    .minimized-mode .music-note-btn { display: block !important; }
-    
-    .fav-player-panel { position: relative; bottom: auto; right: auto; width: 100%; margin-top: 0; }
+    .mobile-menu-container {
+        display: flex;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 10000;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+    }
+    .mobile-menu-main-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--point-yellow);
+        color: #7A5A2F;
+        border: 2px solid #FDE047;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.2s;
+        pointer-events: auto;
+    }
+    .mobile-menu-main-btn:active { transform: scale(0.92); }
+    .mobile-menu-items {
+        display: flex;
+        gap: 12px;
+        flex-direction: row;
+        align-items: center;
+        opacity: 0;
+        transform: translateX(30px);
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .mobile-menu-container.open .mobile-menu-items {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+    .mobile-menu-item {
+        padding: 12px 20px;
+        border-radius: 999px;
+        background: #FFFDF0;
+        border: 2px solid #FDE047;
+        color: #7A5A2F;
+        font-weight: 900;
+        font-size: 15px;
+        white-space: nowrap;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 44px;
+    }
+    .mobile-menu-item:active { background: #FDE047; }
+
+    #btnMin {
+        width: 44px !important;
+        height: 44px !important;
+        bottom: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 50 !important;
+    }
+
+    .mobile-player-close {
+        display: flex !important;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: #F3F4F6;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #4B5563;
+        z-index: 10;
+        transition: background 0.2s;
+    }
+    .mobile-player-close:active { background: #D1D5DB; }
+
+    .fav-player-panel {
+        padding: 50px 24px 40px 24px !important;
+        position: fixed !important;
+        bottom: -120% !important;
+        left: 0;
+        right: auto;
+        top: auto;
+        width: 100% !important;
+        margin: 0 !important;
+        border-radius: 28px 28px 0 0 !important;
+        z-index: 9995;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2) !important;
+        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        background: var(--white) !important;
+        padding: 30px 24px 40px 24px !important;
+        border: none !important;
+    }
+    .fav-player-panel.show-sheet { bottom: 0 !important; }
 }

@@ -84,9 +84,15 @@ window.toggleFavPlay = function() {
 
     if (isPlaying) {
         playerWrapper.innerHTML = ""; 
+        playerWrapper.style.display = 'none';
         btn.innerText = "▶";
         visualizer.style.display = 'none';
         isPlaying = false;
+        isMinimized = true;
+        const btnMin = document.getElementById('btnMin');
+        if (btnMin) {
+            btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        }
         showToast("정지되었습니다.");
     } else {
         let src = "";
@@ -107,9 +113,15 @@ window.toggleFavPlay = function() {
         }
 
         playerWrapper.innerHTML = iframeCode;
+        playerWrapper.style.display = 'block';
         btn.innerText = "■";
         visualizer.style.display = 'block';
         isPlaying = true;
+        isMinimized = false;
+        const btnMin = document.getElementById('btnMin');
+        if (btnMin) {
+            btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        }
     }
 };
 
@@ -140,21 +152,31 @@ window.toggleMinimize = function() {
     const visualizer = document.getElementById('visualizer');
     const btnMin = document.getElementById('btnMin');
 
-    if (isMinimized) {
-        playerWrapper.style.display = "block";
-        if (isPlaying) visualizer.style.display = "block";
+    if (!playerWrapper || !btnMin) return;
+
+    const isCurrentlyHidden = playerWrapper.style.display === 'none' || playerWrapper.style.display === '';
+
+    if (isCurrentlyHidden) {
+        playerWrapper.style.display = 'block';
+        if (visualizer) {
+            visualizer.style.display = isPlaying ? 'block' : 'none';
+        }
+
         btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
         isMinimized = false;
     } else {
-        playerWrapper.style.display = "none";
-        if (isPlaying) {
-            visualizer.style.display = "block"; 
-        } else {
-            visualizer.style.display = "none";
+        playerWrapper.style.display = 'none';
+        if (visualizer) {
+            visualizer.style.display = isPlaying ? 'block' : 'none';
         }
+
         btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
         isMinimized = true;
     }
+};
+
+window.toggleScreen = function() {
+    window.toggleMinimize();
 };
 
 function getFavorites() {
@@ -1456,6 +1478,49 @@ window.showTab = async function(tab) {
     }
 }
 
+function handlePlayerPosition() {
+    const playerPanel = document.getElementById('favoritePlayerPanel');
+    const sidebar = document.querySelector('.songbook-sidebar');
+    if (!playerPanel || !sidebar) return;
+
+    if (window.innerWidth <= 768) {
+        if (playerPanel.parentElement !== document.body) {
+            document.body.appendChild(playerPanel);
+        }
+    } else {
+        if (playerPanel.parentElement !== sidebar) {
+            sidebar.insertBefore(playerPanel, sidebar.firstChild);
+            playerPanel.classList.remove('show-sheet');
+        }
+    }
+}
+
+window.toggleMobileMenu = function() {
+    const container = document.getElementById('mobileMenuContainer');
+    const iconDefault = document.getElementById('menuIconDefault');
+    const iconClose = document.getElementById('menuIconClose');
+    if (!container) return;
+
+    container.classList.toggle('open');
+    if (iconDefault && iconClose) {
+        iconDefault.style.display = container.classList.contains('open') ? 'none' : 'block';
+        iconClose.style.display = container.classList.contains('open') ? 'block' : 'none';
+    }
+};
+
+window.handleMobileTab = function(tab) {
+    window.showTab(tab);
+    window.toggleMobileMenu();
+};
+
+window.toggleMobilePlayer = function() {
+    const playerPanel = document.getElementById('favoritePlayerPanel');
+    if (playerPanel) {
+        playerPanel.classList.toggle('show-sheet');
+    }
+    window.toggleMobileMenu();
+};
+
 Object.assign(window, {
     handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
@@ -1464,11 +1529,13 @@ Object.assign(window, {
     promptAdmin, loginAdmin,
     renderSongbook, openBrowser, closeBrowser,
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
-    updateSongbookAdminUI, toggleFavorite, toggleModalFavorite
+    updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
+    toggleMobileMenu, handleMobileTab, toggleMobilePlayer
 });
 
 window.onload = async () => {
     await loadData();
+    handlePlayerPosition();
     
     const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
     await window.showTab(initialTab);
@@ -1480,6 +1547,7 @@ window.onload = async () => {
         if (window.innerWidth !== lastWidth) {
             lastWidth = window.innerWidth;
             if (window.location.hash !== '#songbook') renderCalendar();
+            handlePlayerPosition();
         }
     });
 
