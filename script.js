@@ -1040,6 +1040,7 @@ window.deleteMemo = async (id) => {
 
 window.moveMonth = async function(v) {
     const isMobile = window.innerWidth < 768;
+    
     if (isMobile) {
         const target = new Date(currentDate);
         const dayNum = target.getDay();
@@ -1050,8 +1051,25 @@ window.moveMonth = async function(v) {
     } else {
         currentDate.setMonth(currentDate.getMonth() + v);
     }
+    
     await ensureMonthsLoadedForDate(currentDate);
+
+    // --- 스크롤 튕김 방지 로직 시작 ---
+    const currentScrollY = window.scrollY;
+    const grid = document.getElementById('calendarGrid');
+    if (grid) {
+        grid.style.minHeight = grid.offsetHeight + 'px';
+    }
+
     renderCalendar();
+
+    setTimeout(() => {
+        if (grid) {
+            grid.style.minHeight = '';
+        }
+        window.scrollTo(0, currentScrollY);
+    }, 0);
+    // --- 스크롤 튕김 방지 로직 끝 ---
 }
 
 function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
