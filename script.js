@@ -1540,6 +1540,22 @@ window.toggleMobilePlayer = function() {
     window.toggleMobileMenu();
 };
 
+window.toggleMobileMemo = function() {
+    const memoPanel = document.getElementById('memoPanel');
+    if (memoPanel) {
+        memoPanel.classList.toggle('show-sheet');
+        if (memoPanel.classList.contains('show-sheet')) {
+            updateMemoTabUI();
+            loadMemos();
+        }
+    }
+
+    const container = document.getElementById('mobileMenuContainer');
+    if (container && container.classList.contains('open')) {
+        window.toggleMobileMenu();
+    }
+};
+
 Object.assign(window, {
     handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
@@ -1549,7 +1565,7 @@ Object.assign(window, {
     renderSongbook, openBrowser, closeBrowser,
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
-    toggleMobileMenu, handleMobileTab, toggleMobilePlayer
+    toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo
 });
 
 window.onload = async () => {

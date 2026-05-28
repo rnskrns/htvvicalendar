@@ -691,6 +691,8 @@ body {
 }
 .loading-overlay.hidden { opacity: 0; pointer-events: none; }
 
+.mobile-nav-arrow { display: none; }
+
 /* 통통 튀는 텍스트 */
 .cute-loading-text {
     font-size: 28px; font-weight: 900;
@@ -726,6 +728,7 @@ body {
 }
 
 @media screen and (max-width: 768px) {
+    .calendar-header-top .memo-btn { display: none !important; }
     .main-header { display: flex; flex-direction: column; grid-template-columns: none; width: 100%; padding: 40px 16px 20px; gap: 16px; }
     .header-center { width: 100%; padding: 0; }
     .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
@@ -745,6 +748,41 @@ body {
     .main-logo { height: 90px; }
     .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
     .calendar-main { flex: 1; min-width: 0; width: 100%; }
+    .mobile-nav-arrow {
+        display: flex;
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 44px;
+        height: 44px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 2px solid #FDE047;
+        border-radius: 50%;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        color: #7A5A2F;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        opacity: 0.3;
+        transition: all 0.2s ease;
+    }
+    .mobile-nav-arrow:active {
+        opacity: 0.8;
+        background: #FFF9C4;
+        transform: translateY(-50%) scale(0.9);
+    }
+    .mobile-nav-arrow svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .mobile-nav-arrow.left-arrow { left: 8px; }
+    .mobile-nav-arrow.right-arrow { right: 8px; }
     body { padding-bottom: 90px; }
     .top-tabs { display: none !important; }
     .site-admin-actions { right: auto; left: 16px; bottom: 24px; gap: 12px; }
@@ -769,6 +807,29 @@ body {
     
     .memo-input-actions { flex-wrap: wrap; justify-content: space-between; gap: 10px; width: 100%; }
     .memo-input-actions .btn { flex: 1; min-width: 140px; }
+    .memo-panel-container {
+        display: flex !important;
+        flex-direction: column !important;
+        position: fixed !important;
+        bottom: -120% !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        margin: 0 !important;
+        border-radius: 28px 28px 0 0 !important;
+        z-index: 9995 !important;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2) !important;
+        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        background: var(--white) !important;
+        padding: 50px 24px 40px 24px !important;
+        border: none !important;
+        height: 85vh !important;
+        max-height: none !important;
+    }
+    .memo-panel-container.show-sheet { bottom: 0 !important; }
+    .memo-list { flex: 1 !important; max-height: none !important; overflow-y: auto !important; }
+    #mobileMemoCloseBtn { display: flex !important; }
     
     .songbook-section { flex-direction: column; height: auto; max-height: none; overflow: visible; gap: 16px; }
     .songbook-section.visible { height: auto; max-height: none; }
