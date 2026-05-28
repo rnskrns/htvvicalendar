@@ -746,7 +746,7 @@ body {
     .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
     .main-logo { height: 90px; }
     .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
-    .calendar-main { flex: 1; min-width: 0; width: 100%; touch-action: none; }
+    .calendar-main { flex: 1; min-width: 0; width: 100%; }
     body { padding-bottom: 90px; }
     .top-tabs { display: none !important; }
     .site-admin-actions { right: auto; left: 16px; bottom: 24px; gap: 12px; }
