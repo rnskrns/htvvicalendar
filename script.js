@@ -670,6 +670,7 @@ function applyDraggable() {
         disabled: !isDraggable,
         delay: 200,
         delayOnTouchOnly: true,
+        fallbackTolerance: 5,
         onStart: function(evt) {
             evt.item.style.height = evt.item.offsetHeight + 'px';
         },
