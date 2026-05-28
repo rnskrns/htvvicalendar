@@ -661,33 +661,31 @@ function renderCalendar() {
 }
 
 function applyDraggable() {
-    const isDraggable = isAdmin;
-
-    const sortableOptions = {
-        animation: 150,
-        ghostClass: 'dragging-ghost',
-        fallbackOnBody: true,
-        disabled: !isDraggable,
-        delay: 200,
-        delayOnTouchOnly: true,
-        fallbackTolerance: 5,
-        onStart: function(evt) {
-            evt.item.style.height = evt.item.offsetHeight + 'px';
-        },
-        onEnd: function (evt) {
-            evt.item.style.height = '';
-            if (!isAdmin) return;
-
-            const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
-            if (dateId) modifiedDates.add(dateId);
-        }
-    };
-
     document.querySelectorAll('.event-container, .week-events').forEach(el => {
-        if (el.sortableInstance) {
-            el.sortableInstance.option('disabled', !isDraggable);
+        if (isAdmin) {
+            if (!el.sortableInstance) {
+                el.sortableInstance = new Sortable(el, {
+                    animation: 150,
+                    ghostClass: 'dragging-ghost',
+                    fallbackOnBody: true,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
+                    onStart: function(evt) {
+                        evt.item.style.height = evt.item.offsetHeight + 'px';
+                    },
+                    onEnd: function (evt) {
+                        evt.item.style.height = '';
+                        const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
+                        if (dateId) modifiedDates.add(dateId);
+                    }
+                });
+            }
         } else {
-            el.sortableInstance = new Sortable(el, sortableOptions);
+            if (el.sortableInstance) {
+                el.sortableInstance.destroy();
+                el.sortableInstance = null;
+            }
         }
     });
 }
@@ -1619,7 +1617,7 @@ window.onload = async () => {
             const xDiff = touchEndX - touchStartX;
             const yDiff = touchEndY - touchStartY;
 
-            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
+            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff) * 2) {
                 window.moveMonth(xDiff > 0 ? -1 : 1);
             }
 
