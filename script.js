@@ -661,30 +661,31 @@ function renderCalendar() {
 }
 
 function applyDraggable() {
-    const isDraggable = isAdmin;
-
-    const sortableOptions = {
-        animation: 150,
-        ghostClass: 'dragging-ghost',
-        fallbackOnBody: true,
-        disabled: !isDraggable,
-        onStart: function(evt) {
-            evt.item.style.height = evt.item.offsetHeight + 'px';
-        },
-        onEnd: function (evt) {
-            evt.item.style.height = '';
-            if (!isAdmin) return;
-
-            const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
-            if (dateId) modifiedDates.add(dateId);
-        }
-    };
-
     document.querySelectorAll('.event-container, .week-events').forEach(el => {
-        if (el.sortableInstance) {
-            el.sortableInstance.option('disabled', !isDraggable);
+        if (isAdmin) {
+            if (!el.sortableInstance) {
+                el.sortableInstance = new Sortable(el, {
+                    animation: 150,
+                    ghostClass: 'dragging-ghost',
+                    fallbackOnBody: true,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
+                    onStart: function(evt) {
+                        evt.item.style.height = evt.item.offsetHeight + 'px';
+                    },
+                    onEnd: function (evt) {
+                        evt.item.style.height = '';
+                        const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
+                        if (dateId) modifiedDates.add(dateId);
+                    }
+                });
+            }
         } else {
-            el.sortableInstance = new Sortable(el, sortableOptions);
+            if (el.sortableInstance) {
+                el.sortableInstance.destroy();
+                el.sortableInstance = null;
+            }
         }
     });
 }
@@ -1040,6 +1041,7 @@ window.deleteMemo = async (id) => {
 
 window.moveMonth = async function(v) {
     const isMobile = window.innerWidth < 768;
+    
     if (isMobile) {
         const target = new Date(currentDate);
         const dayNum = target.getDay();
@@ -1050,8 +1052,25 @@ window.moveMonth = async function(v) {
     } else {
         currentDate.setMonth(currentDate.getMonth() + v);
     }
+    
     await ensureMonthsLoadedForDate(currentDate);
+
+    // --- 스크롤 튕김 방지 로직 시작 ---
+    const currentScrollY = window.scrollY;
+    const grid = document.getElementById('calendarGrid');
+    if (grid) {
+        grid.style.minHeight = grid.offsetHeight + 'px';
+    }
+
     renderCalendar();
+
+    setTimeout(() => {
+        if (grid) {
+            grid.style.minHeight = '';
+        }
+        window.scrollTo(0, currentScrollY);
+    }, 0);
+    // --- 스크롤 튕김 방지 로직 끝 ---
 }
 
 function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
@@ -1550,6 +1569,61 @@ window.onload = async () => {
             handlePlayerPosition();
         }
     });
+
+    const calendarMain = document.getElementById('calendarMain');
+    if (calendarMain) {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let isSwipeActive = false;
+
+        const isCalendarTouch = (target) => target && target.closest && target.closest('#calendarMain');
+
+        const resetSwipeState = () => {
+            isSwipeActive = false;
+        };
+
+        document.addEventListener('touchstart', (e) => {
+            const touchTarget = e.target;
+            if (!isCalendarTouch(touchTarget)) return;
+
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+            touchEndX = touchStartX;
+            touchEndY = touchStartY;
+            isSwipeActive = true;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
+
+            const currentX = e.changedTouches[0].screenX;
+            const currentY = e.changedTouches[0].screenY;
+            const xDiff = currentX - touchStartX;
+            const yDiff = currentY - touchStartY;
+
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 8) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isSwipeActive || !isCalendarTouch(e.target)) return;
+
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+
+            const xDiff = touchEndX - touchStartX;
+            const yDiff = touchEndY - touchStartY;
+
+            if (Math.abs(xDiff) > 50 && Math.abs(xDiff) > Math.abs(yDiff) * 2) {
+                window.moveMonth(xDiff > 0 ? -1 : 1);
+            }
+
+            resetSwipeState();
+        }, { passive: true });
+    }
 
     setTimeout(() => {
         const loadingOverlay = document.getElementById('loadingOverlay');
