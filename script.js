@@ -668,6 +668,8 @@ function applyDraggable() {
         ghostClass: 'dragging-ghost',
         fallbackOnBody: true,
         disabled: !isDraggable,
+        delay: 200,
+        delayOnTouchOnly: true,
         onStart: function(evt) {
             evt.item.style.height = evt.item.offsetHeight + 'px';
         },
