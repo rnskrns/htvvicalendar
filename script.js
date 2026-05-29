@@ -586,12 +586,11 @@ function renderCalendar() {
             const today = new Date();
             const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
             
+            dayNumber.className = `week-day-num ${yoilColors[i] || ''}`;
+            dayNumber.innerText = num;
+
             if (isToday) {
-                dayNumber.className = 'today-circle';
-                dayNumber.innerText = num;
-            } else {
-                dayNumber.className = `week-day-num ${yoilColors[i] || ''}`;
-                dayNumber.innerText = num;
+                row.classList.add('border-2', 'border-sky-400', 'rounded-xl');
             }
             
             dayLabel.appendChild(dayName);
@@ -1585,7 +1584,6 @@ window.onload = async () => {
             handlePlayerPosition();
         }
     });
-
 
     setTimeout(() => {
         const loadingOverlay = document.getElementById('loadingOverlay');
