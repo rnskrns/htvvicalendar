@@ -48,6 +48,63 @@ window.extractYtId = function(url) {
 };
 const extractYtId = window.extractYtId;
 
+// ✨ 우리가 만든 Vercel 백엔드를 호출하는 함수 ✨
+window.loadNoticePreview = async function(url, container, manualTitle, manualDesc) {
+    if (!url || !container) return;
+
+    container.style.display = 'block';
+
+    // 1. 만약 관리자가 제목을 '직접 입력'했다면 서버 호출 없이 바로 띄워줌 (안전장치)
+    if (manualTitle) {
+        container.innerHTML = `
+            <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
+                <div class="premium-notice-header">
+                    <span class="premium-notice-badge">공지사항</span>
+                    <span class="premium-notice-date">바로가기 ↗</span>
+                </div>
+                <h3 class="premium-notice-title">${manualTitle}</h3>
+                ${manualDesc ? `<p class="premium-notice-desc">${manualDesc}</p>` : ''}
+            </a>
+        `;
+        return;
+    }
+
+    // 2. 직접 입력한 게 없다면 Vercel 백엔드(/api/get-notice)에 요청!
+    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
+
+    try {
+        const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            // 백엔드가 성공적으로 긁어온 데이터를 예쁜 카드에 담아줌
+            container.innerHTML = `
+                <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
+                    <div class="premium-notice-header">
+                        <span class="premium-notice-badge">공지사항</span>
+                        <span class="premium-notice-date">바로가기 ↗</span>
+                    </div>
+                    <h3 class="premium-notice-title">${data.title}</h3>
+                    ${data.description ? `<p class="premium-notice-desc">${data.description}</p>` : ''}
+                </a>
+            `;
+        } else {
+            throw new Error(data.error || 'API 응답 실패');
+        }
+    } catch (error) {
+        console.error('미리보기 로드 실패:', error);
+        // 서버에서 긁어오기 실패했을 때 보여줄 일반 버튼
+        container.innerHTML = `
+            <div style="margin-top: 15px; text-align: center;">
+                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">
+                    보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.
+                </p>
+                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
+            </div>
+        `;
+    }
+};
+
 function updateFavPlayerPlaylist() {
     const favorites = getFavorites();
     favPlaylist = songbookSongs.filter(s => favorites.includes(s.id));
@@ -407,7 +464,6 @@ function openAddModal(id) {
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
     
-    // 제목과 내용(Desc) 초기화 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ''; 
     const noticeDescEl = document.getElementById('eventNoticeDesc');
@@ -437,7 +493,6 @@ function openEditModal(id, idx) {
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
     
-    // 제목과 내용(Desc) 수정폼에 불러오기 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
     const noticeDescEl = document.getElementById('eventNoticeDesc');
@@ -482,7 +537,6 @@ function openEditModalByEvent(ev) {
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
     
-    // 제목과 내용(Desc) 수정폼에 불러오기 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
     const noticeDescEl = document.getElementById('eventNoticeDesc');
@@ -537,7 +591,6 @@ async function saveEvent() {
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
     
-    // ✨ 입력 폼이 없어도 에러 나지 않도록 방어 코드 작성 ✨
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     const noticeTitle = noticeTitleEl ? noticeTitleEl.value.trim() : ''; 
     const noticeDescEl = document.getElementById('eventNoticeDesc');
@@ -556,7 +609,7 @@ async function saveEvent() {
             members,
             noticeLink,
             noticeTitle, 
-            noticeDesc, // ✨ 내용도 DB에 함께 저장
+            noticeDesc, 
             imageUrl,
             dateId: activeDateId,
             startDate: startStr,
@@ -843,35 +896,19 @@ function showInfo(id, idx) {
         });
     }
     
-    // ✨ 프리미엄 공지사항 카드 렌더링 ✨
+    // ✨ 프리미엄 공지사항 렌더링 (Vercel 백엔드 연결) ✨
     const noticePreview = document.getElementById('infoNoticePreview');
     const noticeBtn = document.getElementById('infoNoticeBtn'); 
 
     if(noticeBtn) noticeBtn.style.display = 'none';
 
-    if (ev.noticeLink && ev.noticeTitle) {
-        if(noticePreview) {
-            noticePreview.style.display = 'block';
-            noticePreview.innerHTML = `
-                <a href="${ev.noticeLink}" target="_blank" rel="noreferrer" class="premium-notice-card">
-                    <div class="premium-notice-header">
-                        <span class="premium-notice-badge">공지사항</span>
-                        <span class="premium-notice-date">바로가기 ↗</span>
-                    </div>
-                    <h3 class="premium-notice-title">${ev.noticeTitle}</h3>
-                    ${ev.noticeDesc ? `<p class="premium-notice-desc">${ev.noticeDesc}</p>` : ''}
-                </a>
-            `;
+    if (ev.noticeLink) {
+        // 백엔드 함수 호출! (수동 입력한 제목/내용이 있으면 같이 넘겨줌)
+        if(window.loadNoticePreview && noticePreview) {
+            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         }
-    } else if (ev.noticeLink) {
-        if(noticeBtn) {
-            noticeBtn.style.display = 'block';
-            noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-        }
-        if(noticePreview) noticePreview.style.display = 'none';
     } else {
         if(noticePreview) noticePreview.style.display = 'none';
-        if(noticeBtn) noticeBtn.style.display = 'none';
     }
     
     document.getElementById('infoModal').style.display = 'flex';
@@ -914,35 +951,19 @@ function showInfoByEvent(ev) {
         });
     }
 
-    // ✨ 프리미엄 공지사항 카드 렌더링 ✨
+    // ✨ 프리미엄 공지사항 렌더링 (Vercel 백엔드 연결) ✨
     const noticePreview = document.getElementById('infoNoticePreview');
     const noticeBtn = document.getElementById('infoNoticeBtn'); 
 
     if(noticeBtn) noticeBtn.style.display = 'none';
 
-    if (ev.noticeLink && ev.noticeTitle) {
-        if(noticePreview) {
-            noticePreview.style.display = 'block';
-            noticePreview.innerHTML = `
-                <a href="${ev.noticeLink}" target="_blank" rel="noreferrer" class="premium-notice-card">
-                    <div class="premium-notice-header">
-                        <span class="premium-notice-badge">공지사항</span>
-                        <span class="premium-notice-date">바로가기 ↗</span>
-                    </div>
-                    <h3 class="premium-notice-title">${ev.noticeTitle}</h3>
-                    ${ev.noticeDesc ? `<p class="premium-notice-desc">${ev.noticeDesc}</p>` : ''}
-                </a>
-            `;
+    if (ev.noticeLink) {
+        // 백엔드 함수 호출! (수동 입력한 제목/내용이 있으면 같이 넘겨줌)
+        if(window.loadNoticePreview && noticePreview) {
+            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         }
-    } else if (ev.noticeLink) {
-        if(noticeBtn) {
-            noticeBtn.style.display = 'block';
-            noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-        }
-        if(noticePreview) noticePreview.style.display = 'none';
     } else {
         if(noticePreview) noticePreview.style.display = 'none';
-        if(noticeBtn) noticeBtn.style.display = 'none';
     }
     
     document.getElementById('infoModal').style.display = 'flex';
