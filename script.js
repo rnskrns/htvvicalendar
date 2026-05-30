@@ -1,1597 +1,1352 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
+// =========================================================================
+// 앱 아이콘(파비콘 및 애플 터치 아이콘) 동적 설정
+// =========================================================================
+function setAppIcon() {
+    const iconUrl = "https://i.postimg.cc/wjrJrQ0c/A1EAA0.png";
+    
+    let linkIcon = document.querySelector("link[rel~='icon']");
+    if (!linkIcon) {
+        linkIcon = document.createElement('link');
+        linkIcon.rel = 'icon';
+        document.head.appendChild(linkIcon);
+    }
+    linkIcon.href = iconUrl;
 
+    let appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleIcon) {
+        appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = iconUrl;
+}
+setAppIcon();
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+// =========================================================================
+// 전역 함수 바인딩
+// =========================================================================
+window.toggleAmpm = toggleAmpm; window.handleAdminClick = handleAdminClick; window.checkPassword = checkPassword; window.logoutAdmin = logoutAdmin;
+window.openPasswordModal = openPasswordModal; window.closePasswordModal = closePasswordModal; window.closeLogoutModal = closeLogoutModal;
+window.handleDayClick = handleDayClick; window.handleDayRightClick = handleDayRightClick; window.editFromMenu = editFromMenu;
+window.closeEditModal = closeEditModal; window.saveEditedSchedule = saveEditedSchedule; window.deleteScheduleAction = deleteScheduleAction; window.openDetailModal = openDetailModal; window.closeDetailModal = closeDetailModal;
+window.openAllSchedulesModal = openAllSchedulesModal; window.changeTab = changeTab; window.changeMonth = changeMonth; window.openMonthPicker = openMonthPicker;
+window.closeMonthPicker = closeMonthPicker; window.changePickerYear = changePickerYear; window.selectMonth = selectMonth; window.addScheduleInputBlock = addScheduleInputBlock;
+window.closeScheduleModal = closeScheduleModal; window.saveSchedule = saveSchedule; window.toggleFields = toggleFields; 
+window.toggleProfileDropdown = toggleProfileDropdown; window.openLinkModal = openLinkModal; window.closeLinkModal = closeLinkModal;
+window.addMemberLink = addMemberLink; window.deleteMemberLink = deleteMemberLink; window.addUpLink = addUpLink; window.deleteUpLink = deleteUpLink;
+window.toggleUpPanel = toggleUpPanel; window.toggleMemoPanel = toggleMemoPanel; window.closeSidePanel = closeSidePanel;
+window.openMobileTabMenu = openMobileTabMenu; window.closeMobileTabMenu = closeMobileTabMenu;
+window.executeDesktopTabChange = executeDesktopTabChange; window.executeMobileTabChange = executeMobileTabChange;
+window.changeHomeDate = changeHomeDate; window.changeIndividualWeek = changeIndividualWeek;
+window.openMobileDatePicker = openMobileDatePicker; window.closeMobileDatePicker = closeMobileDatePicker;
+window.changeDatePickerMonth = changeDatePickerMonth; window.selectMobileDate = selectMobileDate;
+window.closeUpPopup = closeUpPopup; 
+window.moveLink = moveLink; window.editMemberLink = editMemberLink;
+window.openMemoAddModal = openMemoAddModal; window.openMemoEditModal = openMemoEditModal; 
+window.closeMemoModal = closeMemoModal; window.saveMemoAction = saveMemoAction; window.deleteMemo = deleteMemo;
+window.openSmartLink = openSmartLink; // 스마트 링크 함수 바인딩
+
+// =========================================================================
+// Firebase 초기화 및 변수 선언
+// =========================================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
-    authDomain: "htvvi-calendar.firebaseapp.com",
-    projectId: "htvvi-calendar",
-    storageBucket: "htvvi-calendar.firebasestorage.app",
-    messagingSenderId: "629395623347",
-    appId: "1:629395623347:web:64b75d50633ac275c58fc6",
-    measurementId: "G-QECSWX905Y",
-    databaseURL: "https://htvvi-calendar-default-rtdb.firebaseio.com"
+    apiKey: "AIzaSyBKHLfymzRWRqUEsX9MF_SlZoph1WM_4Ck",
+    authDomain: "signalplanner-95f78.firebaseapp.com",
+    projectId: "signalplanner-95f78",
+    storageBucket: "signalplanner-95f78.firebasestorage.app",
+    messagingSenderId: "859229037333",
+    appId: "1:859229037333:web:30eb50897b017c33b13f1c",
+    measurementId: "G-D1RQRFH1KF"
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
+let scheduleList = []; 
+let memoList = { '달타':[], '서피카':[], '다룽':[], '최또':[], '카나시':[] };
 let isAdmin = false;
-let modifiedDates = new Set();
-let currentDate = new Date();
-let events = {};
+let loggedInUser = null; 
+let currentPage = '홈';
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+let pickerYear = currentYear;
+let contextTargetId = null;
+let currentEditingIds = [];
+let targetModalContext = { year: currentYear, month: currentMonth, day: 1, member: '홈' };
+let currentEditingMemoId = null;
 
-// 지연 로딩을 위한 상태 변수 추가
-let loadedMonths = new Set();
-let isSongbookLoaded = false;
+let isMobile = window.innerWidth <= 1024;
+let sidePanelMode = null; 
+let homeTargetDate = new Date(); 
+let individualTargetDate = new Date(); 
+let datePickerCurrentDate = new Date();
 
-let members = {};
-let currentAMPM = '오전';
-let activeMemoTab = '컨텐츠';
-let activeDateId = '';
-let pickerYear = currentDate.getFullYear();
-let memoLoadToken = 0;
-
-let favPlaylist = [];
-let currentFavIndex = 0;
-let isPlaying = false; 
-
-window.extractYtId = function(url) {
-    if(!url) return null;
-    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[7].length == 11) ? match[7] : null;
-};
-const extractYtId = window.extractYtId;
-
-function updateFavPlayerPlaylist() {
-    const favorites = getFavorites();
-    favPlaylist = songbookSongs.filter(s => favorites.includes(s.id));
-    
-    const playerTitle = document.getElementById('playerTrackTitle');
-    const playerArtist = document.getElementById('playerTrackArtist');
-    const playerWrapper = document.getElementById('playerWrapper');
-    const btn = document.getElementById('playPauseBtn');
-    const visualizer = document.getElementById('visualizer');
-    
-    if (favPlaylist.length === 0) {
-        if(playerTitle) playerTitle.innerText = "재생할 곡이 없습니다";
-        if(playerArtist) playerArtist.innerText = "곡을 즐겨찾기 해보세요.";
-        if(playerWrapper) playerWrapper.innerHTML = "";
-        if(btn) btn.innerText = "▶";
-        if(visualizer) visualizer.style.display = 'none';
-        isPlaying = false;
-        return;
+window.addEventListener('resize', () => {
+    const wasMobile = isMobile;
+    isMobile = window.innerWidth <= 1024;
+    if (wasMobile !== isMobile) {
+        sidePanelMode = null; 
+        closeSidePanel(true);
+        renderHeaderTabs();
+        render();
     }
-    
-    if (currentFavIndex >= favPlaylist.length) currentFavIndex = 0;
-    
-    if(playerTitle) playerTitle.innerText = favPlaylist[currentFavIndex].title;
-    if(playerArtist) playerArtist.innerText = favPlaylist[currentFavIndex].artist;
-}
-window.updateFavPlayerPlaylist = updateFavPlayerPlaylist;
+});
 
-window.toggleFavPlay = function() {
-    if (favPlaylist.length === 0) return;
-    
-    const playerWrapper = document.getElementById('playerWrapper');
-    const btn = document.getElementById('playPauseBtn'); 
-    const visualizer = document.getElementById('visualizer');
-    const currentSong = favPlaylist[currentFavIndex];
+const themeColors = { '홈': '#FF5252', '달타': '#FBC02D', '서피카': '#F06292', '다룽': '#1E88E5', '최또': '#D81B60', '카나시': '#F57C00' };
 
-    if (isPlaying) {
-        playerWrapper.innerHTML = ""; 
-        playerWrapper.style.display = 'none';
-        btn.innerText = "▶";
-        visualizer.style.display = 'none';
-        isPlaying = false;
-        isMinimized = true;
-        const btnMin = document.getElementById('btnMin');
-        if (btnMin) {
-            btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        }
-        showToast("정지되었습니다.");
+const collectionMap = { '달타': 'daltaevent', '서피카': 'SEOPICAevent', '다룽': 'drungevent', '최또': 'choiagainevent', '카나시': 'kanashievent' };
+const memoCollectionMap = { '달타': 'daltamemo', '서피카': 'seopicamemo', '다룽': 'drungmemo', '최또': 'choiagainmemo', '카나시': 'kanashimemo' };
+
+const members = [
+    { name: '달타', img: 'https://i.postimg.cc/y8VYYyZM/dalta-peusa.png', link: '' },
+    { name: '서피카', img: 'https://i.postimg.cc/7YrWFxGX/jemog-eul-iblyeoghaejuseyo-(1).png', link: '' },
+    { name: '다룽', img: 'https://i.postimg.cc/bNfB7zDm/jemog-eul-iblyeoghaejuseyo-(2).png', link: '' },
+    { name: '최또', img: 'https://i.postimg.cc/fTQrGwtB/jemog-eul-iblyeoghaejuseyo.png', link: '' },
+    { name: '카나시', img: 'https://i.postimg.cc/vZQHHtVC/kanasi-peusa.png', link: '' }
+];
+
+const memberCardImages = {
+    '달타': { bangon: 'https://i.postimg.cc/P5N94Lsc/jemog-eul-iblyeoghaejuseyo.png', hubang: 'https://i.postimg.cc/br7DBDVt/jemog-eul-iblyeoghaejuseyo-(5).png' },
+    '서피카': { bangon: 'https://i.postimg.cc/0yrFf6RF/jemog-eul-iblyeoghaejuseyo-(2).png', hubang: 'https://i.postimg.cc/T1zL4LNQ/jemog-eul-iblyeoghaejuseyo-(9).png' },
+    '다룽': { bangon: 'https://i.postimg.cc/zG36jLZc/jemog-eul-iblyeoghaejuseyo-(3).png', hubang: 'https://i.postimg.cc/MHCMFM3M/jemog-eul-iblyeoghaejuseyo-(8).png' },
+    '최또': { bangon: 'https://i.postimg.cc/FH18Zf56/jemog-eul-iblyeoghaejuseyo-(1).png', hubang: 'https://i.postimg.cc/SRB2v21z/jemog-eul-iblyeoghaejuseyo-(6).png' },
+    '카나시': { bangon: 'https://i.postimg.cc/8z33n1Nt/jemog-eul-iblyeoghaejuseyo-(4).png', hubang: 'https://i.postimg.cc/vTJgNg29/jemog-eul-iblyeoghaejuseyo-(7).png' }
+};
+
+const defaultMemberLinks = {
+    '달타': [ { title: '공지', url: 'https://cafe.naver.com/f-e/cafes/30973382/menus/20?viewType=L' }, { title: 'SOOP', url: 'https://www.sooplive.com/station/dalta20' }, { title: '유튜브', url: 'https://www.youtube.com/@Dalta20' } ],
+    '서피카': [ { title: '공지', url: 'https://cafe.naver.com/f-e/cafes/30973382/menus/85' }, { title: 'SOOP', url: 'https://www.sooplive.com/station/spica21' }, { title: '유튜브', url: 'https://www.youtube.com/@SEOPICA' } ],
+    '다룽': [ { title: '공지', url: 'https://cafe.naver.com/f-e/cafes/30973382/menus/46' }, { title: 'SOOP', url: 'https://www.sooplive.com/station/daarung22' }, { title: '유튜브', url: 'https://www.youtube.com/@daarung22' } ],
+    '최또': [ { title: '공지', url: 'https://cafe.naver.com/f-e/cafes/30973382/menus/88' }, { title: 'SOOP', url: 'https://www.sooplive.com/station/choiagain' }, { title: '유튜브', url: 'https://www.youtube.com/@CHOI_AGAIN' } ],
+    '카나시': [ { title: '공지', url: 'https://cafe.naver.com/f-e/cafes/30973382/menus/105' }, { title: 'SOOP', url: 'https://www.sooplive.com/station/kjhh0029' }, { title: '유튜브', url: 'https://www.youtube.com/@kanashi_0123' } ]
+};
+
+let dynamicLinks = JSON.parse(JSON.stringify(defaultMemberLinks));
+let upLinksList = [];
+
+const adminAccounts = { 
+    'dalta20@naver.com': { name: '달타', img: 'https://stimg.sooplive.com/LOGO/da/dalta20/dalta20.jpg' },
+    'real_email2@naver.com': { name: '서피카', img: 'https://stimg.sooplive.com/LOGO/sp/spica21/spica21.jpg' },
+    'daarung22@naver.com': { name: '다룽', img: 'https://stimg.sooplive.com/LOGO/da/daarung22/daarung22.jpg' },
+    'choiagain333@naver.com': { name: '최또', img: 'https://stimg.sooplive.com/LOGO/ch/choiagain/choiagain.jpg' },
+    'jhh0029@naver.com': { name: '카나시', img: 'https://stimg.sooplive.com/LOGO/kj/kjhh0029/kjhh0029.jpg' },
+    'rnskrns@naver.com': { name: '관리자', img: 'https://i.postimg.cc/cHc39MV6/11.jpg' },
+    'jkolpc@naver.com': { name: '관리자', img: 'https://i.postimg.cc/cHc39MV6/11.jpg' }
+};
+
+const adminPasswords = {
+    '0820': { name: '달타', img: 'https://stimg.sooplive.com/LOGO/da/dalta20/dalta20.jpg' },
+    '0221': { name: '서피카', img: 'https://stimg.sooplive.com/LOGO/sp/spica21/spica21.jpg' },
+    '1128': { name: '다룽', img: 'https://stimg.sooplive.com/LOGO/da/daarung22/daarung22.jpg' },
+    '1030': { name: '최또', img: 'https://stimg.sooplive.com/LOGO/ch/choiagain/choiagain.jpg' },
+    '0123': { name: '카나시', img: 'https://stimg.sooplive.com/LOGO/kj/kjhh0029/kjhh0029.jpg' }
+};
+
+// =========================================================================
+// 스마트 링크 처리 함수 (앱 딥링크 완벽 지원)
+// =========================================================================
+function openSmartLink(url) {
+    if (!url) return;
+    
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if (isMobileDevice) {
+        // 모바일 환경: window.open 대신 현재 창 이동(location.href)을 사용해야 
+        // OS단에서 딥링크(SOOP, 유튜브, 네이버 카페 등 앱 실행)를 정상적으로 가로챕니다.
+        // ※ 중요: 이전처럼 www를 m으로 강제 변환하면 SOOP 내부 라우팅이 깨져서 에러가 발생하므로 원본 주소 그대로 넘깁니다!
+        window.location.href = url;
     } else {
-        let src = "";
-        let iframeCode = "";
-
-        if (currentSong.url.includes("sooplive.com/player/")) {
-            const match = currentSong.url.match(/player\/(\d+)/);
-            const videoId = match ? match[1] : currentSong.url.split('/').pop().split('?')[0];
-            src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
-            iframeCode = `<iframe id="soop_player_video" width="100%" height="100%" src="${src}" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; web-share;"></iframe>`;
-        } else if (extractYtId(currentSong.url)) {
-            const videoId = extractYtId(currentSong.url);
-            src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-            iframeCode = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
-        } else {
-            src = currentSong.url;
-            iframeCode = `<iframe width="100%" height="100%" frameborder="0" src="${src}" allow="autoplay; clipboard-write; web-share" allowfullscreen="true"></iframe>`;
-        }
-
-        playerWrapper.innerHTML = iframeCode;
-        playerWrapper.style.display = 'block';
-        btn.innerText = "■";
-        visualizer.style.display = 'block';
-        isPlaying = true;
-        isMinimized = false;
-        const btnMin = document.getElementById('btnMin');
-        if (btnMin) {
-            btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        }
-    }
-};
-
-window.nextFavSong = function() {
-    if (favPlaylist.length === 0) return;
-    currentFavIndex = (currentFavIndex + 1) % favPlaylist.length;
-    isPlaying = false; 
-    updateFavPlayerPlaylist();
-    toggleFavPlay(); 
-};
-
-window.prevFavSong = function() {
-    if (favPlaylist.length === 0) return;
-    currentFavIndex = (currentFavIndex - 1 + favPlaylist.length) % favPlaylist.length;
-    isPlaying = false;
-    updateFavPlayerPlaylist();
-    toggleFavPlay(); 
-};
-
-window.updateFavPlayerUIAndPlay = function() {
-    updateFavPlayerPlaylist();
-};
-
-let isMinimized = true;
-
-window.toggleMinimize = function() {
-    const playerWrapper = document.getElementById('playerWrapper');
-    const visualizer = document.getElementById('visualizer');
-    const btnMin = document.getElementById('btnMin');
-
-    if (!playerWrapper || !btnMin) return;
-
-    const isCurrentlyHidden = playerWrapper.style.display === 'none' || playerWrapper.style.display === '';
-
-    if (isCurrentlyHidden) {
-        playerWrapper.style.display = 'block';
-        if (visualizer) {
-            visualizer.style.display = isPlaying ? 'block' : 'none';
-        }
-
-        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        isMinimized = false;
-    } else {
-        playerWrapper.style.display = 'none';
-        if (visualizer) {
-            visualizer.style.display = isPlaying ? 'block' : 'none';
-        }
-
-        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        isMinimized = true;
-    }
-};
-
-window.toggleScreen = function() {
-    window.toggleMinimize();
-};
-
-function getFavorites() {
-    try { return JSON.parse(localStorage.getItem('htvvi_favorites')) || []; } 
-    catch(e) { return []; }
-}
-
-function getWeekOfMonth(date) {
-    const target = new Date(date);
-    const day = target.getDay();
-    const diff = target.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(target.setDate(diff));
-    
-    const year = monday.getFullYear();
-    const month = monday.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    let firstMonday = new Date(year, month, 1 - firstDayOfWeek);
-    
-    const diffTime = monday.getTime() - firstMonday.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    const weekNo = Math.floor(diffDays / 7) + 1;
-    
-    return { month: month + 1, week: weekNo };
-}
-
-function toggleFavorite(event, id) {
-    event.stopPropagation(); 
-    let favorites = getFavorites();
-    if (favorites.includes(id)) {
-        favorites = favorites.filter(favId => favId !== id);
-    } else {
-        favorites.push(id);
-    }
-    localStorage.setItem('htvvi_favorites', JSON.stringify(favorites));
-    renderSongbook(); 
-    updateFavPlayerPlaylist(); 
-}
-
-async function handleEventImgUpload(input) {
-    if (input.files && input.files[0]) {
-        try {
-            const file = input.files[0];
-            showToast('일정 이미지를 업로드 중입니다...');
-            const url = await uploadFileToStorage(file, `event-images/${Date.now()}_${file.name}`);
-            document.getElementById('eventImageUrl').value = url;
-            showToast('일정 이미지가 Firebase에 업로드되었습니다.');
-        } catch (error) { console.error(error); showToast('일정 이미지 업로드에 실패했습니다.'); }
+        // PC 환경: 정상적으로 새 탭으로 열기
+        window.open(url, '_blank');
     }
 }
 
-async function handleMemberImgUpload(input) {
-    if (input.files && input.files[0]) {
-        try {
-            const file = input.files[0];
-            showToast('멤버 이미지를 업로드 중입니다...');
-            const url = await uploadFileToStorage(file, `member-images/${Date.now()}_${file.name}`);
-            document.getElementById('newMemberImg').value = url;
-            showToast('멤버 이미지가 Firebase에 업로드되었습니다.');
-        } catch (error) { console.error(error); showToast('멤버 이미지 업로드에 실패했습니다.'); }
-    }
-}
-
-async function addMember() {
-    const name = document.getElementById('newMemberName').value.trim();
-    const soopId = document.getElementById('newMemberId').value.trim();
-
-    if (!name) return showToast('닉네임을 입력해주세요.');
-    if (!soopId) return showToast('SOOP 아이디를 입력해주세요.');
-
-    // SOOP 아이디 기반 이미지 URL 생성
-    const prefix = soopId.substring(0, 2).toLowerCase();
-    const img = `https://stimg.sooplive.com/LOGO/${prefix}/${soopId}/${soopId}.jpg`;
-
-    const id = `member_${encodeURIComponent(name)}`;
-    const data = { name, img, soopId };
-
+function initNaverLogin() {
     try {
-    await setDoc(doc(db, 'members', id), data);
-    await loadMembersFromFirebase();
-    document.getElementById('newMemberName').value = '';
-    document.getElementById('newMemberId').value = '';
-    renderMemberList();
-    showToast(`${name} 멤버가 추가되었습니다.`);
-} catch (error) { 
-    console.error(error); 
-    showToast(`멤버 저장 실패: ${error.message}`); 
-}
-}
-
-function deleteMember(name) {
-    const btn = document.getElementById('confirmBtn');
-    document.getElementById('confirmMessage').innerText = `[${name}] 멤버를 삭제할까요?`;
-    btn.onclick = async () => {
-        try {
-            await deleteDoc(doc(db, 'members', `member_${encodeURIComponent(name)}`));
-            delete members[name];
-            renderMemberList();
-            closeModal('confirmModal');
-            showToast(`${name} 멤버가 삭제되었습니다.`);
-        } catch (error) { console.error(error); showToast('멤버 삭제에 실패했습니다.'); }
-    };
-    document.getElementById('confirmModal').style.display = 'flex';
-}
-
-function openMemberManager() { renderMemberList(); document.getElementById('memberModal').style.display = 'flex'; }
-
-function renderMemberList() {
-    const list = document.getElementById('memberList');
-    list.innerHTML = '';
-    Object.values(members).forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'member-list-item';
-        item.innerHTML = `<img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'"><div style="flex:1; font-weight:800;">${m.name}</div><button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>`;
-        list.appendChild(item);
-    });
-}
-
-function showToast(msg) {
-    const toast = document.getElementById('toastMessage');
-    toast.innerText = msg; toast.style.display = 'block';
-    clearTimeout(showToast.timeout);
-    showToast.timeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
-}
-
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-function formatTime12h(timeStr) {
-    if (!timeStr) return '';
-    const [h, m] = timeStr.split(':').map(Number);
-    return `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}:${m.toString().padStart(2, '0')}`;
-}
-
-function setAMPM(val) {
-    currentAMPM = val;
-    document.getElementById('ampmAM').classList.toggle('active', val === '오전');
-    document.getElementById('ampmPM').classList.toggle('active', val === '오후');
-}
-
-async function uploadFileToStorage(file, path) {
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-}
-
-async function loadMembersFromFirebase() {
-    members = {};
-    const snapshot = await getDocs(collection(db, 'members'));
-    snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (!data || !data.name) return;
-        members[data.name] = { name: data.name, img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` };
-    });
-}
-
-// 특정 연/월의 이벤트만 가져오기 기능
-async function loadEventsForMonth(year, month) {
-    const monthKey = `${year}-${month}`;
-    if (loadedMonths.has(monthKey)) return;
-
-    const q = query(
-        collection(db, 'events'),
-        where('dateId', '>=', `${year}-${month}-`),
-        where('dateId', '<=', `${year}-${month}-\uf8ff`)
-    );
-
-    const snapshot = await getDocs(q);
-    const docs = [];
-    snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (!data || !data.dateId) return;
-        docs.push({ ...data, id: docSnap.id });
-    });
-
-    docs.sort((a, b) => {
-        const dateA = new Date(a.startDate || a.dateId).getTime();
-        const dateB = new Date(b.startDate || b.dateId).getTime();
-        if (dateA !== dateB) return dateA - dateB;
-        return (a.order ?? 9999) - (b.order ?? 9999);
-    });
-
-    docs.forEach(data => {
-        if (!events[data.dateId]) events[data.dateId] = [];
-        if (!events[data.dateId].some(e => e.id === data.id)) {
-            events[data.dateId].push(data);
-        }
-    });
-
-    loadedMonths.add(monthKey);
-}
-
-// 필요한 월이 로드되었는지 확인하는 함수
-async function ensureMonthsLoadedForDate(date) {
-    const y = date.getFullYear();
-    const m = date.getMonth() + 1;
-    await loadEventsForMonth(y, m);
-
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-        const target = new Date(date);
-        const dayNum = target.getDay();
-        const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-        const monday = new Date(target.setDate(diff));
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-
-        if (monday.getMonth() !== date.getMonth()) {
-            await loadEventsForMonth(monday.getFullYear(), monday.getMonth() + 1);
-        }
-        if (sunday.getMonth() !== date.getMonth()) {
-            await loadEventsForMonth(sunday.getFullYear(), sunday.getMonth() + 1);
-        }
-    }
-}
-
-async function loadData() {
-    try { 
-        await Promise.all([loadMembersFromFirebase(), loadMemos()]); 
-    }
-    catch (error) { console.error(error); }
-}
-
-function openAddModal(id) {
-    activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
-    document.getElementById('editIndex').value = '-1';
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
-    document.getElementById('eventTitle').value = '';
-    document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
-    document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
-    document.getElementById('eventMembers').value = ''; document.getElementById('eventNoticeLink').value = ''; document.getElementById('eventType').value = '개인방송';
-    
-    const pad = (n) => n.toString().padStart(2, '0');
-    if (document.getElementById('eventStartDate')) {
-        const parts = id.split('-');
-        const y = parts[0]; const m = pad(parseInt(parts[1], 10)); const d = pad(parseInt(parts[2], 10));
-        document.getElementById('eventStartDate').value = `${y}-${m}-${d}`;
-        document.getElementById('eventEndDate').value = `${y}-${m}-${d}`;
-    }
-    setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
-    document.getElementById('eventModal').style.display = 'flex';
-}
-
-function openEditModal(id, idx) {
-    activeDateId = id;
-    const ev = events[id][idx];
-    document.getElementById('modalTitle').innerText = '일정 수정';
-    document.getElementById('editIndex').value = idx;
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
-    document.getElementById('eventTitle').value = ev.title;
-    document.getElementById('eventType').value = ev.type;
-    document.getElementById('eventMembers').value = ev.members || '';
-    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
-    
-    if (document.getElementById('eventStartDate')) {
-        if (ev.startDate) {
-            const s = new Date(ev.startDate);
-            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-        if (ev.endDate) {
-            const e = new Date(ev.endDate);
-            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-    }
-    if (ev.time) {
-        const [h, m] = ev.time.split(':').map(Number);
-        setAMPM(h >= 12 ? '오후' : '오전');
-        document.getElementById('timeHour').value = h % 12 || 12;
-        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
-    }
-    document.getElementById('delBtn').style.display = 'block';
-    document.getElementById('eventModal').style.display = 'flex';
-}
-
-async function saveEvent() {
-    const title = document.getElementById('eventTitle').value.trim();
-    if (!title) return showToast('제목을 입력하세요.');
-    const hRaw = document.getElementById('timeHour').value;
-    const mRaw = document.getElementById('timeMin').value;
-    let timeStr = '';
-    if (hRaw !== '') {
-        let h = parseInt(hRaw, 10);
-        const m = parseInt(mRaw || '0', 10);
-        if (currentAMPM === '오후' && h < 12) h += 12;
-        if (currentAMPM === '오전' && h === 12) h = 0;
-        timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    }
-
-    const startStr = document.getElementById('eventStartDate').value;
-    const endStr = document.getElementById('eventEndDate').value;
-    const type = document.getElementById('eventType').value;
-    const members = document.getElementById('eventMembers').value;
-    const noticeLink = document.getElementById('eventNoticeLink').value.trim();
-    const imageUrl = document.getElementById('eventImageUrl').value;
-
-    const editingDocId = document.getElementById('editingEventDocId').value;
-    const isEditing = editingDocId !== '';
-
-    try {
-        const data = {
-            title,
-            time: timeStr,
-            type,
-            members,
-            noticeLink,
-            imageUrl,
-            dateId: activeDateId,
-            startDate: startStr,
-            endDate: endStr,
-        };
-
-        if (isEditing) {
-            await setDoc(doc(db, 'events', editingDocId), data);
-            showToast('일정이 수정되었습니다.');
-        } else {
-            const sDate = new Date(startStr);
-            const eDate = new Date(endStr);
-            for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
-                const dateId = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                await addDoc(collection(db, 'events'), { ...data, dateId });
-            }
-            showToast('일정이 추가되었습니다.');
-        }
-
-        // 저장 후 관련 캘린더 캐시 클리어 후 리로드
-        loadedMonths.clear();
-        events = {};
-        await ensureMonthsLoadedForDate(currentDate);
-
-        document.getElementById('editingEventDocId').value = '';
-        document.getElementById('editIndex').value = '-1';
-        closeModal('eventModal'); renderCalendar();
-    } catch (error) { console.error(error); showToast(`저장 실패: ${error.message}`); }
-}
-
-async function deleteEvent() {
-    const idx = parseInt(document.getElementById('editIndex').value, 10);
-    if (!confirm('이 일정을 삭제할까요?')) return;
-    try {
-        const editingDocId = document.getElementById('editingEventDocId') ? document.getElementById('editingEventDocId').value : '';
-        if (editingDocId) {
-            await deleteDoc(doc(db, 'events', editingDocId));
-        } else {
-            const existingEvent = events[activeDateId] && events[activeDateId][idx];
-            if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
-        }
-        
-        // 삭제 후 관련 캘린더 캐시 클리어 후 리로드
-        loadedMonths.clear();
-        events = {};
-        await ensureMonthsLoadedForDate(currentDate);
-
-        if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
-        closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
-    } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
-}
-
-function renderCalendar() {
-    const grid = document.getElementById('calendarGrid');
-    grid.innerHTML = '';
-    
-    const isMobile = window.innerWidth < 768;
-    
-    if (isMobile) {
-        grid.className = 'calendar-grid weekly-view';
-        
-        const target = new Date(currentDate);
-        const dayNum = target.getDay();
-        const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-        const monday = new Date(target.setDate(diff));
-        
-        const { month, week } = getWeekOfMonth(currentDate);
-        document.getElementById('monthDisplay').innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
-        
-        const yoils = ['월', '화', '수', '목', '금', '토', '일'];
-        const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
-        
-        for (let i = 0; i < 7; i++) {
-            const dayDate = new Date(monday);
-            dayDate.setDate(monday.getDate() + i);
-            
-            const num = dayDate.getDate();
-            const m = dayDate.getMonth() + 1;
-            const y = dayDate.getFullYear();
-            const dateId = `${y}-${m}-${num}`;
-            
-            const row = document.createElement('div');
-            row.className = 'week-row';
-            if (isAdmin) {
-                row.onclick = () => openAddModal(dateId);
-            }
-            
-            const dayLabel = document.createElement('div');
-            dayLabel.className = 'week-day-label';
-            
-            const dayName = document.createElement('span');
-            dayName.className = `week-day-name ${yoilColors[i] || ''}`;
-            dayName.innerText = yoils[i];
-            
-            const dayNumber = document.createElement('span');
-            const today = new Date();
-            const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
-            
-            dayNumber.className = `week-day-num ${yoilColors[i] || ''}`;
-            dayNumber.innerText = num;
-
-            if (isToday) {
-                row.classList.add('border-2', 'border-sky-400', 'rounded-xl');
-            }
-            
-            dayLabel.appendChild(dayName);
-            dayLabel.appendChild(dayNumber);
-            
-            const eventsDiv = document.createElement('div');
-            eventsDiv.className = 'week-events';
-            
-            if (events[dateId] && events[dateId].length > 0) {
-                events[dateId].forEach((ev, idx) => {
-                    const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
-                    const tag = document.createElement('div');
-                    tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-                    tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
-                    if (isAdmin) {
-                        tag.oncontextmenu = (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openEditModal(dateId, idx);
-                        };
-                    }
-                    eventsDiv.appendChild(tag);
-                });
-            } else {
-                const noEvent = document.createElement('div');
-                noEvent.className = 'week-no-event';
-                noEvent.innerText = '등록된 일정이 없습니다.';
-                eventsDiv.appendChild(noEvent);
-            }
-            
-            row.appendChild(dayLabel);
-            row.appendChild(eventsDiv);
-            grid.appendChild(row);
-        }
-    } else {
-        grid.className = 'calendar-grid';
-        grid.innerHTML = `<div class="day-label">월</div><div class="day-label">화</div><div class="day-label">수</div><div class="day-label">목</div><div class="day-label">금</div><div class="day-label text-blue-400">토</div><div class="day-label text-red-400">일</div>`;
-        
-        const y = currentDate.getFullYear();
-        const m = currentDate.getMonth();
-        document.getElementById('monthDisplay').innerText = `${y}년 ${m + 1}월`;
-        
-        const firstDay = new Date(y, m, 1);
-        const lastDay = new Date(y, m + 1, 0);
-        const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-        const prevLastDay = new Date(y, m, 0).getDate();
-        
-        for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            const d = new Date(y, m, i);
-            const dateId = `${y}-${m + 1}-${i}`;
-            const allEvents = Object.values(events).flat();
-            const todaysEvents = allEvents.filter(ev => {
-                if (!ev.startDate) return ev.dateId === dateId;
-                const start = new Date(ev.startDate);
-                const end = new Date(ev.endDate);
-                start.setHours(0,0,0,0);
-                end.setHours(0,0,0,0);
-                return d >= start && d <= end;
+        if (typeof naver !== 'undefined') {
+            const naverLogin = new naver.LoginWithNaverId({
+                clientId: "an6qp9jysDqzS6UnwJZy", 
+                callbackUrl: "https://signalcalendar.vercel.app/", 
+                isPopup: false, 
+                loginButton: { color: "green", type: 3, height: 48 }
             });
-            createDay(i, true, todaysEvents);
-        }
-    }
-    applyDraggable();
-    updateAdminUI(); updateSummary();
-}
-
-function applyDraggable() {
-    document.querySelectorAll('.event-container, .week-events').forEach(el => {
-        if (isAdmin) {
-            if (!el.sortableInstance) {
-                el.sortableInstance = new Sortable(el, {
-                    animation: 150,
-                    ghostClass: 'dragging-ghost',
-                    fallbackOnBody: true,
-                    delay: 200,
-                    delayOnTouchOnly: true,
-                    fallbackTolerance: 5,
-                    onStart: function(evt) {
-                        evt.item.style.height = evt.item.offsetHeight + 'px';
-                    },
-                    onEnd: function (evt) {
-                        evt.item.style.height = '';
-                        const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
-                        if (dateId) modifiedDates.add(dateId);
+            naverLogin.init();
+            
+            naverLogin.getLoginStatus(function (status) {
+                if (status) {
+                    const userEmail = naverLogin.user.getEmail();
+                    if (adminAccounts[userEmail]) {
+                        isAdmin = true;
+                        loggedInUser = adminAccounts[userEmail];
+                        sessionStorage.setItem('isAdmin', 'true');
+                        sessionStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+                        updateLoginUI(loggedInUser);
+                        closePasswordModal();
+                    } else {
+                        alert("관리자 권한이 없는 계정입니다.");
+                        naverLogin.logout();
                     }
-                });
-            }
-        } else {
-            if (el.sortableInstance) {
-                el.sortableInstance.destroy();
-                el.sortableInstance = null;
-            }
-        }
-    });
-}
-
-function createDay(num, isCurr, dayEvents = []) {
-    const dateId = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${num}`;
-    const div = document.createElement('div');
-    div.dataset.dateId = dateId;
-    div.className = 'day' + (isCurr ? '' : ' not-current');
-    const numDiv = document.createElement('div');
-    numDiv.className = 'day-num';
-    const today = new Date();
-    const isToday = isCurr && today.getDate() === num && today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear();
-    numDiv.innerHTML = isCurr ? (isToday ? `<span class="today-circle">${num}</span>` : num) : '';
-    div.appendChild(numDiv);
-    const evCont = document.createElement('div');
-    evCont.className = 'event-container';
-    if (isCurr && dayEvents && dayEvents.length > 0) {
-        dayEvents.forEach((ev, idx) => {
-            const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
-            const tag = document.createElement('div');
-            tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`;
-            tag.dataset.id = ev.id;
-            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-            tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-            if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
-            evCont.appendChild(tag);
-        });
-    }
-    div.appendChild(evCont);
-    if (isCurr && isAdmin) div.onclick = () => openAddModal(dateId);
-    document.getElementById('calendarGrid').appendChild(div);
-}
-
-function showInfo(id, idx) {
-    const ev = events[id]?.[idx];
-    if (!ev) return;
-
-    document.getElementById('infoTitle').innerText = ev.title;
-
-    let dateText = '';
-    if (ev.startDate && ev.endDate) {
-        const s = new Date(ev.startDate);
-        const e = new Date(ev.endDate);
-        const startText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}`;
-        const endText = `${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}`;
-        dateText = startText;
-        if (ev.startDate !== ev.endDate) {
-            dateText = `${startText} - ${endText}`;
-        }
-        if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
-    } else if (ev.dateId) {
-        const parts = ev.dateId.split('-');
-        dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}`;
-        if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
-    } else {
-        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
-    }
-
-    document.getElementById('infoTime').innerText = dateText;
-
-    const infoImageContainer = document.getElementById('infoImageContainer');
-    infoImageContainer.innerHTML = '';
-    if (ev.imageUrl) {
-        const img = document.createElement('img');
-        img.src = ev.imageUrl;
-        img.alt = ev.title;
-        img.className = 'info-image';
-        img.onload = () => {
-            infoImageContainer.innerHTML = '';
-            infoImageContainer.appendChild(img);
-        };
-        img.onerror = () => {
-            infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`;
-        };
-        infoImageContainer.appendChild(img);
-    }
-    const profs = document.getElementById('infoProfiles');
-    profs.innerHTML = '';
-    if (ev.members) {
-        ev.members.split(',').forEach(nameRaw => {
-            const name = nameRaw.trim();
-            if (!name) return;
-            const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-            const card = document.createElement('div');
-            card.className = 'profile-card';
-            card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-            profs.appendChild(card);
-        });
-    }
-    const noticeBtn = document.getElementById('infoNoticeBtn');
-    if (ev.noticeLink) {
-        noticeBtn.style.display = 'block';
-        noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-    } else {
-        noticeBtn.style.display = 'none';
-    }
-    document.getElementById('infoModal').style.display = 'flex';
-}
-
-function showInfoByEvent(ev) {
-    if (!ev) return;
-    document.getElementById('infoTitle').innerText = ev.title;
-    let dateText = '';
-    if (ev.startDate && ev.endDate) {
-        const s = new Date(ev.startDate); const e = new Date(ev.endDate);
-        dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
-        if (ev.startDate !== ev.endDate) dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()} - ${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
-    } else if (ev.dateId) {
-        const parts = ev.dateId.split('-');
-        dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
-    } else {
-        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
-    }
-    document.getElementById('infoTime').innerText = dateText;
-    const infoImageContainer = document.getElementById('infoImageContainer');
-    infoImageContainer.innerHTML = '';
-    if (ev.imageUrl) {
-        const img = document.createElement('img');
-        img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
-        img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
-        img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
-        infoImageContainer.appendChild(img);
-    }
-    const profs = document.getElementById('infoProfiles');
-    profs.innerHTML = '';
-    if (ev.members) {
-        ev.members.split(',').forEach(nameRaw => {
-            const name = nameRaw.trim(); if (!name) return;
-            const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-            const card = document.createElement('div');
-            card.className = 'profile-card';
-            card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-            profs.appendChild(card);
-        });
-    }
-    const noticeBtn = document.getElementById('infoNoticeBtn');
-    if (ev.noticeLink) {
-        noticeBtn.style.display = 'block';
-        noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-    } else noticeBtn.style.display = 'none';
-    document.getElementById('infoModal').style.display = 'flex';
-}
-
-function openEditModalByEvent(ev) {
-    if (!ev) return;
-    activeDateId = ev.dateId || (ev.startDate ? ev.startDate : activeDateId);
-    document.getElementById('modalTitle').innerText = '일정 수정';
-    document.getElementById('editIndex').value = '0';
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
-    document.getElementById('eventTitle').value = ev.title || '';
-    document.getElementById('eventType').value = ev.type || '개인방송';
-    document.getElementById('eventMembers').value = ev.members || '';
-    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
-    if (ev.time) {
-        const [h, m] = ev.time.split(':').map(Number);
-        setAMPM(h >= 12 ? '오후' : '오전');
-        document.getElementById('timeHour').value = h % 12 || 12;
-        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
-    } else {
-        setAMPM('오전'); document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
-    }
-    if (document.getElementById('eventStartDate')) {
-        if (ev.startDate) {
-            const s = new Date(ev.startDate);
-            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-        if (ev.endDate) {
-            const e = new Date(ev.endDate);
-            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-    }
-    document.getElementById('delBtn').style.display = 'block';
-    document.getElementById('eventModal').style.display = 'flex';
-}
-
-function updateSummary() {
-    const today = new Date();
-    const id = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-    const cont = document.getElementById('summaryContent');
-    cont.innerHTML = '';
-    if (events[id] && events[id].length > 0) {
-        events[id].forEach((ev, idx) => {
-            const item = document.createElement('div');
-            item.className = 'summary-item';
-            item.onclick = () => showInfo(id, idx);
-            item.innerHTML = `<span class="summary-dot type-dot-${ev.type.replace(/\s+/g, '')}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
-            cont.appendChild(item);
-        });
-    } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
-}
-
-function toggleMemo() {
-    const panel = document.getElementById('memoPanel');
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) {
-        updateMemoTabUI();
-        loadMemos();
-    }
-}
-
-function selectMemoTab(tab) {
-    activeMemoTab = tab;
-    updateMemoTabUI();
-    loadMemos();
-}
-
-function updateMemoTabUI() {
-    document.querySelectorAll('.memo-tab').forEach(btn => {
-        btn.classList.toggle('memo-tab-active', btn.dataset.tab === activeMemoTab);
-    });
-}
-
-function openMemoInput() {
-    if (!isAdmin) return;
-    document.getElementById('memoInputArea').classList.remove('hidden');
-    document.getElementById('memoItemText').focus();
-}
-
-function closeMemoInput() {
-    const input = document.getElementById('memoItemText');
-    if (input) input.value = '';
-    document.getElementById('memoDateInput').value = '';
-    document.getElementById('memoTimeInput').value = '';
-    document.getElementById('memoInputArea').classList.add('hidden');
-}
-
-async function saveMemoItem() {
-    if (!isAdmin) return;
-    const input = document.getElementById('memoItemText');
-    const dateInput = document.getElementById('memoDateInput');
-    const timeInput = document.getElementById('memoTimeInput');
-    
-    const text = input.value.trim();
-    const dateVal = dateInput.value;
-    const timeVal = timeInput.value;
-
-    if (!text) return showToast('메모 내용을 입력하세요.');
-    try {
-        await addDoc(collection(db, 'memos_list'), { 
-            text, 
-            tab: activeMemoTab, 
-            date: dateVal,
-            time: timeVal,
-            createdAt: new Date() 
-        });
-        input.value = '';
-        dateInput.value = '';
-        timeInput.value = '';
-        closeMemoInput();
-        loadMemos();
-        showToast('메모가 추가되었습니다.');
-    } catch (error) {
-        console.error('메모 추가 실패:', error);
-        showToast('메모 추가에 실패했습니다.');
-    }
-}
-
-async function loadMemos() {
-    const list = document.getElementById('memoList');
-    list.innerHTML = '';
-    const currentLoad = ++memoLoadToken;
-    
-    const snapshot = await getDocs(collection(db, "memos_list"));
-    if (currentLoad !== memoLoadToken) return;
-    
-    let memos = [];
-    snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.tab === activeMemoTab) {
-            memos.push({ id: docSnap.id, ...data });
-        }
-    });
-
-    memos.sort((a, b) => {
-        const hasDateTimeA = !!(a.date || a.time);
-        const hasDateTimeB = !!(b.date || b.time);
-
-        if (hasDateTimeA && hasDateTimeB) {
-            const dateA = a.date || '9999-12-31';
-            const timeA = a.time || '23:59';
-            const dtA = `${dateA}T${timeA}`;
-
-            const dateB = b.date || '9999-12-31';
-            const timeB = b.time || '23:59';
-            const dtB = `${dateB}T${timeB}`;
-
-            return dtA.localeCompare(dtB); 
-        } else if (hasDateTimeA && !hasDateTimeB) {
-            return -1; 
-        } else if (!hasDateTimeA && hasDateTimeB) {
-            return 1;
-        } else {
-            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-            return tB - tA; 
-        }
-    });
-    
-    memos.forEach(data => {
-        let dateTimeStr = '';
-        if (data.date || data.time) {
-            let parts = [];
-            if (data.date) {
-                const dParts = data.date.split('-');
-                if(dParts.length === 3) parts.push(`${dParts[0].slice(-2)}.${dParts[1]}.${dParts[2]}`);
-                else parts.push(data.date);
-            }
-            if (data.time) {
-                parts.push(formatTime12h(data.time));
-            }
-            dateTimeStr = `<div class="memo-datetime">${parts.join(' ')}</div>`;
-        }
-
-        const entry = document.createElement('div');
-        entry.className = 'memo-item-entry';
-        
-        entry.innerHTML = `
-            <div class="memo-content-wrapper">
-                ${dateTimeStr}
-                <div class="memo-text-content">${data.text}</div>
-            </div>
-            ${isAdmin ? `<button class="memo-item-delete" onclick="deleteMemo('${data.id}')">✕</button>` : ''}
-        `;
-        
-        list.appendChild(entry);
-    });
-}
-
-window.deleteMemo = async (id) => {
-    if (!isAdmin) {
-        showToast('관리자만 삭제할 수 있습니다.');
-        return;
-    }
-    if(confirm('이 메모를 삭제하시겠습니까?')) {
-        try {
-            await deleteDoc(doc(db, "memos_list", id));
-            loadMemos();
-            showToast('메모가 삭제되었습니다.');
-        } catch (error) {
-            console.error('메모 삭제 실패:', error);
-            showToast('메모 삭제에 실패했습니다.');
-        }
-    }
-};
-
-window.moveMonth = async function(v) {
-    const isMobile = window.innerWidth < 768;
-    
-    if (isMobile) {
-        const target = new Date(currentDate);
-        const dayNum = target.getDay();
-        const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-        const monday = new Date(target.setDate(diff));
-        monday.setDate(monday.getDate() + (v * 7));
-        currentDate = monday;
-    } else {
-        currentDate.setMonth(currentDate.getMonth() + v);
-    }
-    
-    await ensureMonthsLoadedForDate(currentDate);
-
-    // --- 스크롤 튕김 방지 로직 시작 ---
-    const currentScrollY = window.scrollY;
-    const grid = document.getElementById('calendarGrid');
-    if (grid) {
-        grid.style.minHeight = grid.offsetHeight + 'px';
-    }
-
-    renderCalendar();
-
-    setTimeout(() => {
-        if (grid) {
-            grid.style.minHeight = '';
-        }
-        window.scrollTo(0, currentScrollY);
-    }, 0);
-    // --- 스크롤 튕김 방지 로직 끝 ---
-}
-
-function openMonthPicker() { pickerYear = currentDate.getFullYear(); updatePickerUI(); document.getElementById('monthPickerModal').style.display = 'flex'; }
-
-function updatePickerUI() {
-    document.getElementById('pickerYearDisplay').innerText = `${pickerYear}년`;
-    const grid = document.querySelector('.month-picker-grid');
-    grid.innerHTML = '';
-    for (let i = 0; i < 12; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'month-btn';
-        btn.innerText = `${i + 1}월`;
-        if (pickerYear === currentDate.getFullYear() && i === currentDate.getMonth()) btn.classList.add('active');
-        btn.onclick = () => selectMonth(i);
-        grid.appendChild(btn);
-    }
-}
-
-function changePickerYear(offset) { pickerYear += offset; updatePickerUI(); }
-
-window.selectMonth = async function(m) { 
-    currentDate.setFullYear(pickerYear); 
-    currentDate.setMonth(m); 
-    closeModal('monthPickerModal'); 
-    await ensureMonthsLoadedForDate(currentDate);
-    renderCalendar(); 
-}
-
-async function promptAdmin() {
-    if (isAdmin) {
-        if (modifiedDates.size > 0) {
-            if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) {
-                await saveAllModifiedOrders();
-            }
-        }
-        isAdmin = false;
-        modifiedDates.clear();
-        updateAdminUI();
-        renderCalendar();
-        showToast('관리자 모드 해제');
-    }
-    else {
-        document.getElementById('adminPw').value = '';
-        document.getElementById('pwError').classList.add('hidden');
-        document.getElementById('pwModal').style.display = 'flex';
-    }
-}
-
-async function saveAllModifiedOrders() {
-    showToast('순서를 서버에 저장 중입니다...');
-    const updatePromises = [];
-
-    for (const dateId of modifiedDates) {
-        const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) ||
-                          document.querySelector(`[data-date-id="${dateId}"] .week-events`);
-        if (container) {
-            const items = container.querySelectorAll('.event-tag');
-            items.forEach((item, index) => {
-                const docId = item.dataset.id;
-                if (docId) {
-                    updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
                 }
             });
         }
-    }
-
-    await Promise.all(updatePromises);
-    modifiedDates.clear();
-    showToast('모든 순서가 저장되었습니다.');
+    } catch(e) { console.error("Naver Login Init Error:", e); }
 }
 
-function loginAdmin() {
-    if (document.getElementById('adminPw').value === '0112') {
-        isAdmin = true; closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
-    } else document.getElementById('pwError').classList.remove('hidden');
-}
-
-function updateMemoEditState() {
-    const memoInput = document.getElementById('memoItemText');
-    if (!memoInput) return;
-    memoInput.disabled = !isAdmin;
-}
-
-function updateAdminUI() {
-    document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
-    document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
-    applyDraggable();
-    updateMemoEditState();
-    updateSongbookAdminUI();
-    const memoPanel = document.getElementById('memoPanel');
-    if (memoPanel && memoPanel.classList.contains('open')) {
-        loadMemos();
-    }
-}
-
-let songbookSongs = [];
-let songbookCurrentFilter = 'All';
-let songbookSearchTerm = '';
-let songbookIsEditing = null;
-let currentModalSongId = null;
-
-async function loadSongbookSongs() {
-    songbookSongs = [];
+async function loadLinksFromFirebase() {
     try {
-        const snapshot = await getDocs(collection(db, 'songbook_songs'));
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data && data.title && data.artist) {
-                songbookSongs.push({ 
-                    id: docSnap.id, 
-                    title: data.title, 
-                    artist: data.artist, 
-                    url: data.url || '',
-                    isConditionSong: data.isConditionSong || false
-                });
+        const now = new Date();
+        const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+        const todayYYYYMMDD = kstTime.toISOString().split('T')[0];
+
+        const upSnap = await getDocs(collection(db, 'uplinks'));
+        upLinksList = [];
+        
+        for (const d of upSnap.docs) {
+            const data = d.data();
+            if (data.deadline && data.deadline < todayYYYYMMDD) {
+                await deleteDoc(doc(db, 'uplinks', d.id));
+            } else {
+                upLinksList.push({ id: d.id, ...data });
             }
-        });
-        songbookSongs.sort((a, b) => {
-            const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
-            if (titleCompare !== 0) return titleCompare;
-            return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
-        });
-    } catch (error) {
-        console.error('노래 데이터 로드 실패:', error);
+        }
+
+        const linkSnap = await getDocs(collection(db, 'memberLinks'));
+        if (linkSnap.empty) {
+            for (const member of Object.keys(defaultMemberLinks)) {
+                for (const link of defaultMemberLinks[member]) {
+                    await addDoc(collection(db, 'memberLinks'), { member, title: link.title, url: link.url, timestamp: Date.now() });
+                }
+            }
+            const reSnap = await getDocs(collection(db, 'memberLinks'));
+            let dbLinks = { '달타':[], '서피카':[], '다룽':[], '최또':[], '카나시':[] };
+            reSnap.forEach(doc => { const data = doc.data(); if(dbLinks[data.member]) dbLinks[data.member].push({ id: doc.id, ...data }); });
+            dynamicLinks = dbLinks;
+        } else {
+            let dbLinks = { '달타':[], '서피카':[], '다룽':[], '최또':[], '카나시':[] };
+            linkSnap.forEach(doc => {
+                const data = doc.data();
+                if(dbLinks[data.member]) dbLinks[data.member].push({ id: doc.id, ...data });
+            });
+            for(let m in dbLinks) dbLinks[m].sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+            dynamicLinks = dbLinks;
+        }
+        renderHeaderTabs();
+        checkAndShowPopup(todayYYYYMMDD);
+    } catch(e) { console.error("링크 로드 실패:", e); }
+}
+
+function checkAndShowPopup(today) {
+    const lastClosed = localStorage.getItem('upPopupClosedDate');
+    if (lastClosed !== today && upLinksList.length > 0) {
+        showUpPopup();
     }
 }
 
-function renderSongbook() {
-    const songListDiv = document.getElementById('songList');
-    const artistListDiv = document.getElementById('artistList');
-    
-    songListDiv.innerHTML = '';
-    songbookSearchTerm = document.getElementById('songbookSearch').value.trim().toLowerCase();
-    
-    const favorites = getFavorites();
+function showUpPopup() {
+    const list = document.getElementById('upPopupList');
+    if(!list) return;
+    list.innerHTML = upLinksList.map(up => {
+        const theme = themeColors[up.member] || '#5D4037';
+        return `
+        <div class="border-[2px] rounded-xl p-4 mb-3 cursor-pointer hover:bg-gray-50 flex flex-col gap-1" style="border-color:${theme}" onclick="openSmartLink('${up.url}')">
+            <div class="font-bold text-[17px] mb-2 text-gray-800 break-words leading-snug">${up.title}</div>
+            <div class="flex justify-between items-end">
+                <span class="text-[12px] font-bold text-white px-2.5 py-1 rounded-md" style="background-color: ${theme}">${up.member}</span>
+                <span class="text-[12px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">${up.deadline ? '마감: ' + up.deadline : '마감일 없음'}</span>
+            </div>
+        </div>
+        `;
+    }).join('');
+    document.getElementById('upPopupOverlay').classList.remove('hidden');
+}
 
-    const filtered = songbookSongs.filter(song => {
-        let matchesFilter = false;
-        if (songbookCurrentFilter === 'Favorites') {
-            matchesFilter = favorites.includes(song.id);
-        } else {
-            matchesFilter = songbookCurrentFilter === 'All' || song.artist === songbookCurrentFilter;
-        }
-        const matchesSearch = !songbookSearchTerm || song.title.toLowerCase().includes(songbookSearchTerm) || song.artist.toLowerCase().includes(songbookSearchTerm);
-        return matchesFilter && matchesSearch;
-    });
+function closeUpPopup() {
+    if (document.getElementById('noMorePopup').checked) {
+        const now = new Date();
+        const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+        localStorage.setItem('upPopupClosedDate', kstTime.toISOString().split('T')[0]);
+    }
+    document.getElementById('upPopupOverlay').classList.add('hidden');
+}
 
-    const starSolid = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
-    const starOutline = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="28" height="28"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>`;
+function renderHeaderTabs() {
+    const desktopContainer = document.getElementById('headerNavTabs');
+    const mobileNav = document.getElementById('mobileBottomNav');
+    const tabs = ['달타', '서피카', '다룽', '최또', '카나시'];
+    const colors = { '달타': '#FBC02D', '서피카': '#F06292', '다룽': '#1E88E5', '최또': '#D81B60', '카나시': '#F57C00' };
 
-    filtered.forEach(song => {
-        const isFav = favorites.includes(song.id);
-        const favIcon = isFav ? starSolid : starOutline;
-        const favClass = isFav ? 'is-favorite' : '';
+    if (desktopContainer) {
+        let html = `
+            <button class="font-paperozi px-5 py-2.5 bg-transparent border-2 border-transparent text-[#5D4037] font-bold rounded-lg hover:border-[#FF5252] hover:text-[#FF5252] transition-all duration-200 flex items-center justify-center" onclick="executeDesktopTabChange('홈')">
+                <i class="fi fi-rr-home text-2xl"></i>
+            </button>
+        `;
         
-        const safeUrl = song.url ? song.url.replace(/'/g, "\\'") : '';
-        const safeTitle = song.title ? song.title.replace(/'/g, "\\'") : '';
-
-        const conditionBadge = song.isConditionSong ? `<span class="condition-badge">컨디션곡</span>` : '';
-
-        songListDiv.innerHTML += `
-            <div class="song-item" oncontextmenu="editSong(event, '${song.id}')">
-                <div class="song-item-left">
-                    <button class="favorite-btn ${favClass}" onclick="toggleFavorite(event, '${song.id}')" title="즐겨찾기">${favIcon}</button>
-                </div>
-                <div class="song-clickable" onclick="openBrowser('${safeUrl}', '${song.id}', '${safeTitle}')" style="align-items: flex-start; justify-content: center; overflow: hidden;">
-                    <div style="display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden;">
-                        <span class="song-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; flex: 0 1 auto;">${song.title}</span>
-                        ${conditionBadge}
+        tabs.forEach(tab => {
+            const hoverColor = colors[tab];
+            const links = dynamicLinks[tab] || [];
+            let dropdownHtml = links.map(link => `
+                <a href="#" onclick="openSmartLink('${link.url}'); event.preventDefault();" class="block px-4 py-2 text-[14.5px] font-bold text-gray-700 hover:bg-gray-100 hover:text-[${hoverColor}] transition-colors text-center border-b border-gray-100">${link.title}</a>
+            `).join('');
+            
+            html += `
+                <div class="relative group">
+                    <button class="font-paperozi px-5 py-2.5 text-lg bg-transparent border-2 border-transparent text-[#5D4037] font-bold rounded-lg hover:border-[${hoverColor}] hover:text-[${hoverColor}] transition-all duration-200" onclick="executeDesktopTabChange('${tab}')">${tab}</button>
+                    <div class="absolute left-1/2 -translate-x-1/2 top-full pt-1 w-32 hidden group-hover:block z-[2000]">
+                        <div class="bg-white flex flex-col shadow-xl rounded-xl border-2 border-[#5D4037] overflow-hidden py-1">
+                            <a href="#" onclick="executeDesktopTabChange('${tab}'); event.preventDefault();" class="block px-4 py-2 text-[14.5px] font-bold text-gray-700 hover:bg-gray-100 hover:text-[${hoverColor}] transition-colors border-b border-gray-100 text-center">일정표</a>
+                            ${dropdownHtml}
+                        </div>
                     </div>
-                    <span class="song-artist" style="text-align: left;">${song.artist}</span>
                 </div>
-                ${isAdmin ? `<button class="song-delete-btn" type="button" onclick="deleteSong('${song.id}')" title="삭제">✕</button>` : ''}
+            `;
+        });
+        desktopContainer.innerHTML = html;
+    }
+
+    if (mobileNav) {
+        let mHtml = '';
+        ['홈', ...tabs].forEach(tab => {
+            const isActive = currentPage === tab;
+            const activeColor = tab === '홈' ? '#FF5252' : colors[tab];
+            let contentHtml = '';
+            
+            if (tab === '홈') {
+                contentHtml = `<i class="fi fi-rr-home text-[24px] transition-all ${isActive ? 'scale-110' : ''}" style="color: ${isActive ? activeColor : '#9CA3AF'}"></i>`;
+            } else {
+                contentHtml = `<span class="text-[16px] font-bold font-paperozi transition-all ${isActive ? 'scale-110' : ''}" style="color: ${isActive ? activeColor : '#9CA3AF'}">${tab}</span>`;
+            }
+            
+            mHtml += `
+                <button class="flex flex-col items-center justify-center w-full h-full gap-1 transition-all" onclick="openMobileTabMenu('${tab}')">
+                    ${contentHtml}
+                </button>
+            `;
+        });
+        mobileNav.innerHTML = mHtml;
+    }
+}
+
+function openMobileTabMenu(tab) {
+    if (tab === '홈') { executeDesktopTabChange('홈'); return; }
+    const overlay = document.getElementById('mobileTabMenuOverlay');
+    const container = document.getElementById('mobileTabMenuContainer');
+    const color = themeColors[tab];
+
+    let html = `
+        <div class="flex flex-col gap-2 relative">
+            <div class="text-center font-bold text-[18px] mb-2 font-paperozi" style="color: ${color}">${tab} 메뉴</div>
+            <button onclick="executeMobileTabChange('${tab}')" class="w-full py-2.5 bg-white rounded-lg font-bold text-[14px] border-[1.5px] border-gray-200 shadow-sm active:bg-gray-50 text-gray-800">일정표 보기</button>
+    `;
+    
+    const links = dynamicLinks[tab] || [];
+    links.forEach(l => {
+        html += `<a href="#" onclick="openSmartLink('${l.url}'); event.preventDefault();" class="w-full py-2.5 text-center bg-white rounded-lg font-bold text-[14px] shadow-sm border-[1.5px] active:brightness-95" style="border-color: ${color}; color: ${color}">${l.title}</a>`;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+    
+    overlay.classList.remove('hidden'); overlay.classList.add('block');
+    requestAnimationFrame(() => {
+        container.classList.remove('opacity-0', 'translate-y-4');
+        container.classList.add('opacity-100', 'translate-y-0');
+    });
+}
+
+function closeMobileTabMenu() {
+    const overlay = document.getElementById('mobileTabMenuOverlay');
+    const container = document.getElementById('mobileTabMenuContainer');
+    if(!container) return;
+    container.classList.remove('opacity-100', 'translate-y-0');
+    container.classList.add('opacity-0', 'translate-y-4');
+    setTimeout(() => { overlay.classList.add('hidden'); overlay.classList.remove('block'); }, 200);
+}
+
+function executeDesktopTabChange(tab) { changeTab(tab); }
+function executeMobileTabChange(tab) { closeMobileTabMenu(); changeTab(tab); }
+
+function updateLoginUI(user) {
+    const desktopContainer = document.getElementById('desktopAuthContainer');
+    if(desktopContainer) {
+        desktopContainer.innerHTML = `
+            <div class="relative inline-block text-left group z-[2000]">
+                <div class="flex items-center gap-2 cursor-pointer bg-white border-2 border-gray-200 shadow-sm px-4 py-1.5 rounded-xl font-bold" onclick="toggleProfileDropdown('desktopProfileMenu')">
+                    <img src="${user.img || 'https://via.placeholder.com/40'}" class="w-8 h-8 rounded-full object-cover border-2 border-[#5D4037]">
+                    <span class="text-lg text-[#5D4037] font-paperozi">${user.name}</span>
+                    <i class="fi fi-rr-caret-down text-[#5D4037]"></i>
+                </div>
+                <div id="desktopProfileMenu" class="hidden absolute right-0 top-full mt-2 w-36 bg-white flex-col shadow-xl rounded-xl border-2 border-[#5D4037] overflow-hidden">
+                    <button onclick="openLinkModal()" class="px-4 py-3 text-left font-bold text-[#5D4037] font-paperozi hover:bg-gray-100 border-b border-gray-100">링크관리</button>
+                    <button onclick="logoutAdmin()" class="px-4 py-3 text-left font-bold text-red-500 font-paperozi hover:bg-gray-100">로그아웃</button>
+                </div>
+            </div>
+        `;
+    }
+    const mobileContainer = document.getElementById('mobileAuthContainer');
+    if(mobileContainer) {
+        mobileContainer.innerHTML = `
+            <div class="relative inline-block text-left z-[2000]">
+                <div class="flex items-center gap-1 cursor-pointer bg-white border border-gray-200 shadow-sm px-2 py-[5px] rounded-lg font-bold" onclick="toggleProfileDropdown('mobileProfileMenu')">
+                    <img src="${user.img || 'https://via.placeholder.com/40'}" class="w-[20px] h-[20px] rounded-full object-cover border border-[#5D4037]">
+                </div>
+                <div id="mobileProfileMenu" class="hidden absolute right-0 top-full mt-2 w-28 bg-white flex-col shadow-xl rounded-xl border-2 border-[#5D4037] overflow-hidden">
+                    <button onclick="openLinkModal()" class="px-3 py-2 text-left font-bold text-[#5D4037] text-sm font-paperozi hover:bg-gray-100 border-b border-gray-100">링크관리</button>
+                    <button onclick="logoutAdmin()" class="px-3 py-2 text-left font-bold text-red-500 text-sm font-paperozi hover:bg-gray-100">로그아웃</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function toggleProfileDropdown(menuId) {
+    const menu = document.getElementById(menuId);
+    if(menu) {
+        if(menu.classList.contains('hidden')) { menu.classList.remove('hidden'); menu.classList.add('flex'); } 
+        else { menu.classList.remove('flex'); menu.classList.add('hidden'); }
+    }
+}
+
+window.addEventListener('click', (e) => {
+    ['desktopProfileMenu', 'mobileProfileMenu'].forEach(id => {
+        const pMenu = document.getElementById(id);
+        if(pMenu && !pMenu.classList.contains('hidden') && !e.target.closest('#desktopAuthContainer') && !e.target.closest('#mobileAuthContainer')) {
+            pMenu.classList.add('hidden'); pMenu.classList.remove('flex');
+        }
+    });
+});
+
+async function openLinkModal() {
+    if(!isAdmin || !loggedInUser) return;
+    const member = loggedInUser.name; 
+    if(member === '관리자') { alert("개별 멤버 계정으로 로그인해주세요."); return; }
+
+    const container = document.getElementById('memberLinksContainer');
+    container.innerHTML = '';
+    const links = dynamicLinks[member] || [];
+    
+    links.forEach((link, index) => {
+        const isFirst = index === 0;
+        const isLast = index === links.length - 1;
+        container.innerHTML += `
+            <div class="flex justify-between items-center bg-white border-2 border-gray-200 p-3 rounded-lg shadow-sm">
+                <div class="font-bold text-[15px] text-[#5D4037] w-1/4 truncate">${link.title}</div>
+                <div class="flex items-center gap-1 w-3/4 justify-end">
+                    <a href="#" onclick="openSmartLink('${link.url}'); event.preventDefault();" class="text-[13px] text-blue-500 underline truncate max-w-[130px] mr-2">${link.url}</a>
+                    <button onclick="moveLink('${member}', '${link.id}', -1)" class="p-1 text-gray-500 hover:text-[#5D4037] ${isFirst ? 'opacity-30 cursor-not-allowed' : ''}"><i class="fi fi-rr-angle-up text-lg"></i></button>
+                    <button onclick="moveLink('${member}', '${link.id}', 1)" class="p-1 text-gray-500 hover:text-[#5D4037] ${isLast ? 'opacity-30 cursor-not-allowed' : ''}"><i class="fi fi-rr-angle-down text-lg"></i></button>
+                    <button onclick="editMemberLink('${member}', '${link.id}')" class="text-[#5D4037] font-bold text-[13px] border-2 border-[#5D4037] px-2 py-0.5 rounded ml-1 hover:bg-[#5D4037] hover:text-white transition shrink-0">수정</button>
+                    <button onclick="deleteMemberLink('${member}', '${link.id}')" class="text-white bg-red-500 w-6 h-6 rounded flex items-center justify-center hover:bg-red-600 transition shrink-0 ml-1"><i class="fi fi-br-cross-small"></i></button>
+                </div>
             </div>
         `;
     });
-
-    const headerDiv = document.querySelector('.songbook-header');
-    if (headerDiv) {
-        const addBtn = headerDiv.querySelector('.add-song-btn');
-        if (isAdmin && !addBtn) {
-            const btn = document.createElement('button');
-            btn.className = 'add-song-btn';
-            btn.type = 'button';
-            btn.textContent = '+';
-            btn.onclick = () => {
-                document.getElementById('adminSongForm').classList.add('visible');
-                document.getElementById('newSongTitle').focus();
-            };
-            headerDiv.appendChild(btn);
-        } else if (!isAdmin && addBtn) {
-            addBtn.remove();
-        }
-    }
-
-    const favBtn = document.getElementById('favFilterBtn');
-    if (favBtn) {
-        favBtn.classList.toggle('active', songbookCurrentFilter === 'Favorites');
-    }
-
-    const uniqueArtists = [...new Set(songbookSongs.map(s => s.artist))].sort((a, b) => a.localeCompare(b, 'ko', { sensitivity: 'base' }));
     
-    artistListDiv.innerHTML = '';
-    
-    const allActive = songbookCurrentFilter === 'All' ? 'active' : '';
-    artistListDiv.innerHTML += `<button class="artist-btn ${allActive}" onclick="setSongbookFilter('All')" type="button">All</button>`;
-    
-    uniqueArtists.forEach(a => {
-        const active = songbookCurrentFilter === a ? 'active' : '';
-        artistListDiv.innerHTML += `<button class="artist-btn ${active}" onclick="setSongbookFilter('${a}')" type="button">${a}</button>`;
-    });        
+    document.getElementById('linkModal').classList.replace('hidden', 'flex');
+    ['desktopProfileMenu', 'mobileProfileMenu'].forEach(id => {
+        const pMenu = document.getElementById(id);
+        if(pMenu) { pMenu.classList.remove('flex'); pMenu.classList.add('hidden'); }
+    });
 }
+function closeLinkModal() { document.getElementById('linkModal').classList.replace('flex', 'hidden'); }
 
-function openBrowser(url, id, title) {
-    if(!url) {
-        showToast("등록된 링크가 없습니다.");
-        return;
-    }
-    currentModalSongId = id;
-    document.getElementById('browserTitle').innerText = title ? title : 'HTVVI 브라우저';
-    document.getElementById('browserModal').classList.add('visible');
-    
-    let src = url;
-    if (url.includes("sooplive.com/player/")) {
-        const match = url.match(/player\/(\d+)/);
-        const videoId = match ? match[1] : url.split('/').pop().split('?')[0];
-        src = `https://vod.sooplive.com/player/${videoId}/embed?showChat=false&autoPlay=true&mutePlay=false`;
-    } else if (extractYtId(url)) {
-        const videoId = extractYtId(url);
-        src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
-    
-    document.getElementById('browserIframe').src = src;
-    
-    const btn = document.getElementById('modalFavoriteBtn');
-    if(id) {
-        btn.style.display = 'flex';
-        updateModalFavoriteBtn();
-    } else {
-        btn.style.display = 'none';
-    }
-}
+async function moveLink(member, linkId, direction) {
+    const arr = dynamicLinks[member];
+    const idx = arr.findIndex(l => l.id === linkId);
+    if (idx < 0 || idx + direction < 0 || idx + direction >= arr.length) return;
 
-function updateModalFavoriteBtn() {
-    if(!currentModalSongId) return;
-    const btn = document.getElementById('modalFavoriteBtn');
-    const favorites = getFavorites();
-    
-    const starSolidModal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
-    const starOutlineModal = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>`;
+    const tempTime = arr[idx].timestamp;
+    arr[idx].timestamp = arr[idx + direction].timestamp;
+    arr[idx + direction].timestamp = tempTime;
 
-    if(favorites.includes(currentModalSongId)) {
-        btn.classList.add('active');
-        btn.innerHTML = `${starSolidModal} 즐겨찾기 해제`;
-    } else {
-        btn.classList.remove('active');
-        btn.innerHTML = `${starOutlineModal} 즐겨찾기 추가`;
-    }
-}
-
-function toggleModalFavorite() {
-    if(!currentModalSongId) return;
-    const fakeEvent = { stopPropagation: () => {} };
-    toggleFavorite(fakeEvent, currentModalSongId);
-    updateModalFavoriteBtn();
-    updateFavPlayerPlaylist(); 
-}
-
-function closeBrowser() {
-    document.getElementById('browserModal').classList.remove('visible');
-    document.getElementById('browserIframe').src = '';
-    currentModalSongId = null;
-}
-
-function editSong(event, id) {
-    if (!isAdmin) return true;
-    event.preventDefault();
-    const song = songbookSongs.find(item => item.id === id);
-    if (!song) return false;
-    document.getElementById('newSongTitle').value = song.title;
-    document.getElementById('newSongArtist').value = song.artist;
-    document.getElementById('newSongUrl').value = song.url;
-    document.getElementById('isConditionSong').checked = song.isConditionSong || false;
-    document.getElementById('adminSongForm').classList.add('visible');
-    songbookIsEditing = id;
-    document.getElementById('addSongBtn').textContent = '수정 저장';
-    return false;
-}
-
-function updateSongbookAdminUI() {
-    document.getElementById('adminSongForm').classList.toggle('visible', isAdmin);
-    document.getElementById('addSongBtn').textContent = '노래 추가';
-    renderSongbook();
-}
-
-async function addSong() {
-    const titleInput = document.getElementById('newSongTitle');
-    const artistInput = document.getElementById('newSongArtist');
-    const urlInput = document.getElementById('newSongUrl');
-    const conditionCheckbox = document.getElementById('isConditionSong');
-    
-    const title = titleInput.value.trim();
-    const artist = artistInput.value.trim();
-    const url = urlInput.value.trim();
-    const isConditionSong = conditionCheckbox.checked;
-    
-    if (!title || !artist) {
-        showToast('노래 제목과 가수명을 입력해주세요.');
-        return;
-    }
     try {
-        if (songbookIsEditing !== null) {
-            await setDoc(doc(db, 'songbook_songs', songbookIsEditing), {
-                title, artist, url, isConditionSong
-            });
-            songbookIsEditing = null;
+        await updateDoc(doc(db, 'memberLinks', arr[idx].id), { timestamp: arr[idx].timestamp });
+        await updateDoc(doc(db, 'memberLinks', arr[idx + direction].id), { timestamp: arr[idx + direction].timestamp });
+        arr.sort((a,b) => a.timestamp - b.timestamp);
+        openLinkModal(); renderHeaderTabs();
+    } catch(e) { console.error(e); }
+}
+
+async function editMemberLink(member, linkId) {
+    const link = dynamicLinks[member].find(l => l.id === linkId);
+    if(!link) return;
+    const newTitle = prompt("수정할 메뉴 이름을 입력하세요.", link.title);
+    if(newTitle === null) return;
+    const newUrl = prompt("수정할 메뉴의 URL을 입력하세요.", link.url);
+    if(newUrl === null) return;
+
+    if(newTitle.trim() !== '' && newUrl.trim() !== '') {
+        try {
+            await updateDoc(doc(db, 'memberLinks', linkId), { title: newTitle.trim(), url: newUrl.trim() });
+            link.title = newTitle.trim();
+            link.url = newUrl.trim();
+            openLinkModal(); renderHeaderTabs();
+        } catch(e) { console.error(e); }
+    }
+}
+
+async function addMemberLink() {
+    const title = document.getElementById('newLinkTitle').value.trim();
+    const url = document.getElementById('newLinkUrl').value.trim();
+    if(!title || !url) return alert('제목과 링크를 입력하세요.');
+    const member = loggedInUser.name;
+    const newLink = { member, title, url, timestamp: Date.now() };
+    try {
+        const docRef = await addDoc(collection(db, 'memberLinks'), newLink);
+        newLink.id = docRef.id;
+        if(!dynamicLinks[member]) dynamicLinks[member] = [];
+        dynamicLinks[member].push(newLink);
+        document.getElementById('newLinkTitle').value = ''; document.getElementById('newLinkUrl').value = '';
+        openLinkModal(); renderHeaderTabs();
+    } catch(e) { console.error(e); alert('추가 실패'); }
+}
+
+async function deleteMemberLink(member, linkId) {
+    if(!confirm('삭제하시겠습니까?')) return;
+    try {
+        await deleteDoc(doc(db, 'memberLinks', linkId));
+        dynamicLinks[member] = dynamicLinks[member].filter(l => l.id !== linkId);
+        openLinkModal(); renderHeaderTabs();
+    } catch(e) { console.error(e); }
+}
+
+async function addUpLink() {
+    const title = document.getElementById('upTitle').value.trim();
+    const url = document.getElementById('upUrl').value.trim();
+    const deadline = document.getElementById('upDeadline').value;
+    if(!title || !url) return alert('제목과 링크를 입력하세요.');
+    const member = loggedInUser.name;
+    const newUp = { member, title, url, deadline, timestamp: Date.now() };
+    try {
+        const docRef = await addDoc(collection(db, 'uplinks'), newUp);
+        upLinksList.push({ id: docRef.id, ...newUp });
+        alert('업링크가 추가되었습니다.');
+        document.getElementById('upTitle').value = ''; document.getElementById('upUrl').value = ''; document.getElementById('upDeadline').value = '';
+        if(sidePanelMode === 'UP') renderUpLinksPanel(); 
+    } catch(e) { console.error(e); }
+}
+
+async function deleteUpLink(upId) {
+    if(!confirm('이 업링크를 삭제하시겠습니까?')) return;
+    try {
+        await deleteDoc(doc(db, 'uplinks', upId));
+        upLinksList = upLinksList.filter(u => u.id !== upId);
+        if(sidePanelMode === 'UP') renderUpLinksPanel();
+    } catch(e) { console.error(e); }
+}
+
+function toggleUpPanel() {
+    if (sidePanelMode === 'UP') closeSidePanel();
+    else openSidePanel('UP');
+}
+function toggleMemoPanel() {
+    if (sidePanelMode === 'MEMO') closeSidePanel();
+    else openSidePanel('MEMO');
+}
+
+function closeSidePanel(instant = false) {
+    sidePanelMode = null;
+    const panel = document.getElementById('sideExpansionPanel');
+    const mobileOverlay = document.getElementById('mobilePanelOverlay');
+    
+    if(isMobile) {
+        panel.classList.remove('translate-y-0', 'opacity-100');
+        panel.classList.add('translate-y-full', 'opacity-0');
+        if(mobileOverlay) { mobileOverlay.classList.remove('block'); mobileOverlay.classList.add('hidden'); }
+    } else {
+        panel.classList.remove('h-[890px]', 'opacity-100');
+        panel.classList.add('h-0', 'opacity-0');
+    }
+    
+    if (instant) {
+        panel.classList.add('hidden'); panel.classList.remove('flex');
+    } else {
+        setTimeout(() => {
+            if (sidePanelMode === null) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+        }, 300);
+    }
+}
+
+function openSidePanel(mode) {
+    sidePanelMode = mode;
+    const panel = document.getElementById('sideExpansionPanel');
+    const mobileOverlay = document.getElementById('mobilePanelOverlay');
+    
+    panel.classList.remove('hidden'); panel.classList.add('flex');
+    if(isMobile && mobileOverlay) { mobileOverlay.classList.remove('hidden'); mobileOverlay.classList.add('block'); }
+    
+    if (mode === 'MEMO') {
+        const memos = memoList[currentPage] || [];
+        const contentHtml = memos.map(memo => `
+            <div class="bg-white p-4 rounded-xl border-[2.5px] border-[#5D4037] relative shadow-sm mb-4 cursor-pointer hover:bg-gray-50 transition" 
+                 oncontextmenu="if(typeof isAdmin !== 'undefined' && isAdmin) { event.preventDefault(); event.stopPropagation(); window.openMemoEditModal('${memo.id}'); }">
+                ${isAdmin ? `<button onclick="deleteMemo('${memo.id}')" class="absolute top-2 right-2 text-[#5D4037] hover:text-red-500 font-bold p-1 z-10"><i class="fi fi-br-cross-small"></i></button>` : ''}
+                <div class="text-[13px] font-bold text-gray-500 mb-2 pointer-events-none">${memo.date || ''}</div>
+                <div class="text-[16px] font-medium text-[#5D4037] whitespace-pre-wrap leading-relaxed pointer-events-none">${memo.content}</div>
+            </div>
+        `).join('');
+
+        panel.innerHTML = `
+            <div class="p-6 border-b-[4px] border-[#5D4037] bg-white flex justify-between items-center shadow-sm z-10 shrink-0">
+                <div class="text-[22px] font-bold text-[#5D4037] font-paperozi flex items-center gap-2">
+                    <i class="fi fi-rr-edit"></i> ${currentPage} 메모장
+                </div>
+                <div class="flex items-center gap-3">
+                    ${isAdmin ? `<button onclick="openMemoAddModal()" class="w-9 h-9 flex items-center justify-center bg-[#5D4037] text-white rounded-full font-bold hover:brightness-110 shadow-sm transition"><i class="fi fi-br-plus"></i></button>` : ''}
+                    <button onclick="closeSidePanel()" class="text-3xl text-[#5D4037] hover:text-red-500 cursor-pointer"><i class="fi fi-rr-cross-small"></i></button>
+                </div>
+            </div>
+            <div class="flex-1 p-5 bg-[#FFFDF5] overflow-y-auto modal-scroll w-full">
+                ${contentHtml || '<div class="text-center text-gray-400 font-bold mt-16 text-lg">저장된 메모가 없습니다.</div>'}
+            </div>
+        `;
+    } else if (mode === 'UP') {
+        renderUpLinksPanel();
+    }
+
+    requestAnimationFrame(() => {
+        if(isMobile) {
+            panel.classList.remove('translate-y-full', 'opacity-0'); panel.classList.add('translate-y-0', 'opacity-100');
         } else {
-            await addDoc(collection(db, 'songbook_songs'), {
-                title, artist, url, isConditionSong
-            });
+            panel.classList.remove('h-0', 'opacity-0'); panel.classList.add('h-[890px]', 'opacity-100');
         }
-        titleInput.value = '';
-        artistInput.value = '';
-        urlInput.value = '';
-        conditionCheckbox.checked = false;
-        document.getElementById('addSongBtn').textContent = '노래 추가';
-        await loadSongbookSongs();
-        renderSongbook();
-        showToast('노래가 저장되었습니다.');
-    } catch (error) {
-        console.error('노래 저장 실패:', error);
-        showToast('노래 저장에 실패했습니다.');
-    }
+    });
 }
 
-function cancelEdit() {
-    document.getElementById('newSongTitle').value = '';
-    document.getElementById('newSongArtist').value = '';
-    document.getElementById('newSongUrl').value = '';
-    document.getElementById('isConditionSong').checked = false;
-    songbookIsEditing = null;
-    document.getElementById('addSongBtn').textContent = '노래 추가';
+function openMemoAddModal() {
+    currentEditingMemoId = null;
+    document.getElementById('memoModalTitle').innerText = '메모 추가';
+    
+    const now = new Date();
+    const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    document.getElementById('memoDate').value = kstTime.toISOString().split('T')[0];
+    
+    document.getElementById('memoContent').value = '';
+    document.getElementById('memoModal').classList.replace('hidden', 'flex');
 }
 
-async function deleteSong(id) {
+function openMemoEditModal(memoId) {
     if (!isAdmin) return;
-    if (!confirm('이 노래를 삭제하시겠습니까?')) return;
+    const memo = memoList[currentPage].find(m => m.id === memoId);
+    if (!memo) return;
+    currentEditingMemoId = memoId;
+    document.getElementById('memoModalTitle').innerText = '메모 수정';
+    document.getElementById('memoDate').value = memo.date || '';
+    document.getElementById('memoContent').value = memo.content || '';
+    document.getElementById('memoModal').classList.replace('hidden', 'flex');
+}
+
+function closeMemoModal() {
+    document.getElementById('memoModal').classList.replace('flex', 'hidden');
+}
+
+async function saveMemoAction() {
+    const date = document.getElementById('memoDate').value;
+    const content = document.getElementById('memoContent').value.trim();
+    if(!content) return alert('내용을 입력하세요.');
+
+    const colName = memoCollectionMap[currentPage];
+    if (!colName) return;
+
     try {
-        await deleteDoc(doc(db, 'songbook_songs', id));
-        await loadSongbookSongs();
-        renderSongbook();
-        showToast('노래가 삭제되었습니다.');
-    } catch (error) {
-        console.error('노래 삭제 실패:', error);
-        showToast('노래 삭제에 실패했습니다.');
+        if (currentEditingMemoId) {
+            await updateDoc(doc(db, colName, currentEditingMemoId), { date, content });
+            const m = memoList[currentPage].find(x => x.id === currentEditingMemoId);
+            if(m) { m.date = date; m.content = content; }
+        } else {
+            const docRef = await addDoc(collection(db, colName), { date, content, timestamp: Date.now() });
+            if(!memoList[currentPage]) memoList[currentPage] = [];
+            memoList[currentPage].unshift({ id: docRef.id, collectionName: colName, date, content, timestamp: Date.now() });
+        }
+        closeMemoModal();
+        if (sidePanelMode === 'MEMO') openSidePanel('MEMO');
+    } catch(e) { console.error('메모 저장 실패:', e); }
+}
+
+async function deleteMemo(memoId) {
+    if(!confirm('해당 메모를 삭제하시겠습니까?')) return;
+    const colName = memoCollectionMap[currentPage];
+    try {
+        await deleteDoc(doc(db, colName, memoId));
+        memoList[currentPage] = memoList[currentPage].filter(m => m.id !== memoId);
+        if (sidePanelMode === 'MEMO') openSidePanel('MEMO');
+    } catch(e) { console.error('메모 삭제 실패:', e); }
+}
+
+function renderUpLinksPanel() {
+    const panel = document.getElementById('sideExpansionPanel');
+    const sorted = [...upLinksList].sort((a, b) => {
+        if (a.deadline && b.deadline) {
+            if (a.deadline === b.deadline) return (a.timestamp || 0) - (b.timestamp || 0);
+            return a.deadline < b.deadline ? -1 : 1; 
+        }
+        if (a.deadline && !b.deadline) return -1; 
+        if (!a.deadline && b.deadline) return 1;
+        return (a.timestamp || 0) - (b.timestamp || 0); 
+    });
+    
+    let upCardsHtml = sorted.map(up => {
+        const theme = themeColors[up.member] || '#5D4037';
+        const deleteBtn = (isAdmin && loggedInUser.name === up.member) ? 
+            `<button onclick="event.stopPropagation(); deleteUpLink('${up.id}')" class="text-red-500 hover:text-red-700 ml-2 font-bold z-20 absolute top-2 right-2"><i class="fi fi-br-cross-small"></i></button>` : '';
+            
+        return `
+            <div class="relative w-full border-[3px] rounded-xl p-5 mb-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-[2px] cursor-pointer bg-white shrink-0" 
+                 style="border-color: ${theme}; border-left-width: 8px;"
+                 onclick="openSmartLink('${up.url}')">
+                ${deleteBtn}
+                <div class="text-[17px] font-bold font-paperozi mb-4 text-gray-800 break-words pr-6 leading-snug">${up.title}</div>
+                <div class="flex justify-between items-end">
+                    <span class="text-[12px] font-bold text-white px-2.5 py-1 rounded-md" style="background-color: ${theme}">${up.member}</span>
+                    ${up.deadline ? `<span class="text-[13px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">마감: ${up.deadline}</span>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if(upLinksList.length === 0) { upCardsHtml = `<div class="text-center text-gray-400 font-bold mt-16 text-lg">등록된 UP 링크가 없습니다.</div>`; }
+
+    panel.innerHTML = `
+        <div class="p-6 border-b-[4px] border-[#5D4037] bg-white flex justify-between items-center shadow-sm z-10 shrink-0">
+            <div class="text-[22px] font-bold text-[#5D4037] font-paperozi flex items-center gap-2">
+                <i class="fi fi-rr-arrow-up-right"></i> UP 해줘!
+            </div>
+            <button onclick="closeSidePanel()" class="text-3xl text-[#5D4037] hover:text-red-500 cursor-pointer"><i class="fi fi-rr-cross-small"></i></button>
+        </div>
+        <div class="flex-1 p-5 bg-[#FFFDF5] overflow-y-auto modal-scroll">
+            ${upCardsHtml}
+        </div>
+    `;
+}
+
+async function loadSchedulesFromFirebase() {
+    try {
+        const eventPromises = Object.entries(collectionMap).map(([member, colName]) => getDocs(collection(db, colName)).then(snapshot => ({ type: 'event', member, colName, snapshot })));
+        const memoPromises = Object.entries(memoCollectionMap).map(([member, colName]) => getDocs(collection(db, colName)).then(snapshot => ({ type: 'memo', member, colName, snapshot })));
+        
+        const results = await Promise.all([...eventPromises, ...memoPromises]);
+        scheduleList = [];
+        memoList = { '달타':[], '서피카':[], '다룽':[], '최또':[], '카나시':[] };
+        
+        results.forEach(({ type, member, colName, snapshot }) => {
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (type === 'memo') {
+                    if(!memoList[member]) memoList[member] = [];
+                    memoList[member].push({ id: doc.id, collectionName: colName, ...data });
+                } else {
+                    scheduleList.push({ id: doc.id, collectionName: colName, ...data });
+                }
+            });
+        });
+
+        for(let m in memoList) {
+            memoList[m].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
+
+        render();
+    } catch (e) { console.error("데이터 불러오기 실패:", e); }
+}
+
+function changeTab(tabName) { 
+    currentPage = tabName; 
+    
+    if (!isMobile) {
+        if(tabName === '홈') {
+            sidePanelMode = 'UP';
+            openSidePanel('UP');
+        } else {
+            closeSidePanel(true);
+        }
+    } else {
+        closeSidePanel(true);
+    }
+    
+    homeTargetDate = new Date();
+    individualTargetDate = new Date();
+    
+    renderHeaderTabs();
+    render(); 
+}
+
+function changeMonth(delta) { currentMonth += delta; if (currentMonth > 12) { currentMonth = 1; currentYear++; } else if (currentMonth < 1) { currentMonth = 12; currentYear--; } render(); }
+function changeHomeDate(delta) { homeTargetDate.setDate(homeTargetDate.getDate() + delta); render(); }
+function changeIndividualWeek(deltaDays) { individualTargetDate.setDate(individualTargetDate.getDate() + deltaDays); render(); }
+
+function openMonthPicker() { pickerYear = currentYear; renderPicker(); document.getElementById('monthPickerModal').classList.replace('hidden', 'flex'); }
+function closeMonthPicker() { document.getElementById('monthPickerModal').classList.replace('flex', 'hidden'); }
+function changePickerYear(delta) { pickerYear += delta; renderPicker(); }
+function selectMonth(m) { 
+    currentYear = pickerYear; currentMonth = m; 
+    if (isMobile && currentPage !== '홈') individualTargetDate = new Date(currentYear, currentMonth - 1, 1);
+    closeMonthPicker(); render(); 
+}
+function renderPicker() {
+    document.getElementById('pickerYearText').innerText = `${pickerYear}년`;
+    const grid = document.getElementById('pickerMonthGrid'); grid.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+        const btn = document.createElement('button'); btn.innerText = `${i}월`;
+        btn.className = (pickerYear === currentYear && i === currentMonth) ? 'month-btn active py-3.5 rounded-lg font-bold text-[20px]' : 'month-btn py-3.5 rounded-lg font-bold text-[20px]';
+        btn.onclick = () => selectMonth(i); grid.appendChild(btn);
     }
 }
 
-window.setSongbookFilter = function(filter) {
-    const favBtn = document.getElementById('favFilterBtn');
-    if (songbookCurrentFilter === filter && filter !== 'All') {
-        songbookCurrentFilter = 'All';
-        if (favBtn) favBtn.classList.remove('active');
-    } else {
-        songbookCurrentFilter = filter;
-        if (favBtn) {
-            if (filter === 'Favorites') {
-                favBtn.classList.add('active');
+function openMobileDatePicker() {
+    datePickerCurrentDate = new Date(homeTargetDate.getTime());
+    renderMobileDatePicker();
+    document.getElementById('mobileDatePickerModal').classList.replace('hidden', 'flex');
+}
+
+function closeMobileDatePicker() {
+    document.getElementById('mobileDatePickerModal').classList.replace('flex', 'hidden');
+}
+
+function changeDatePickerMonth(delta) {
+    datePickerCurrentDate.setMonth(datePickerCurrentDate.getMonth() + delta);
+    renderMobileDatePicker();
+}
+
+function selectMobileDate(y, m, d) {
+    homeTargetDate = new Date(y, m, d);
+    closeMobileDatePicker();
+    render();
+}
+
+function renderMobileDatePicker() {
+    const y = datePickerCurrentDate.getFullYear();
+    const m = datePickerCurrentDate.getMonth();
+    document.getElementById('datePickerTitle').innerText = `${y}년 ${m + 1}월`;
+
+    const firstDay = new Date(y, m, 1).getDay();
+    const startIdx = (firstDay === 0) ? 6 : firstDay - 1; 
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    const grid = document.getElementById('datePickerGrid');
+    let html = '';
+
+    for (let i = 0; i < 42; i++) {
+        const day = i - startIdx + 1;
+        if (day > 0 && day <= daysInMonth) {
+            const isSelected = (y === homeTargetDate.getFullYear() && m === homeTargetDate.getMonth() && day === homeTargetDate.getDate());
+            const isRealToday = (y === new Date().getFullYear() && m === new Date().getMonth() && day === new Date().getDate());
+            
+            let classes = "py-2 rounded-lg cursor-pointer transition-colors text-[15px] ";
+            if (isSelected) {
+                classes += "bg-[#FF5252] text-white shadow-md";
+            } else if (isRealToday) {
+                classes += "bg-gray-200 text-[#5D4037]";
             } else {
-                favBtn.classList.remove('active');
+                classes += "hover:bg-gray-100 text-[#5D4037]";
             }
+            html += `<div class="${classes}" onclick="selectMobileDate(${y}, ${m}, ${day})">${day}</div>`;
+        } else {
+            html += `<div></div>`;
         }
     }
-    renderSongbook();
+    grid.innerHTML = html;
 }
 
-window.showTab = async function(tab) {
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-    const calendarTop = document.querySelector('.calendar-top');
-    const calendarBody = document.querySelector('.calendar-body');
-    const songbookSection = document.getElementById('songbookSection');
-    
-    const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-    const favoritePlayerPanel = document.getElementById('favoritePlayerPanel');
+function buildScheduleCardHtml(sch, isMobileCard = false) {
+    const color = sch.globalType === '휴방' ? '#9CA3AF' : 'var(--theme-color)';
+    const bgColor = sch.globalType === '휴방' ? '#F9FAFB' : '#FFF5F5';
+    const formattedTime = formatTime12(sch.time) || ''; const broadType = sch.broadType || '';
 
-    if (tab === 'songbook') {
-        calendarTop.style.display = 'none';
-        calendarBody.style.display = 'none';
-        songbookSection.classList.add('visible');
-        
-        if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
-        
-        // 노래책 최초 1회만 데이터 로딩
-        if (!isSongbookLoaded) {
-            const loadingOverlay = document.getElementById('songbookLoading');
-            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+    const cardThemeColor = themeColors[sch.tabOrMember] || '#5D4037';
+    const cardBroadColor = broadType === '합방' ? '#1b3420' : cardThemeColor;
 
-            await loadSongbookSongs();
-            isSongbookLoaded = true;
+    const timeSize = isMobileCard ? '11px' : '12px'; 
+    const titleSize = isMobileCard ? '12px' : '18px';
 
-            if (loadingOverlay) {
-                setTimeout(() => {
-                    loadingOverlay.classList.add('hidden');
-                }, 500);
-            }
-        }
-
-        renderSongbook();
-        updateFavPlayerPlaylist();
-        window.location.hash = '#songbook';
-    } else {
-        calendarTop.style.display = 'flex';
-        calendarBody.style.display = 'flex';
-        songbookSection.classList.remove('visible');
-        
-        if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
-        
-        await ensureMonthsLoadedForDate(currentDate);
-        renderCalendar();
-        
-        window.location.hash = '#schedule';
-    }
+    return `
+        <div class="schedule-card ${sch.globalType === '휴방' ? 'hubang' : 'bangon'} h-full flex flex-col justify-center w-full" 
+             style="color: ${color}; background-color: ${bgColor}; padding: ${isMobileCard ? '4px' : '4px'}; border-radius: 12px !important; box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.2) !important;" 
+             onclick="openDetailModal(event, '${sch.id}')" 
+             oncontextmenu="if(typeof isAdmin !== 'undefined' && isAdmin) { event.preventDefault(); event.stopPropagation(); window.contextTargetId = '${sch.id}'; window.editFromMenu(); }">
+             <div class="w-full flex justify-between items-center px-1 mb-0.5" style="font-size: ${timeSize}; font-weight: 700;">
+                <span style="color: ${sch.globalType === '휴방' ? 'inherit' : cardBroadColor};">${broadType}</span><span>${formattedTime}</span>
+             </div>
+             <div class="flex-1 flex items-center justify-center w-full px-1 py-1">
+                <span class="schedule-text font-paperozi leading-snug" style="font-size: ${titleSize} !important;">${sch.title}</span>
+            </div>
+        </div>
+    `;
 }
 
-function handlePlayerPosition() {
-    const playerPanel = document.getElementById('favoritePlayerPanel');
-    const sidebar = document.querySelector('.songbook-sidebar');
-    if (!playerPanel || !sidebar) return;
-
-    if (window.innerWidth <= 768) {
-        if (playerPanel.parentElement !== document.body) {
-            document.body.appendChild(playerPanel);
-        }
-    } else {
-        if (playerPanel.parentElement !== sidebar) {
-            sidebar.insertBefore(playerPanel, sidebar.firstChild);
-            playerPanel.classList.remove('show-sheet');
-        }
-    }
-}
-
-window.toggleMobileMenu = function() {
-    const container = document.getElementById('mobileMenuContainer');
-    const iconDefault = document.getElementById('menuIconDefault');
-    const iconClose = document.getElementById('menuIconClose');
-    if (!container) return;
-
-    container.classList.toggle('open');
-    if (iconDefault && iconClose) {
-        iconDefault.style.display = container.classList.contains('open') ? 'none' : 'block';
-        iconClose.style.display = container.classList.contains('open') ? 'block' : 'none';
-    }
-};
-
-window.handleMobileTab = function(tab) {
-    window.showTab(tab);
-    window.toggleMobileMenu();
-};
-
-window.toggleMobilePlayer = function() {
-    const playerPanel = document.getElementById('favoritePlayerPanel');
-    if (playerPanel) {
-        playerPanel.classList.toggle('show-sheet');
-    }
-    window.toggleMobileMenu();
-};
-
-window.toggleMobileMemo = function() {
-    const memoPanel = document.getElementById('memoPanel');
-    if (memoPanel) {
-        memoPanel.classList.toggle('show-sheet');
-        if (memoPanel.classList.contains('show-sheet')) {
-            updateMemoTabUI();
-            loadMemos();
-        }
-    }
-
-    const container = document.getElementById('mobileMenuContainer');
-    if (container && container.classList.contains('open')) {
-        window.toggleMobileMenu();
-    }
-};
-
-Object.assign(window, {
-    handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
-    openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
-    setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
-    toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
-    promptAdmin, loginAdmin,
-    renderSongbook, openBrowser, closeBrowser,
-    editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
-    updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
-    toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo
-});
-
-window.onload = async () => {
-    await loadData();
-    handlePlayerPosition();
+function render() {
+    const tabBackgrounds = { '홈': '#ffdddd', '달타': '#FFFDE7', '서피카': '#FFF5F9', '다룽': '#E3F2FD', '최또': '#FCE4EC', '카나시': '#FFF3E0' };
+    document.body.style.backgroundColor = tabBackgrounds[currentPage] || '#ffdddd';
+    document.documentElement.style.setProperty('--theme-color', themeColors[currentPage]);
     
-    const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
-    await window.showTab(initialTab);
-
-    document.getElementById('btnMin').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+    const mBtnContainer = document.getElementById('mobileHeaderRightBtn');
+    const dBtnContainer = document.getElementById('dynamicSideBtn');
     
-    let lastWidth = window.innerWidth;
-    window.addEventListener('resize', () => {
-        if (window.innerWidth !== lastWidth) {
-            lastWidth = window.innerWidth;
-            if (window.location.hash !== '#songbook') renderCalendar();
-            handlePlayerPosition();
+    const mobileUpBtnHtml = `<button onclick="toggleUpPanel()" class="px-3 py-[6px] bg-[#f3f4f6] text-[#5D4037] font-bold rounded-lg transition-all shadow-sm font-paperozi text-[14px] cursor-pointer flex items-center gap-1 border border-gray-200"><i class="fi fi-rr-arrow-up-right"></i> UP</button>`;
+    const mobileMemoBtnHtml = `<button onclick="toggleMemoPanel()" class="px-3 py-[6px] bg-[#f3f4f6] text-[#5D4037] font-bold rounded-lg transition-all shadow-sm font-paperozi text-[14px] cursor-pointer flex items-center gap-1 border border-gray-200"><i class="fi fi-rr-edit"></i> 메모</button>`;
+
+    const desktopUpBtnHtml = `<button onclick="toggleUpPanel()" class="px-6 py-2.5 bg-white text-[#5D4037] font-bold rounded-xl hover:bg-[#5D4037] hover:text-white transition-all shadow-sm font-paperozi text-[18px] cursor-pointer flex items-center gap-2 border-2 border-gray-200"><i class="fi fi-rr-arrow-up-right"></i> UP</button>`;
+    const desktopMemoBtnHtml = `<button onclick="toggleMemoPanel()" class="px-6 py-2.5 bg-white text-[#5D4037] font-bold rounded-xl hover:bg-[#5D4037] hover:text-white transition-all shadow-sm font-paperozi text-[18px] cursor-pointer flex items-center gap-2 border-2 border-gray-200"><i class="fi fi-rr-edit"></i> 메모</button>`;
+
+    if (mBtnContainer) mBtnContainer.innerHTML = (currentPage === '홈') ? mobileUpBtnHtml : mobileMemoBtnHtml;
+    if (dBtnContainer) dBtnContainer.innerHTML = (currentPage === '홈') ? desktopUpBtnHtml : desktopMemoBtnHtml;
+    
+    const content = document.getElementById('mainContent'); if(!content) return; content.innerHTML = '';
+    
+    const grouped = {};
+    scheduleList.forEach(sch => {
+        if(!sch.startDate || !sch.endDate) return;
+        let start = new Date(sch.startDate); let end = new Date(sch.endDate); start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+        for(let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${sch.tabOrMember}`;
+            if(!grouped[key]) grouped[key] = []; grouped[key].push(sch);
         }
     });
 
-    setTimeout(() => {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('hidden');
-            setTimeout(() => {
-                loadingOverlay.remove();
-            }, 500);
+    if (isMobile) {
+        if (currentPage === '홈') renderMobileHome(grouped);
+        else renderMobileIndividual(grouped);
+    } else {
+        if (currentPage === '홈') renderDesktopHome(grouped);
+        else renderDesktopIndividual(grouped);
+    }
+}
+
+function renderMobileHome(grouped) {
+    const content = document.getElementById('mainContent');
+    const d = homeTargetDate;
+    const dateStr = `${d.getMonth()+1}.${d.getDate()}`;
+    const dayStr = ['일','월','화','수','목','금','토'][d.getDay()];
+
+    let html = `
+        <div class="w-full flex justify-between items-center mb-5 px-4 mt-2">
+            <button onclick="changeHomeDate(-1)" class="p-2 flex items-center justify-center text-[#5D4037] hover:scale-110 transition-transform"><i class="fi fi-rr-angle-left text-3xl"></i></button>
+            <div class="text-[22px] font-bold font-paperozi text-[#5D4037] cursor-pointer hover:opacity-70 transition-opacity flex items-center gap-2" onclick="openMobileDatePicker()">
+                ${dateStr} (${dayStr}) <i class="fi fi-sr-caret-down text-sm mt-1"></i>
+            </div>
+            <button onclick="changeHomeDate(1)" class="p-2 flex items-center justify-center text-[#5D4037] hover:scale-110 transition-transform"><i class="fi fi-rr-angle-right text-3xl"></i></button>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-4 w-full">
+    `;
+
+    const rowBorderColors = ['#FBC02D', '#F06292', '#1E88E5', '#D81B60', '#F57C00'];
+    members.forEach((member, i) => {
+        const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}-${member.name}`;
+        const daySchedules = grouped[key] || [];
+        let schedulesHtml = '';
+
+        if (daySchedules.length > 0) {
+            const isHubang = daySchedules.some(s => s.globalType === '휴방');
+            const imgSrc = isHubang ? memberCardImages[member.name].hubang : memberCardImages[member.name].bangon;
+
+            if (isHubang) {
+                schedulesHtml = `<div class="schedule-card hubang h-full flex items-center justify-center w-full overflow-hidden" style="color:#9CA3AF; background-color:#F3F4F6; padding:0; border-radius: 12px; box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.2);" onclick="openAllSchedulesModal(event, '${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}', '${member.name}')"><img src="${imgSrc}" class="w-full h-full object-cover" alt="휴방"></div>`;
+            } else {
+                const borderColor = rowBorderColors[i];
+                const bgColor = '#FFF5F5';
+                schedulesHtml = `<div class="schedule-card h-full w-full flex items-center justify-center overflow-hidden" style="color: ${borderColor}; background-color: ${bgColor}; padding:0; border-radius: 12px; box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.2);" onclick="openAllSchedulesModal(event, '${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}', '${member.name}')"><img src="${imgSrc}" class="w-full h-full object-cover" alt="뱅온"></div>`;
+            }
+        } else {
+            schedulesHtml = `<div class="w-full h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50"><span class="text-gray-400 text-[15px] font-bold">일정 없음</span></div>`;
         }
-    }, 1000);
-};
+
+        const borderColor = rowBorderColors[i];
+        
+        html += `
+            <div class="flex w-full bg-white rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-[2.5px] overflow-hidden" style="border-color: ${borderColor}">
+                <div class="w-1/2 aspect-square border-r-[2.5px] relative cursor-pointer p-0" style="border-color: ${borderColor}" onclick="openSmartLink('${member.link}')">
+                    <img src="${member.img}" class="w-full h-full object-cover">
+                </div>
+                <div class="w-1/2 aspect-square p-2 flex flex-col justify-center gap-2 bg-[#FFFDF5] overflow-y-auto" onclick="handleDayClick(${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${member.name}')" oncontextmenu="handleDayRightClick(event, ${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${member.name}')">
+                    ${schedulesHtml}
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    content.innerHTML = html;
+    content.className = 'shrink-0 transition-all duration-300 w-full max-w-[600px] mx-auto pb-6';
+}
+
+function renderMobileIndividual(grouped) {
+    const content = document.getElementById('mainContent');
+    const realToday = new Date();
+    
+    const current = new Date(individualTargetDate);
+    const day = current.getDay();
+    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(current.setDate(diff));
+
+    let weekDates = [];
+    for(let i=0; i<7; i++) {
+        weekDates.push(new Date(monday.getTime() + i*24*60*60*1000));
+    }
+
+    const monthStr = `${weekDates[0].getMonth()+1}월`;
+    const themeColor = themeColors[currentPage];
+
+    let html = `
+        <div class="w-full flex justify-between items-center mb-5 px-4 mt-2">
+            <button onclick="changeIndividualWeek(-7)" class="p-2 flex items-center justify-center text-[#5D4037] hover:scale-110 transition-transform"><i class="fi fi-rr-angle-left text-3xl"></i></button>
+            <div class="text-[20px] font-bold font-paperozi text-[#5D4037] cursor-pointer hover:opacity-70 transition-opacity flex items-center gap-2" onclick="openMonthPicker()">
+                ${weekDates[0].getFullYear()}년 ${monthStr} 주간 <i class="fi fi-sr-caret-down text-sm mt-1"></i>
+            </div>
+            <button onclick="changeIndividualWeek(7)" class="p-2 flex items-center justify-center text-[#5D4037] hover:scale-110 transition-transform"><i class="fi fi-rr-angle-right text-3xl"></i></button>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-4 w-full">
+    `;
+
+    const daysLabel = ['월','화','수','목','금','토','일'];
+    weekDates.forEach((d, i) => {
+        const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}-${currentPage}`;
+        const daySchedules = grouped[key] || [];
+        let schedulesHtml = daySchedules.map(sch => buildScheduleCardHtml(sch, true)).join('');
+
+        const isToday = d.getFullYear() === realToday.getFullYear() && d.getMonth() === realToday.getMonth() && d.getDate() === realToday.getDate();
+        
+        if (!schedulesHtml) {
+            schedulesHtml = `<div class="w-full h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50"><span class="text-gray-400 text-[14px] font-bold">일정 없음</span></div>`;
+        }
+
+        html += `
+            <div class="flex w-full bg-[#FFFDF5] rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-[1.5px] cursor-pointer transition-transform hover:-translate-y-1 min-h-[90px]" style="border-color: ${isToday ? themeColor : '#e5e7eb'}; color: ${isToday ? themeColor : '#3E2723'}" onclick="handleDayClick(${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${currentPage}')" oncontextmenu="handleDayRightClick(event, ${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${currentPage}')">
+                <div class="w-[75px] shrink-0 flex flex-col items-center justify-center border-r-[1.5px]" style="border-color: ${isToday ? themeColor : '#e5e7eb'}; background-color: ${isToday ? themeColor : '#ffffff'}; color: ${isToday ? 'white' : 'inherit'}; border-top-left-radius: 10px; border-bottom-left-radius: 10px;">
+                    <span class="text-[14px] font-bold mb-0.5 opacity-80">${daysLabel[i]}</span>
+                    <span class="text-[26px] font-bold">${d.getDate()}</span>
+                </div>
+                <div class="flex-1 p-2 flex flex-col justify-center gap-2 overflow-y-auto bg-white" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">
+                    ${schedulesHtml}
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    content.innerHTML = html;
+    content.className = `shrink-0 transition-all duration-300 w-full max-w-[600px] mx-auto pb-6 theme-${currentPage === '달타'?'dalta':currentPage === '서피카'?'seopika':currentPage === '다룽'?'darung':currentPage === '최또'?'choitto':'kanasi'}`;
+}
+
+function renderDesktopHome(grouped) {
+    const content = document.getElementById('mainContent');
+    const realToday = new Date();
+    const logoImgUrl = "https://i.namu.wiki/i/TJgdKNl8C9pH3EUWbPBNXf8x8nqSfvHC6s7RFIrJpa1q5ZfF5C-ZSZAfVwkc2Cg7fEL3g-_BDyVu0_jnM64v3tzxwaxRpbY0mGi5IqnLninFRLDRo8saqkm7t6dCsymt77vsMQpCs8--nkcxqxADOg.webp";
+    
+    const today = new Date(); const diff = today.getDay() === 0 ? -6 : 1 - today.getDay();
+    const monday = new Date(today); monday.setDate(today.getDate() + diff);
+    const weekDates = Array.from({length: 7}, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
+    const daysLabel = ['월', '화', '수', '목', '금', '토', '일'];
+    
+    const headerHtml = weekDates.map((d, i) => {
+        let c = ''; if (i === 5) c = 'text-blue-600'; if (i === 6) c = 'text-red-600';
+        const isToday = d.getFullYear() === realToday.getFullYear() && d.getMonth() === realToday.getMonth() && d.getDate() === realToday.getDate();
+        const dateStr = `${d.getMonth() + 1}.${d.getDate()}`;
+        const displayDate = isToday ? `<span class="bg-[#5D4037] text-white px-2 py-0.5 rounded-md">${dateStr}</span>` : dateStr;
+        return `<div class="header-days-cell ${c}"><div class="leading-none mb-1">${daysLabel[i]}</div><div class="text-[14px] text-gray-500 font-bold font-paperozi">${displayDate}</div></div>`;
+    }).join('');
+
+    const rowBgColors = ['#FFFDE7', '#FFF5F9', '#E3F2FD', '#FFF0F5', '#FFF3E0'];
+    const rowBorderColors = ['#FBC02D', '#F06292', '#1E88E5', '#D81B60', '#F57C00'];
+
+    let homeHtml = `<div class="home-white-box"><div class="mb-8 w-full"><div class="flex gap-[22px] justify-center items-end"><div class="w-[277px] flex items-center justify-center pb-2"><img src="${logoImgUrl}" alt="SIGNAL Logo" style="height: 110px; object-fit: contain; transition: transform 0.2s;" class="cursor-pointer hover:scale-105" onclick="changeTab('홈')"></div><div class="header-days-container">${headerHtml}</div></div></div><div class="weekly-grid">`;
+
+    members.forEach((member, i) => {
+        let daysCellsHtml = '';
+        weekDates.forEach(d => {
+            const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${member.name}`;
+            const daySchedules = grouped[key] || [];
+            let schedulesHtml = '';
+
+            if (daySchedules.length > 0) {
+                const isHubang = daySchedules.some(s => s.globalType === '휴방');
+                const borderColor = isHubang ? '#9CA3AF' : rowBorderColors[i]; 
+                const bgColor = isHubang ? '#F3F4F6' : rowBgColors[i];
+                const imgSrc = isHubang ? memberCardImages[member.name].hubang : memberCardImages[member.name].bangon;
+                
+                schedulesHtml = `<div class="schedule-card w-full h-full flex items-center justify-center overflow-hidden" style="color: ${borderColor}; background-color: ${bgColor}; padding:0; border-radius: 4px;" onclick="openAllSchedulesModal(event, '${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}', '${member.name}')"><img src="${imgSrc}" class="w-full h-full object-cover" style="border-radius: inherit;" alt="${isHubang ? '휴방' : '뱅온'}"></div>`;
+            }
+            daysCellsHtml += `<div class="day-cell" onclick="handleDayClick(${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${member.name}')" oncontextmenu="handleDayRightClick(event, ${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()}, '${member.name}')"><div class="schedule-list w-full h-full">${schedulesHtml}</div></div>`;
+        });
+
+        homeHtml += `<div class="week-row row-${i+1}"><div class="profile-cell" ${member.link ? `onclick="openSmartLink('${member.link}')"` : ''}><img src="${member.img}" alt="${member.name}" style="width: 100%; height: 100%; object-fit: cover;"></div><div class="days-container">${daysCellsHtml}</div></div>`;
+    });
+    content.innerHTML = homeHtml + `</div></div>`;
+    content.className = 'shrink-0 transition-all duration-300 w-full lg:w-auto';
+}
+
+function renderDesktopIndividual(grouped) {
+    const content = document.getElementById('mainContent');
+    const realToday = new Date();
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay(); const startIdx = (firstDay === 0) ? 6 : firstDay - 1; const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const cellsHtml = Array.from({length: 35}, (_, i) => {
+        const day = i - startIdx + 1;
+        if (day > 0 && day <= daysInMonth) {
+            const key = `${currentYear}-${currentMonth}-${day}-${currentPage}`; const daySchedules = grouped[key] || [];
+            const schedulesHtml = daySchedules.map(sch => buildScheduleCardHtml(sch, false)).join('');
+            const isToday = currentYear === realToday.getFullYear() && currentMonth === realToday.getMonth() + 1 && day === realToday.getDate();
+            const displayDay = isToday ? `<span class="bg-[#5D4037] text-white w-7 h-7 inline-flex items-center justify-center rounded-md">${day}</span>` : `<span>${day}</span>`;
+            return `<div class="big-cell" onclick="handleDayClick(${currentYear}, ${currentMonth}, ${day}, '${currentPage}')" oncontextmenu="handleDayRightClick(event, ${currentYear}, ${currentMonth}, ${day}, '${currentPage}')"><div class="w-full flex justify-between items-center mb-1 px-1">${displayDay}</div><div class="w-full flex-1 overflow-y-auto schedule-list flex flex-col gap-1">${schedulesHtml}</div></div>`;
+        }
+        return `<div class="big-cell cursor-default hover:bg-transparent hover:transform-none hover:shadow-none hover:border-dashed"></div>`;
+    }).join('');
+
+    content.innerHTML = `<div class="big-white-box relative theme-${currentPage === '달타'?'dalta':currentPage === '서피카'?'seopika':currentPage === '다룽'?'darung':currentPage === '최또'?'choitto':'kanasi'}">
+        <div class="nav-container"><button class="nav-btn" onclick="changeMonth(-1)"><i class="fi fi-rr-caret-left"></i></button><div class="w-[330px] flex justify-center items-center"><div class="text-[40px] font-normal cursor-pointer hover-theme-text leading-none" style="font-family: 'DnfBitbeatV2', sans-serif;" onclick="openMonthPicker()">${currentYear}년 ${currentMonth}월</div></div><button class="nav-btn" onclick="changeMonth(1)"><i class="fi fi-rr-caret-right"></i></button></div><div class="header-days-container mb-2">${['월','화','수','목','금','토','일'].map(d=>`<div class="header-days-cell" style="padding:22px 0;">${d}</div>`).join('')}</div><div class="big-box-container">${cellsHtml}</div></div>`;
+    content.className = 'shrink-0 transition-all duration-300 w-full lg:w-auto';
+}
+
+async function deleteScheduleAction() {
+    if(!contextTargetId) return;
+    if (confirm('해당 일정을 삭제하시겠습니까?')) {
+        const sch = scheduleList.find(s => s.id === contextTargetId);
+        if(!sch) return;
+        try {
+            await deleteDoc(doc(db, sch.collectionName, contextTargetId));
+            scheduleList = scheduleList.filter(s => s.id !== contextTargetId); 
+            closeEditModal();
+            render();
+        } catch(e) { console.error("삭제 실패:", e); }
+    }
+}
+
+async function saveSchedule() {
+    const globalType = document.querySelector('input[name="globalSchType"]:checked').value;
+    const isHubang = globalType === '휴방';
+    const memberTab = targetModalContext.member;
+    const colName = collectionMap[memberTab];
+    if(!colName) { alert("저장할 멤버 정보가 올바르지 않습니다."); return; }
+
+    for (let oldId of currentEditingIds) {
+        const oldSch = scheduleList.find(s => s.id === oldId);
+        if (oldSch) { try { await deleteDoc(doc(db, oldSch.collectionName, oldId)); } catch(e) {} }
+    }
+    scheduleList = scheduleList.filter(s => !currentEditingIds.includes(s.id));
+
+    const blocks = document.querySelectorAll('#scheduleInputsContainer .schedule-input-block');
+    for (const block of blocks) {
+        const title = block.querySelector('.sch-title').value.trim();
+        if (title) { 
+            const sDate = block.querySelector('.sch-start').value; const eDate = block.querySelector('.sch-end').value;
+            const ampm = block.querySelector('.sch-ampm').innerText; const hh = block.querySelector('.sch-hh').value; const mm = block.querySelector('.sch-mm').value;
+            const broad = isHubang ? '' : block.querySelector('.sch-broad').value; const mem = isHubang ? '' : block.querySelector('.sch-mem').value.trim();
+            const timeStr = isHubang ? '' : buildTimeStr(ampm, hh, mm); const desc = block.querySelector('.sch-desc').value.trim();
+            const newSchedule = { tabOrMember: memberTab, globalType, title, startDate: sDate, endDate: eDate, time: timeStr, broadType: broad, memberTag: mem, detail: desc };
+            
+            try {
+                const docRef = await addDoc(collection(db, colName), newSchedule);
+                newSchedule.id = docRef.id; newSchedule.collectionName = colName; scheduleList.push(newSchedule);
+            } catch(e) { console.error("저장 오류:", e); }
+        }
+    }
+    closeScheduleModal(); render();
+}
+
+async function saveEditedSchedule() {
+    if(!contextTargetId) return;
+    const block = document.getElementById('editContainer').querySelector('.schedule-input-block');
+    const title = block.querySelector('.sch-title').value.trim();
+    if(!title) { alert("일정 제목을 입력해주세요."); return; }
+    const globalType = document.querySelector('input[name="editGlobalSchType"]:checked').value;
+    const isHubang = globalType === '휴방';
+    const sDate = block.querySelector('.sch-start').value; const eDate = block.querySelector('.sch-end').value;
+    const ampm = block.querySelector('.sch-ampm').innerText; const hh = block.querySelector('.sch-hh').value; const mm = block.querySelector('.sch-mm').value;
+    const broad = isHubang ? '' : block.querySelector('.sch-broad').value; const mem = isHubang ? '' : block.querySelector('.sch-mem').value.trim();
+    const timeStr = isHubang ? '' : buildTimeStr(ampm, hh, mm); const desc = block.querySelector('.sch-desc').value.trim();
+    const updatedData = { globalType, title, startDate: sDate, endDate: eDate, time: timeStr, broadType: broad, memberTag: mem, detail: desc };
+    const sch = scheduleList.find(s => s.id === contextTargetId); if(!sch) return;
+
+    try {
+        await updateDoc(doc(db, sch.collectionName, contextTargetId), updatedData);
+        const idx = scheduleList.findIndex(s => s.id === contextTargetId);
+        if(idx !== -1) scheduleList[idx] = { ...scheduleList[idx], ...updatedData };
+        closeEditModal(); render();
+    } catch(e) { console.error("수정 오류:", e); }
+}
+
+function formatTime12(timeStr) {
+    if (!timeStr) return ''; const [hourStr, minute] = timeStr.split(':');
+    let hour = parseInt(hourStr, 10); const ampm = hour >= 12 ? '오후' : '오전';
+    hour = hour % 12; if (hour === 0) hour = 12; return `${ampm} ${hour}:${minute}`;
+}
+
+function buildTimeStr(ampm, hh, mm) {
+    if (!hh) return ''; let h = parseInt(hh, 10); let m = mm ? parseInt(mm, 10) : 0;
+    if (ampm === '오후' && h < 12) h += 12; if (ampm === '오전' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+function toggleAmpm(btn) { btn.innerText = btn.innerText === '오후' ? '오전' : '오후'; }
+function isDateStrInRange(targetDateStr, startStr, endStr) {
+    const t = new Date(targetDateStr).setHours(0,0,0,0); const s = new Date(startStr).setHours(0,0,0,0); const e = new Date(endStr).setHours(0,0,0,0);
+    return t >= s && t <= e;
+}
+
+function toggleFields(modalId, radioName) {
+    const modal = document.getElementById(modalId); if(!modal) return;
+    const radio = modal.querySelector(`input[name="${radioName}"]:checked`); if (!radio) return;
+    const isHubang = radio.value === '휴방';
+    modal.querySelectorAll('.optional-field').forEach(el => { el.style.display = isHubang ? 'none' : ''; });
+}
+
+function handleAdminClick() { if (!isAdmin) openPasswordModal(); }
+function checkPassword() {
+    const val = document.getElementById('pwInput').value; const user = adminPasswords[val]; 
+    if (user) {
+        isAdmin = true; loggedInUser = user;
+        sessionStorage.setItem('isAdmin', 'true');
+        sessionStorage.setItem('loggedInUser', JSON.stringify(user));
+        
+        updateLoginUI(user);
+        alert(`${user.name}님 환영합니다!`); document.getElementById('pwInput').value = ''; closePasswordModal();
+    } else { alert('비밀번호가 틀렸습니다.'); document.getElementById('pwInput').value = ''; }
+}
+
+function logoutAdmin() {
+    isAdmin = false; loggedInUser = null;
+    sessionStorage.clear(); 
+    
+    const desktopContainer = document.getElementById('desktopAuthContainer');
+    if(desktopContainer) desktopContainer.innerHTML = `<button class="font-paperozi bg-white border-2 border-gray-200 px-4 py-2 rounded-xl font-bold text-lg text-[#5D4037] hover:bg-[#5D4037] hover:border-[#5D4037] hover:text-white transition-all duration-200 shadow-sm" onclick="handleAdminClick()">로그인</button>`;
+    const mobileContainer = document.getElementById('mobileAuthContainer');
+    if(mobileContainer) mobileContainer.innerHTML = `<button class="font-paperozi bg-white border border-gray-200 px-2 py-[5px] rounded-lg font-bold text-[13px] text-[#5D4037] hover:bg-[#5D4037] hover:text-white transition-all shadow-sm" onclick="handleAdminClick()">로그인</button>`;
+    
+    closeSidePanel();
+    localStorage.removeItem('com.naver.nid.access_token'); localStorage.removeItem('com.naver.nid.oauth.state_token');
+    alert('로그아웃 되었습니다.'); window.location.reload(); 
+}
+
+function openPasswordModal() { document.getElementById('passwordModal').classList.replace('hidden', 'flex'); }
+function closePasswordModal() { document.getElementById('passwordModal').classList.replace('flex', 'hidden'); }
+function closeLogoutModal() { document.getElementById('logoutModal').classList.replace('flex', 'hidden'); }
+
+function handleDayClick(year, month, day, member) { 
+    const dateStr = `${year}-${month}-${day}`;
+    openAllSchedulesModal(null, dateStr, member); 
+}
+
+function handleDayRightClick(event, year, month, day, member) {
+    event.preventDefault();
+    if (!isAdmin) return;
+    openScheduleModal(year, month, day, member);
+}
+
+function getScheduleFormHTML(data, isDeletable = true) {
+    const id = data.id || ''; const title = data.title || ''; const sDate = data.startDate || ''; const eDate = data.endDate || '';
+    const broad = data.broadType || '개인방송'; const mem = data.memberTag || ''; const desc = data.detail || '';
+    let hh = '', mm = '', ampm = '오후';
+    if (data.time) { let [h, m] = data.time.split(':'); h = parseInt(h, 10); ampm = h >= 12 ? '오후' : '오전'; h = h % 12; if (h === 0) h = 12; hh = h; mm = m; }
+    
+    const deleteBtnHtml = isDeletable ? `<button type="button" class="absolute top-2 right-4 text-[#5D4037] text-[35px] font-bold flex items-center justify-center hover:scale-110 transition-all z-10" onclick="this.closest('.schedule-input-block').remove()" title="일정 삭제"><i class="fi fi-sr-minus-small"></i></button>` : '';
+
+    return `
+        <div class="schedule-input-block border-2 border-[#5D4037] p-5 rounded-xl bg-white relative shadow-sm pretendard mt-1">
+            ${deleteBtnHtml} <input type="hidden" class="sch-id" value="${id}">
+            <div class="mb-4 pr-8"><label class="block text-[13px] text-gray-500 font-bold mb-1.5">일정 제목</label><input type="text" class="sch-title w-full border-2 border-[#5D4037] rounded-lg p-2.5 outline-none focus:border-[var(--theme-color)] text-[15px] font-medium" placeholder="일정 제목 입력" value="${title}"></div>
+            <div class="mb-4"><label class="block text-[13px] text-gray-500 font-bold mb-1.5">날짜</label><div class="flex items-center gap-2"><input type="date" class="sch-start flex-1 border-2 border-[#5D4037] rounded-lg p-2 outline-none text-[14px] font-medium" value="${sDate}"><span class="font-bold text-[#5D4037]">~</span><input type="date" class="sch-end flex-1 border-2 border-[#5D4037] rounded-lg p-2 outline-none text-[14px] font-medium" value="${eDate}"></div></div>
+            <div class="flex gap-4 mb-4 optional-field"><div class="flex-1"><label class="block text-[13px] text-gray-500 font-bold mb-1.5">시간</label><div class="flex items-center justify-between border-2 border-[#5D4037] rounded-lg p-1.5 bg-white"><button type="button" class="sch-ampm ampm-btn px-2.5 py-1 font-bold text-[#5D4037] rounded-md text-[13px]" onclick="toggleAmpm(this)">${ampm}</button><input type="number" min="1" max="12" class="sch-hh w-[38px] p-1 text-center font-bold text-[#5D4037] outline-none text-[15px]" placeholder="시" value="${hh}"><span class="font-bold text-[#5D4037]">:</span><input type="number" min="0" max="59" class="sch-mm w-[38px] p-1 text-center font-bold text-[#5D4037] outline-none mr-1 text-[15px]" placeholder="분" value="${mm}"></div></div><div class="flex-1"><label class="block text-[13px] text-gray-500 font-bold mb-1.5">유형</label><select class="sch-broad w-full border-2 border-[#5D4037] rounded-lg p-2.5 outline-none text-[15px] bg-white font-bold text-[#5D4037] cursor-pointer"><option value="개인방송" ${broad==='개인방송'?'selected':''}>개인방송</option><option value="합방" ${broad==='합방'?'selected':''}>합방</option><option value="시네티" ${broad==='시네티'?'selected':''}>시네티</option></select></div></div>
+            <div class="mb-4 optional-field"><label class="block text-[13px] text-gray-500 font-bold mb-1.5">멤버</label><input type="text" class="sch-mem w-full border-2 border-[#5D4037] rounded-lg p-2.5 outline-none focus:border-[var(--theme-color)] text-[15px] font-medium" placeholder="멤버 태그 입력 (선택)" value="${mem}"></div>
+            <div><label class="block text-[13px] text-gray-500 font-bold mb-1.5">상세</label><textarea class="sch-desc w-full border-2 border-[#5D4037] rounded-lg p-3 outline-none focus:border-[var(--theme-color)] text-[15px] resize-none h-[75px] font-medium" placeholder="상세 내용을 입력하세요 (선택)">${desc}</textarea></div>
+        </div>
+    `;
+}
+
+function openScheduleModal(year, month, day, member) {
+    targetModalContext = { year, month, day, member }; document.getElementById('scheduleModalDate').innerText = `${year}년 ${month}월 ${day}일`;
+    const targetDateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const targets = scheduleList.filter(s => s.tabOrMember === member && isDateStrInRange(targetDateStr, s.startDate, s.endDate));
+    currentEditingIds = targets.map(t => t.id); const container = document.getElementById('scheduleInputsContainer'); container.innerHTML = '';
+    
+    if (targets.length > 0) {
+        document.querySelector(`input[name="globalSchType"][value="${targets[0].globalType}"]`).checked = true;
+        targets.forEach(t => container.insertAdjacentHTML('beforeend', getScheduleFormHTML(t, true)));
+    } else {
+        document.querySelector('input[name="globalSchType"][value="뱅온"]').checked = true;
+        container.insertAdjacentHTML('beforeend', getScheduleFormHTML({ startDate: targetDateStr, endDate: targetDateStr }, true));
+    }
+    document.getElementById('scheduleModal').classList.replace('hidden', 'flex'); toggleFields('scheduleModal', 'globalSchType');
+}
+
+function addScheduleInputBlock() {
+    const { year, month, day } = targetModalContext; const targetDateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const container = document.getElementById('scheduleInputsContainer'); container.insertAdjacentHTML('beforeend', getScheduleFormHTML({ startDate: targetDateStr, endDate: targetDateStr }, true));
+    container.scrollTop = container.scrollHeight; toggleFields('scheduleModal', 'globalSchType');
+}
+function closeScheduleModal() { document.getElementById('scheduleModal').classList.replace('flex', 'hidden'); }
+
+function editFromMenu() {
+    if(!contextTargetId) return; const sch = scheduleList.find(s => s.id === contextTargetId); if(!sch) return;
+    document.querySelector(`input[name="editGlobalSchType"][value="${sch.globalType}"]`).checked = true;
+    document.getElementById('editContainer').innerHTML = getScheduleFormHTML(sch, false);
+    document.getElementById('editScheduleModal').classList.replace('hidden', 'flex'); toggleFields('editScheduleModal', 'editGlobalSchType');
+}
+function closeEditModal() { document.getElementById('editScheduleModal').classList.replace('flex', 'hidden'); contextTargetId = null; }
+
+function renderSchedulesInModal(schedules, y, m, d, member) {
+    const modal = document.getElementById('scheduleDetailModal'); const modalContent = modal.querySelector('.modal-content');
+    modalContent.style.backgroundColor = '#FFFDF5'; modalContent.style.padding = '12px 20px 20px 20px';
+    const closeBtnContainer = modal.querySelector('.justify-end.mb-2'); if (closeBtnContainer) closeBtnContainer.style.marginBottom = '0px';
+
+    let htmlContent = '<div class="flex flex-col w-full max-h-[65vh] overflow-y-auto px-2 pt-2 pb-4 modal-scroll">';
+    if (schedules.length === 0) {
+        htmlContent += `<div class="text-center text-gray-500 font-bold mt-6 mb-4 text-lg">일정이 없습니다.</div>`;
+    } else {
+        schedules.forEach((sch, index) => {
+            let timeText = sch.time ? formatTime12(sch.time) : ''; let broadText = sch.broadType || '개인방송'; let memText = sch.memberTag || ''; let detailText = sch.detail || '';
+            let themeColor = themeColors[sch.tabOrMember] || '#5D4037';
+            let isHabBang = broadText === '합방';
+            let broadColor = isHabBang ? '#1b3420' : themeColor;
+            
+            let badgeHtml = sch.globalType === '휴방' ? '' : 
+                `<div class="flex gap-2 justify-center">
+                    ${timeText ? `<span class="px-4 py-1.5 bg-white text-[13px] font-bold rounded-full shadow-sm border-2" style="color: ${themeColor}; border-color: ${themeColor};">${timeText}</span>` : ''}
+                    <span class="px-4 py-1.5 bg-white text-[13px] font-bold rounded-full shadow-sm border-2" style="color: ${broadColor}; border-color: ${broadColor};">${broadText}</span>
+                </div>`;
+                
+            htmlContent += `<div class="flex flex-col w-full items-center"><div class="flex flex-col items-center gap-2 mb-4 w-full"><div class="text-[28px] font-bold text-[#000] text-center leading-tight break-keep font-paperozi">${sch.title}</div>${badgeHtml}</div><div class="flex flex-col gap-5 w-full pretendard px-3">${memText ? `<div class="flex flex-col"><div class="text-[13px] text-gray-400 font-bold mb-1">멤버</div><div class="text-[17px] text-[#5D4037] font-bold">${memText}</div></div>` : ''}${detailText ? `<div class="flex flex-col"><div class="text-[13px] text-gray-400 font-bold mb-1">상세</div><div class="text-[15px] text-[#5D4037] font-medium leading-relaxed whitespace-pre-wrap">${detailText}</div></div>` : ''}</div></div>`;
+            if (index < schedules.length - 1) htmlContent += `<div class="w-full border-b-2 border-dashed border-[#5D4037] opacity-20 my-8"></div>`;
+        });
+    }
+    htmlContent += '</div>';
+
+    document.getElementById('detailDesc').innerHTML = htmlContent;
+    const closeBtn = modal.querySelector('.modal-btn');
+    if(closeBtn) { closeBtn.className = "modal-btn w-full bg-[#5D4037] text-white py-4 rounded-2xl font-bold text-[20px] mt-6 hover:brightness-110 transition-all cursor-pointer"; closeBtn.innerText = "닫기"; }
+    modal.classList.replace('hidden', 'flex'); modal.style.display = '';
+}
+
+function openDetailModal(event, schId) { 
+    event.stopPropagation(); 
+    const sch = scheduleList.find(s => s.id === schId); 
+    if(!sch) return; 
+    renderSchedulesInModal([sch], null, null, null, null); 
+}
+
+function openAllSchedulesModal(event, dateStr, member) {
+    if (event) event.stopPropagation(); 
+    const [y, m, d] = dateStr.split('-'); 
+    const targetDateStr = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    const allSchedules = scheduleList.filter(s => s.tabOrMember === member && isDateStrInRange(targetDateStr, s.startDate, s.endDate));
+    renderSchedulesInModal(allSchedules, y, m, d, member);
+}
+
+function closeDetailModal() { const modal = document.getElementById('scheduleDetailModal'); modal.classList.replace('flex', 'hidden'); modal.style.display = ''; }
+
+async function initApp() {
+    const savedAdmin = sessionStorage.getItem('isAdmin');
+    const savedUser = sessionStorage.getItem('loggedInUser');
+    
+    if (savedAdmin === 'true' && savedUser) {
+        isAdmin = true;
+        loggedInUser = JSON.parse(savedUser);
+        updateLoginUI(loggedInUser);
+    }
+
+    initNaverLogin();
+    await loadLinksFromFirebase();
+    await loadSchedulesFromFirebase();
+    
+    if (!isMobile) {
+        openSidePanel('UP'); 
+    }
+    
+}
+
+initApp();
