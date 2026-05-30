@@ -974,3 +974,7 @@ body {
     margin-top: 8px;     /* 제목과의 간격 */
     line-height: 1.5;    /* 세로로 길어질 때 텍스트가 겹치지 않도록 줄간격 확보 */
 }
+#infoNoticePreview {
+    width: 100%;
+    box-sizing: border-box;
+}
