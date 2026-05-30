@@ -397,7 +397,6 @@ async function loadData() {
     catch (error) { console.error(error); }
 }
 
-// ✨ HTML에 직접 입력 폼이 없어도 에러가 나지 않도록 null 체크 보강 ✨
 function openAddModal(id) {
     activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
     document.getElementById('editIndex').value = '-1';
@@ -408,8 +407,11 @@ function openAddModal(id) {
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
     
+    // 제목과 내용(Desc) 초기화 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ''; 
+    const noticeDescEl = document.getElementById('eventNoticeDesc');
+    if (noticeDescEl) noticeDescEl.value = ''; 
     
     document.getElementById('eventType').value = '개인방송';
     
@@ -435,8 +437,11 @@ function openEditModal(id, idx) {
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
     
+    // 제목과 내용(Desc) 수정폼에 불러오기 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
+    const noticeDescEl = document.getElementById('eventNoticeDesc');
+    if (noticeDescEl) noticeDescEl.value = ev.noticeDesc || ''; 
     
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     
@@ -477,8 +482,11 @@ function openEditModalByEvent(ev) {
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
     
+    // 제목과 내용(Desc) 수정폼에 불러오기 추가
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
+    const noticeDescEl = document.getElementById('eventNoticeDesc');
+    if (noticeDescEl) noticeDescEl.value = ev.noticeDesc || ''; 
     
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     if (ev.time) {
@@ -529,9 +537,11 @@ async function saveEvent() {
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
     
-    // ✨ 입력 폼이 없어도 에러 나지 않도록 처리 ✨
+    // ✨ 입력 폼이 없어도 에러 나지 않도록 방어 코드 작성 ✨
     const noticeTitleEl = document.getElementById('eventNoticeTitle');
     const noticeTitle = noticeTitleEl ? noticeTitleEl.value.trim() : ''; 
+    const noticeDescEl = document.getElementById('eventNoticeDesc');
+    const noticeDesc = noticeDescEl ? noticeDescEl.value.trim() : ''; 
     
     const imageUrl = document.getElementById('eventImageUrl').value;
 
@@ -546,6 +556,7 @@ async function saveEvent() {
             members,
             noticeLink,
             noticeTitle, 
+            noticeDesc, // ✨ 내용도 DB에 함께 저장
             imageUrl,
             dateId: activeDateId,
             startDate: startStr,
@@ -832,25 +843,37 @@ function showInfo(id, idx) {
         });
     }
     
-    // ✨ 공지사항 처리 (자동 불러오기 기능 완전히 제거) ✨
-    const noticeBtn = document.getElementById('infoNoticeBtn');
+    // ✨ 프리미엄 공지사항 카드 렌더링 ✨
     const noticePreview = document.getElementById('infoNoticePreview');
-    if (ev.noticeLink) {
-        noticeBtn.style.display = 'block';
-        noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-        
-        if (ev.noticeTitle) {
-            if(noticePreview) {
-                noticePreview.style.display = 'block';
-                noticePreview.innerHTML = `<div class="preview-title">${ev.noticeTitle}</div>`;
-            }
-        } else {
-            if(noticePreview) noticePreview.style.display = 'none';
+    const noticeBtn = document.getElementById('infoNoticeBtn'); 
+
+    if(noticeBtn) noticeBtn.style.display = 'none';
+
+    if (ev.noticeLink && ev.noticeTitle) {
+        if(noticePreview) {
+            noticePreview.style.display = 'block';
+            noticePreview.innerHTML = `
+                <a href="${ev.noticeLink}" target="_blank" rel="noreferrer" class="premium-notice-card">
+                    <div class="premium-notice-header">
+                        <span class="premium-notice-badge">공지사항</span>
+                        <span class="premium-notice-date">바로가기 ↗</span>
+                    </div>
+                    <h3 class="premium-notice-title">${ev.noticeTitle}</h3>
+                    ${ev.noticeDesc ? `<p class="premium-notice-desc">${ev.noticeDesc}</p>` : ''}
+                </a>
+            `;
         }
-    } else {
-        noticeBtn.style.display = 'none';
+    } else if (ev.noticeLink) {
+        if(noticeBtn) {
+            noticeBtn.style.display = 'block';
+            noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
+        }
         if(noticePreview) noticePreview.style.display = 'none';
+    } else {
+        if(noticePreview) noticePreview.style.display = 'none';
+        if(noticeBtn) noticeBtn.style.display = 'none';
     }
+    
     document.getElementById('infoModal').style.display = 'flex';
 }
 
@@ -891,25 +914,37 @@ function showInfoByEvent(ev) {
         });
     }
 
-    // ✨ 공지사항 처리 (자동 불러오기 기능 완전히 제거) ✨
-    const noticeBtn = document.getElementById('infoNoticeBtn');
+    // ✨ 프리미엄 공지사항 카드 렌더링 ✨
     const noticePreview = document.getElementById('infoNoticePreview');
-    if (ev.noticeLink) {
-        noticeBtn.style.display = 'block';
-        noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
-        
-        if (ev.noticeTitle) {
-            if(noticePreview) {
-                noticePreview.style.display = 'block';
-                noticePreview.innerHTML = `<div class="preview-title">${ev.noticeTitle}</div>`;
-            }
-        } else {
-            if(noticePreview) noticePreview.style.display = 'none';
+    const noticeBtn = document.getElementById('infoNoticeBtn'); 
+
+    if(noticeBtn) noticeBtn.style.display = 'none';
+
+    if (ev.noticeLink && ev.noticeTitle) {
+        if(noticePreview) {
+            noticePreview.style.display = 'block';
+            noticePreview.innerHTML = `
+                <a href="${ev.noticeLink}" target="_blank" rel="noreferrer" class="premium-notice-card">
+                    <div class="premium-notice-header">
+                        <span class="premium-notice-badge">공지사항</span>
+                        <span class="premium-notice-date">바로가기 ↗</span>
+                    </div>
+                    <h3 class="premium-notice-title">${ev.noticeTitle}</h3>
+                    ${ev.noticeDesc ? `<p class="premium-notice-desc">${ev.noticeDesc}</p>` : ''}
+                </a>
+            `;
         }
-    } else {
-        noticeBtn.style.display = 'none';
+    } else if (ev.noticeLink) {
+        if(noticeBtn) {
+            noticeBtn.style.display = 'block';
+            noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
+        }
         if(noticePreview) noticePreview.style.display = 'none';
+    } else {
+        if(noticePreview) noticePreview.style.display = 'none';
+        if(noticeBtn) noticeBtn.style.display = 'none';
     }
+    
     document.getElementById('infoModal').style.display = 'flex';
 }
 
