@@ -975,7 +975,7 @@ body {
     word-break: break-all;
     
     /* 🎨 카드의 모양을 잡아주는 디자인 추가 */
-    background-color: #FFF3B0; /* 노란색 배경 */
+    background-color: #FFFCE0; /* 노란색 배경 */
     padding: 16px;             /* 카드 안쪽 여백 */
     border-radius: 12px;       /* 둥근 모서리 */
     text-decoration: none;     /* 링크 밑줄 제거 */
