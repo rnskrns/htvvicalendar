@@ -19,7 +19,6 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// ✨ 세션 스토리지 기반 관리자 상태 유지 ✨
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true';
 
 let modifiedDates = new Set();
@@ -48,13 +47,12 @@ window.extractYtId = function(url) {
 };
 const extractYtId = window.extractYtId;
 
-// ✨ 우리가 만든 Vercel 백엔드를 호출하는 함수 ✨
+// ✨ Vercel 백엔드 호출 및 예쁜 카드 렌더링 함수 ✨
 window.loadNoticePreview = async function(url, container, manualTitle, manualDesc) {
     if (!url || !container) return;
 
     container.style.display = 'block';
 
-    // 1. 만약 관리자가 제목을 '직접 입력'했다면 서버 호출 없이 바로 띄워줌 (안전장치)
     if (manualTitle) {
         container.innerHTML = `
             <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
@@ -69,15 +67,13 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         return;
     }
 
-    // 2. 직접 입력한 게 없다면 Vercel 백엔드(/api/get-notice)에 요청!
     container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
 
     try {
         const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
         const data = await response.json();
         
-        if (response.ok) {
-            // 백엔드가 성공적으로 긁어온 데이터를 예쁜 카드에 담아줌
+        if (response.ok && data.title) {
             container.innerHTML = `
                 <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
                     <div class="premium-notice-header">
@@ -93,11 +89,11 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         }
     } catch (error) {
         console.error('미리보기 로드 실패:', error);
-        // 서버에서 긁어오기 실패했을 때 보여줄 일반 버튼
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
                 <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">
-                    보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.
+                    보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.<br>
+                    (일정 수정에서 '공지 제목'을 직접 입력하면 예쁘게 표시됩니다!)
                 </p>
                 <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
             </div>
@@ -724,8 +720,9 @@ function renderCalendar() {
                     const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
                     tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`;
+                    tag.dataset.id = ev.id;
                     tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-                    tag.onclick = (e) => { e.stopPropagation(); showInfo(dateId, idx); };
+                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
                     if (isAdmin) {
                         tag.oncontextmenu = (e) => {
                             e.preventDefault();
@@ -896,14 +893,22 @@ function showInfo(id, idx) {
         });
     }
     
-    // ✨ 프리미엄 공지사항 렌더링 (Vercel 백엔드 연결) ✨
-    const noticePreview = document.getElementById('infoNoticePreview');
-    const noticeBtn = document.getElementById('infoNoticeBtn'); 
+    // ✨ HTML에 빈칸이 없어도 JS가 알아서 카드를 띄울 자리를 만들어줌 ✨
+    let noticePreview = document.getElementById('infoNoticePreview');
+    if (!noticePreview) {
+        noticePreview = document.createElement('div');
+        noticePreview.id = 'infoNoticePreview';
+        noticePreview.className = 'notice-preview';
+        noticePreview.style.display = 'none';
+        const infoBlock = document.querySelector('.info-block');
+        if(infoBlock) infoBlock.appendChild(noticePreview);
+    }
 
+    const noticeBtn = document.getElementById('infoNoticeBtn'); 
     if(noticeBtn) noticeBtn.style.display = 'none';
 
     if (ev.noticeLink) {
-        // 백엔드 함수 호출! (수동 입력한 제목/내용이 있으면 같이 넘겨줌)
+        // ✨ 여기서 우리가 만든 Vercel 백엔드 자동 불러오기를 호출! ✨
         if(window.loadNoticePreview && noticePreview) {
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         }
@@ -951,14 +956,22 @@ function showInfoByEvent(ev) {
         });
     }
 
-    // ✨ 프리미엄 공지사항 렌더링 (Vercel 백엔드 연결) ✨
-    const noticePreview = document.getElementById('infoNoticePreview');
-    const noticeBtn = document.getElementById('infoNoticeBtn'); 
+    // ✨ HTML에 빈칸이 없어도 JS가 알아서 카드를 띄울 자리를 만들어줌 ✨
+    let noticePreview = document.getElementById('infoNoticePreview');
+    if (!noticePreview) {
+        noticePreview = document.createElement('div');
+        noticePreview.id = 'infoNoticePreview';
+        noticePreview.className = 'notice-preview';
+        noticePreview.style.display = 'none';
+        const infoBlock = document.querySelector('.info-block');
+        if(infoBlock) infoBlock.appendChild(noticePreview);
+    }
 
+    const noticeBtn = document.getElementById('infoNoticeBtn'); 
     if(noticeBtn) noticeBtn.style.display = 'none';
 
     if (ev.noticeLink) {
-        // 백엔드 함수 호출! (수동 입력한 제목/내용이 있으면 같이 넘겨줌)
+        // ✨ 여기서 우리가 만든 Vercel 백엔드 자동 불러오기를 호출! ✨
         if(window.loadNoticePreview && noticePreview) {
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         }
