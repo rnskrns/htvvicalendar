@@ -953,9 +953,24 @@ body {
 
 /* ✨ 프리미엄 공지사항 카드 전용 스타일 (요청하신 디자인 완벽 반영) ✨ */
 .notice-preview { margin-top: 20px; padding: 0; background: transparent; border: none; width: 100%; text-align: left; box-sizing: border-box; box-shadow: none; }
-.premium-notice-card { display: flex; flex-direction: column; height: 190px; text-decoration: none; background-color: #FFFDF0; border: none; border-radius: 24px; padding: 20px; transition: transform 0.2s ease, box-shadow 0.2s ease; width: 100%; box-sizing: border-box; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }.premium-notice-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(250, 204, 21, 0.15); }
+.premium-notice-card {
+    display: flex;
+    flex-direction: column; /* 내부 요소들을 세로로 배치 */
+    width: 100%;            /* 닫기 버튼과 동일하게 가로 영역 100% 차지 */
+    height: auto;           /* ★ 핵심: 내용이 길면 세로로 자동으로 늘어남 */
+    box-sizing: border-box; /* 패딩을 넣어도 가로 길이가 100%를 넘지 않게 방어 */
+    
+    /* 텍스트가 너무 길어질 때 카드를 뚫고 나가지 않게 자동 줄바꿈 처리 */
+    overflow-wrap: break-word; 
+    word-break: break-all;
+}
 .premium-notice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .premium-notice-badge { background-color: #FDE047; color: #7A5A2F; font-size: 12px; font-weight: 900; padding: 6px 12px; border-radius: 999px; }
 .premium-notice-date { font-size: 12px; font-weight: 900; color: #7B8BA3; }
 .premium-notice-title { height: 50px; flex-shrink: 0; color: #7A5A2F; font-size: 18px; font-weight: 900; line-height: 1.4; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; }
-.premium-notice-desc { flex: 1; color: #5B6B85; font-size: 14px; font-weight: 700; line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+.premium-notice-desc {
+    white-space: normal; /* 한 줄로 말줄임표(...) 처리되지 않고 아래로 줄바꿈됨 */
+    overflow: visible;   /* 내용이 잘리지 않고 온전히 다 표시됨 */
+    margin-top: 8px;     /* 제목과의 간격 */
+    line-height: 1.5;    /* 세로로 길어질 때 텍스트가 겹치지 않도록 줄간격 확보 */
+}
