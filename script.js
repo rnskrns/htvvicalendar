@@ -19,7 +19,7 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// ✨ 세션 스토리지 기반 관리자 상태 유지 ✨
+// 세션 스토리지 기반 관리자 상태 유지
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true';
 
 let modifiedDates = new Set();
@@ -47,39 +47,6 @@ window.extractYtId = function(url) {
     return (match && match[7].length == 11) ? match[7] : null;
 };
 const extractYtId = window.extractYtId;
-
-// ✨ 프록시를 이용해 공지사항 미리보기 내용을 가져오는 함수 ✨
-window.loadNoticePreview = async function(url, container) {
-    if (!url || !container) return;
-    container.style.display = 'block';
-    container.innerHTML = '<div class="preview-loading">공지 정보를 불러오는 중...</div>';
-
-    try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-        if (response.ok) {
-            const data = await response.json();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, "text/html");
-
-            const title = doc.querySelector('meta[property="og:title"]')?.content 
-                          || doc.querySelector('title')?.innerText 
-                          || '제목을 불러올 수 없습니다.';
-            const desc = doc.querySelector('meta[property="og:description"]')?.content 
-                         || doc.querySelector('meta[name="description"]')?.content 
-                         || '';
-
-            container.innerHTML = `
-                <div class="preview-title">${title}</div>
-                ${desc ? `<div class="preview-desc">${desc}</div>` : ''}
-            `;
-        } else {
-            throw new Error('Network response failed');
-        }
-    } catch (error) {
-        console.error('미리보기 로드 실패:', error);
-        container.innerHTML = '<div class="preview-desc">미리보기를 불러올 수 없습니다. 아래 버튼을 눌러 원문을 확인해주세요.</div>';
-    }
-};
 
 function updateFavPlayerPlaylist() {
     const favorites = getFavorites();
@@ -439,7 +406,7 @@ function openAddModal(id) {
     document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
-    document.getElementById('eventNoticeTitle').value = ''; // ✨ 추가
+    document.getElementById('eventNoticeTitle').value = ''; 
     document.getElementById('eventType').value = '개인방송';
     
     const pad = (n) => n.toString().padStart(2, '0');
@@ -463,7 +430,7 @@ function openEditModal(id, idx) {
     document.getElementById('eventType').value = ev.type;
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; // ✨ 추가
+    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; 
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     
     if (document.getElementById('eventStartDate')) {
@@ -511,7 +478,7 @@ async function saveEvent() {
     const type = document.getElementById('eventType').value;
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
-    const noticeTitle = document.getElementById('eventNoticeTitle').value.trim(); // ✨ 추가
+    const noticeTitle = document.getElementById('eventNoticeTitle').value.trim(); 
     const imageUrl = document.getElementById('eventImageUrl').value;
 
     const editingDocId = document.getElementById('editingEventDocId').value;
@@ -524,7 +491,7 @@ async function saveEvent() {
             type,
             members,
             noticeLink,
-            noticeTitle, // ✨ 추가
+            noticeTitle, 
             imageUrl,
             dateId: activeDateId,
             startDate: startStr,
@@ -811,7 +778,7 @@ function showInfo(id, idx) {
         });
     }
     
-    // ✨ 공지사항 미리보기 처리 ✨
+    // ✨ 공지사항 처리 (자동 불러오기 제거, 직접 입력한 제목만 표시) ✨
     const noticeBtn = document.getElementById('infoNoticeBtn');
     const noticePreview = document.getElementById('infoNoticePreview');
     if (ev.noticeLink) {
@@ -819,16 +786,12 @@ function showInfo(id, idx) {
         noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
         
         if (ev.noticeTitle) {
-            // 직접 입력한 제목이 있는 경우
             if(noticePreview) {
                 noticePreview.style.display = 'block';
                 noticePreview.innerHTML = `<div class="preview-title">${ev.noticeTitle}</div>`;
             }
         } else {
-            // 없으면 자동으로 불러오기 시도
-            if(window.loadNoticePreview && noticePreview) {
-                window.loadNoticePreview(ev.noticeLink, noticePreview);
-            }
+            if(noticePreview) noticePreview.style.display = 'none';
         }
     } else {
         noticeBtn.style.display = 'none';
@@ -874,7 +837,7 @@ function showInfoByEvent(ev) {
         });
     }
 
-    // ✨ 공지사항 미리보기 처리 ✨
+    // ✨ 공지사항 처리 (자동 불러오기 제거, 직접 입력한 제목만 표시) ✨
     const noticeBtn = document.getElementById('infoNoticeBtn');
     const noticePreview = document.getElementById('infoNoticePreview');
     if (ev.noticeLink) {
@@ -882,16 +845,12 @@ function showInfoByEvent(ev) {
         noticeBtn.onclick = () => window.open(ev.noticeLink, '_blank');
         
         if (ev.noticeTitle) {
-            // 직접 입력한 제목이 있는 경우
             if(noticePreview) {
                 noticePreview.style.display = 'block';
                 noticePreview.innerHTML = `<div class="preview-title">${ev.noticeTitle}</div>`;
             }
         } else {
-            // 없으면 자동으로 불러오기 시도
-            if(window.loadNoticePreview && noticePreview) {
-                window.loadNoticePreview(ev.noticeLink, noticePreview);
-            }
+            if(noticePreview) noticePreview.style.display = 'none';
         }
     } else {
         noticeBtn.style.display = 'none';
@@ -910,7 +869,7 @@ function openEditModalByEvent(ev) {
     document.getElementById('eventType').value = ev.type || '개인방송';
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; // ✨ 추가
+    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; 
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     if (ev.time) {
         const [h, m] = ev.time.split(':').map(Number);
