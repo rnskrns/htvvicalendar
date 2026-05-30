@@ -19,7 +19,7 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// 세션 스토리지 기반 관리자 상태 유지
+// ✨ 세션 스토리지 기반 관리자 상태 유지 ✨
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true';
 
 let modifiedDates = new Set();
@@ -397,6 +397,7 @@ async function loadData() {
     catch (error) { console.error(error); }
 }
 
+// ✨ HTML에 직접 입력 폼이 없어도 에러가 나지 않도록 null 체크 보강 ✨
 function openAddModal(id) {
     activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
     document.getElementById('editIndex').value = '-1';
@@ -406,7 +407,10 @@ function openAddModal(id) {
     document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
-    document.getElementById('eventNoticeTitle').value = ''; 
+    
+    const noticeTitleEl = document.getElementById('eventNoticeTitle');
+    if (noticeTitleEl) noticeTitleEl.value = ''; 
+    
     document.getElementById('eventType').value = '개인방송';
     
     const pad = (n) => n.toString().padStart(2, '0');
@@ -430,7 +434,10 @@ function openEditModal(id, idx) {
     document.getElementById('eventType').value = ev.type;
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; 
+    
+    const noticeTitleEl = document.getElementById('eventNoticeTitle');
+    if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
+    
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     
     if (document.getElementById('eventStartDate')) {
@@ -459,6 +466,49 @@ function openEditModal(id, idx) {
     document.getElementById('eventModal').style.display = 'flex';
 }
 
+function openEditModalByEvent(ev) {
+    if (!ev) return;
+    activeDateId = ev.dateId || (ev.startDate ? ev.startDate : activeDateId);
+    document.getElementById('modalTitle').innerText = '일정 수정';
+    document.getElementById('editIndex').value = '0';
+    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
+    document.getElementById('eventTitle').value = ev.title || '';
+    document.getElementById('eventType').value = ev.type || '개인방송';
+    document.getElementById('eventMembers').value = ev.members || '';
+    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
+    
+    const noticeTitleEl = document.getElementById('eventNoticeTitle');
+    if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
+    
+    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+    if (ev.time) {
+        const [h, m] = ev.time.split(':').map(Number);
+        setAMPM(h >= 12 ? '오후' : '오전');
+        document.getElementById('timeHour').value = h % 12 || 12;
+        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
+    } else {
+        setAMPM('오전'); document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
+    }
+    if (document.getElementById('eventStartDate')) {
+        if (ev.startDate) {
+            const s = new Date(ev.startDate);
+            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
+        } else if (ev.dateId) {
+            const parts = ev.dateId.split('-');
+            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+        }
+        if (ev.endDate) {
+            const e = new Date(ev.endDate);
+            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
+        } else if (ev.dateId) {
+            const parts = ev.dateId.split('-');
+            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
+        }
+    }
+    document.getElementById('delBtn').style.display = 'block';
+    document.getElementById('eventModal').style.display = 'flex';
+}
+
 async function saveEvent() {
     const title = document.getElementById('eventTitle').value.trim();
     if (!title) return showToast('제목을 입력하세요.');
@@ -478,7 +528,11 @@ async function saveEvent() {
     const type = document.getElementById('eventType').value;
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
-    const noticeTitle = document.getElementById('eventNoticeTitle').value.trim(); 
+    
+    // ✨ 입력 폼이 없어도 에러 나지 않도록 처리 ✨
+    const noticeTitleEl = document.getElementById('eventNoticeTitle');
+    const noticeTitle = noticeTitleEl ? noticeTitleEl.value.trim() : ''; 
+    
     const imageUrl = document.getElementById('eventImageUrl').value;
 
     const editingDocId = document.getElementById('editingEventDocId').value;
@@ -778,7 +832,7 @@ function showInfo(id, idx) {
         });
     }
     
-    // ✨ 공지사항 처리 (자동 불러오기 제거, 직접 입력한 제목만 표시) ✨
+    // ✨ 공지사항 처리 (자동 불러오기 기능 완전히 제거) ✨
     const noticeBtn = document.getElementById('infoNoticeBtn');
     const noticePreview = document.getElementById('infoNoticePreview');
     if (ev.noticeLink) {
@@ -837,7 +891,7 @@ function showInfoByEvent(ev) {
         });
     }
 
-    // ✨ 공지사항 처리 (자동 불러오기 제거, 직접 입력한 제목만 표시) ✨
+    // ✨ 공지사항 처리 (자동 불러오기 기능 완전히 제거) ✨
     const noticeBtn = document.getElementById('infoNoticeBtn');
     const noticePreview = document.getElementById('infoNoticePreview');
     if (ev.noticeLink) {
@@ -857,46 +911,6 @@ function showInfoByEvent(ev) {
         if(noticePreview) noticePreview.style.display = 'none';
     }
     document.getElementById('infoModal').style.display = 'flex';
-}
-
-function openEditModalByEvent(ev) {
-    if (!ev) return;
-    activeDateId = ev.dateId || (ev.startDate ? ev.startDate : activeDateId);
-    document.getElementById('modalTitle').innerText = '일정 수정';
-    document.getElementById('editIndex').value = '0';
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
-    document.getElementById('eventTitle').value = ev.title || '';
-    document.getElementById('eventType').value = ev.type || '개인방송';
-    document.getElementById('eventMembers').value = ev.members || '';
-    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventNoticeTitle').value = ev.noticeTitle || ''; 
-    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
-    if (ev.time) {
-        const [h, m] = ev.time.split(':').map(Number);
-        setAMPM(h >= 12 ? '오후' : '오전');
-        document.getElementById('timeHour').value = h % 12 || 12;
-        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
-    } else {
-        setAMPM('오전'); document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
-    }
-    if (document.getElementById('eventStartDate')) {
-        if (ev.startDate) {
-            const s = new Date(ev.startDate);
-            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-        if (ev.endDate) {
-            const e = new Date(ev.endDate);
-            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-    }
-    document.getElementById('delBtn').style.display = 'block';
-    document.getElementById('eventModal').style.display = 'flex';
 }
 
 function updateSummary() {
