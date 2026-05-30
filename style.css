@@ -951,8 +951,18 @@ body {
     .fav-player-panel.show-sheet { bottom: 0 !important; }
 }
 
-/* ✨ 프리미엄 공지사항 카드 전용 스타일 (요청하신 디자인 완벽 반영) ✨ */
-.notice-preview { margin-top: 20px; padding: 0; background: transparent; border: none; width: 100%; text-align: left; box-sizing: border-box; box-shadow: none; }
+/* 프리미엄 공지사항 카드 전용 */
+.notice-preview { 
+    margin-top: 20px; 
+    padding: 0; 
+    background: transparent; 
+    border: none; 
+    width: 100%; 
+    text-align: left; 
+    box-sizing: border-box; 
+    box-shadow: none; 
+}
+
 .premium-notice-card {
     display: flex;
     flex-direction: column; /* 내부 요소들을 세로로 배치 */
@@ -963,17 +973,60 @@ body {
     /* 텍스트가 너무 길어질 때 카드를 뚫고 나가지 않게 자동 줄바꿈 처리 */
     overflow-wrap: break-word; 
     word-break: break-all;
+    
+    /* 🎨 카드의 모양을 잡아주는 디자인 추가 */
+    background-color: #FFF3B0; /* 노란색 배경 */
+    padding: 16px;             /* 카드 안쪽 여백 */
+    border-radius: 12px;       /* 둥근 모서리 */
+    text-decoration: none;     /* 링크 밑줄 제거 */
 }
-.premium-notice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.premium-notice-badge { background-color: #FDE047; color: #7A5A2F; font-size: 12px; font-weight: 900; padding: 6px 12px; border-radius: 999px; }
-.premium-notice-date { font-size: 12px; font-weight: 900; color: #7B8BA3; }
-.premium-notice-title { height: 50px; flex-shrink: 0; color: #7A5A2F; font-size: 18px; font-weight: 900; line-height: 1.4; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; }
+
+.premium-notice-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 12px; 
+}
+
+.premium-notice-badge { 
+    background-color: #FDE047; 
+    color: #7A5A2F; 
+    font-size: 12px; 
+    font-weight: 900; 
+    padding: 6px 12px; 
+    border-radius: 999px; 
+}
+
+.premium-notice-date { 
+    font-size: 12px; 
+    font-weight: 900; 
+    color: #7B8BA3; 
+}
+
+.premium-notice-title { 
+    height: auto; /* 고정된 50px을 지우고 auto로 변경 (글씨가 잘리거나 겹치는 것 방지) */
+    flex-shrink: 0; 
+    color: #7A5A2F; 
+    font-size: 18px; 
+    font-weight: 900; 
+    line-height: 1.4; 
+    margin: 0 0 12px 0; 
+    display: -webkit-box; 
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+    word-break: keep-all; 
+}
+
 .premium-notice-desc {
     white-space: normal; /* 한 줄로 말줄임표(...) 처리되지 않고 아래로 줄바꿈됨 */
     overflow: visible;   /* 내용이 잘리지 않고 온전히 다 표시됨 */
     margin-top: 8px;     /* 제목과의 간격 */
     line-height: 1.5;    /* 세로로 길어질 때 텍스트가 겹치지 않도록 줄간격 확보 */
+    color: #7A5A2F;      /* 텍스트 색상 추가 */
+    font-size: 14px;
 }
+
 #infoNoticePreview {
     width: 100%;
     box-sizing: border-box;
