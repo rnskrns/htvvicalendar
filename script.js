@@ -1375,7 +1375,14 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    // 1. PC 상단 탭 활성화 업데이트
     document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+    
+    // 2. 모바일 메뉴 활성화 업데이트 (추가된 부분)
+    document.querySelectorAll('.mobile-menu-item[data-tab]').forEach(btn => {
+        btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
+    });
+
     const calendarTop = document.querySelector('.calendar-top'); const calendarBody = document.querySelector('.calendar-body');
     const songbookSection = document.getElementById('songbookSection'); const todaySchedulePanel = document.getElementById('todaySchedulePanel');
 

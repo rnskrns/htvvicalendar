@@ -605,11 +605,13 @@ body {
     cursor: pointer; transition: color 0.2s; display: flex; align-items: center; justify-content: center; 
     gap: 8px !important; min-height: auto; font-family: 'Cafe24SurroundAir', sans-serif;
     }
-    
+
     .mobile-menu-item:last-child { border-bottom: none; }
     
-    .mobile-menu-item:hover, .mobile-menu-item:active { 
-        color: #EAB308; background: transparent; 
+    .mobile-menu-item:hover, 
+    .mobile-menu-item:active,
+    .mobile-menu-item.active-mobile-tab { 
+        color: #EAB308 !important; background: transparent; 
     }
 
     #btnMin { width: 44px !important; height: 44px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 50 !important; }
