@@ -19,6 +19,13 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'KerisKeduLine';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_Line.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
@@ -186,9 +193,8 @@ body {
 .calendar-header-top { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; }
 .calendar-header-title { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; }
 
-#monthDisplay { font-family: 'RixInuaridurine', sans-serif !important; }
+#monthDisplay { font-family: 'KerisKeduLine', sans-serif !important; }
 
-/* 메모/UP 버튼 기본 디자인 */
 .memo-btn { 
     position: static !important; 
     margin: 0; 
@@ -637,3 +643,4 @@ body {
 
 .up-item-card { background: white; border: 2px solid #bae6fd; border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; }
 .up-title { font-weight: 800; color: #0284c7; font-size: 16px; font-family: 'Cafe24SurroundAir', sans-serif;}
+

@@ -925,10 +925,11 @@ window.loadUpItems = async function() {
             entry.onmouseout = () => entry.style.background = "#ffffff";
 
             let deadlineText = '';
-            if (data.deadline) {
-                const parts = data.deadline.split('-');
-                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 13px; font-weight: 600; margin-top: 4px; font-family: 'GMarketSans', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
-            }
+                if (data.deadline) {
+                    const parts = data.deadline.split('-');
+                    // 마감일 폰트도 통일하고 크기를 살짝 줄였습니다 (11px)
+                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'OngleipParkDahyeon', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+                }
             entry.innerHTML = `
                 <div style="flex: 1;" onclick="window.open('${data.link}', '_blank')">
                     <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'GMarketSans', sans-serif;">${data.title}</div>
@@ -995,8 +996,19 @@ window.checkAndShowPopup = async function() {
             
             popupList.innerHTML = '';
             if (popupImageUrl) {
-                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; object-fit: cover; max-height: 350px;" alt="Notice Image"></div>`;
-            }
+                popupList.innerHTML += `
+                    <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 14px; font-family: 'OngleipParkDahyeon', sans-serif;">${data.title}</div>
+                            ${deadlineText}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                `;
 
             const todayLocal = new Date();
             const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
