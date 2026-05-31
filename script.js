@@ -1377,6 +1377,7 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    console.log("버튼 클릭됨! 대상 탭:", tab);
     // 1. 모바일 메뉴 액티브 상태 업데이트 (기존 코드)
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) {
