@@ -727,10 +727,21 @@ function showInfoByEvent(ev) {
     } else if (ev.dateId) {
         const parts = ev.dateId.split('-'); dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
     } else {
-        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
-    }
-    
-    const timeEl = document.getElementById('infoTime'); if (timeEl) timeEl.innerText = dateText;
+        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
+    }
+    const timeEl = document.getElementById('infoTime'); 
+    if (timeEl) {
+        // 1. 텍스트 설정: 기존 파란색 뱃지 안에 날짜, 시간, 유형을 한 번에 넣습니다.
+        timeEl.innerText = dateText + (ev.type ? ` | ${ev.type}` : '');
+
+        // 2. 이전에 남아있던 다른 일정의 유형 색상 클래스를 초기화합니다.
+        timeEl.className = timeEl.className.replace(/\btype-\S+/g, '').trim();
+
+        // 3. 현재 일정의 유형에 맞는 클래스를 뱃지에 추가합니다.
+        if (ev.type) {
+            timeEl.classList.add(`type-${ev.type.replace(/\s+/g, '')}`);
+        }
+    }
     
     const infoImageContainer = document.getElementById('infoImageContainer');
     if(infoImageContainer) {
