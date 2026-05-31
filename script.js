@@ -1377,14 +1377,26 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    // 1. 모바일 메뉴 액티브 상태 업데이트 (기존 코드)
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) {
             btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
         }
     });
 
-    const calendarTop = document.querySelector('.calendar-top'); const calendarBody = document.querySelector('.calendar-body');
-    const songbookSection = document.getElementById('songbookSection'); const todaySchedulePanel = document.getElementById('todaySchedulePanel');
+    // 2. PC 상단바 메뉴 액티브 상태 업데이트 (추가된 코드)
+    // HTML에 적용된 PC 상단바 버튼 클래스명으로 변경해 주셔도 좋습니다. (현재는 data-tab 속성이 있는 요소 중 모바일이 아닌 것을 모두 잡습니다)
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        if (!btn.classList.contains('mobile-menu-item') && btn.dataset.tab) {
+            // 사용하는 CSS에 맞춰 'active' 클래스명을 알맞게 변경해 주세요. (예: 'active-tab', 'selected' 등)
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        }
+    });
+
+    const calendarTop = document.querySelector('.calendar-top'); 
+    const calendarBody = document.querySelector('.calendar-body');
+    const songbookSection = document.getElementById('songbookSection'); 
+    const todaySchedulePanel = document.getElementById('todaySchedulePanel');
 
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
