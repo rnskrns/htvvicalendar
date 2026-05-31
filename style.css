@@ -12,6 +12,20 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'Ria';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-1@1.0/RiaSans-ExtraBold.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'KerisKeduLine';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_Line.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
@@ -179,18 +193,37 @@ body {
 .calendar-header-top { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; }
 .calendar-header-title { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; }
 
-#monthDisplay { font-family: 'RixInuaridurine', sans-serif !important; }
+#monthDisplay { font-family: 'Ria', sans-serif !important; }
 
-/* 메모/UP 버튼 위치 겹침 해결 */
+/* 메모/UP 버튼 기본 디자인 */
 .memo-btn { 
     position: static !important; 
     margin: 0; 
     flex-shrink: 0; 
-    background: transparent; border: 2px dashed #E5E1DA; border-radius: 999px; height: 50px; padding: 0 20px; 
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; 
-    transition: all 0.2s ease; font-family: 'GMarketSans', sans-serif !important; font-weight: 900; font-size: 15px; color: var(--text-dark); 
+    background: transparent; 
+    border: 2px dashed #E5E1DA; 
+    border-radius: 999px; 
+    height: 50px; 
+    padding: 0 20px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; 
+    transition: all 0.2s ease; 
+    font-family: 'GMarketSans', sans-serif !important; 
+    font-weight: 900; 
+    font-size: 15px; 
+    color: var(--text-dark); 
 }
-.memo-btn:hover { color: #EAB308; border-color: #EAB308; }
+
+/* 호버 및 활성화 상태 (흰배경, 노란 외곽선/폰트) */
+.memo-btn:hover, .board-active { 
+    background: #FFFFFF !important;
+    border-style: solid !important;
+    border-color: #EAB308 !important;
+    color: #EAB308 !important;
+}
 
 .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
 .calendar-main { flex: 1; min-width: 0; width: 100%; }
@@ -428,7 +461,7 @@ body {
 .mobile-nav-arrow { display: none; }
 
 .cute-loading-text {
-    font-family: 'RixInuaridurine', sans-serif;
+    font-family: 'KerisKeduLine', sans-serif;
     font-size: 32px; font-weight: normal; color: var(--point-text); letter-spacing: 6px;
     display: flex; gap: 4px;
 }
@@ -441,9 +474,10 @@ body {
 .cute-loading-text span:nth-child(6) { animation-delay: 0.5s; }
 .cute-loading-text span:nth-child(7) { animation-delay: 0.6s; }
 
+/* 노란색에서 하늘색으로 물드는 로딩 애니메이션 */
 @keyframes text-bounce { 
-    0%, 100% { transform: translateY(0); } 
-    50% { transform: translateY(-10px); color: #EAB308; } 
+    0%, 100% { transform: translateY(0); color: #FBBF24; } 
+    50% { transform: translateY(-10px); color: #38BDF8; } 
 }
 
 @media screen and (max-width: 1024px) {
@@ -550,19 +584,27 @@ body {
         flex-shrink: 0; cursor: pointer; z-index: 2; transition: all 0.2s; pointer-events: auto;
     }
     .mobile-menu-main-btn:active { transform: scale(0.92); }
+    
     .mobile-menu-items {
-        display: flex; gap: 12px; flex-direction: column; align-items: flex-end; opacity: 0;
+        display: flex; gap: 0; flex-direction: column; align-items: stretch; opacity: 0;
         transform: translateY(30px); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #FFFFFF; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 
+        overflow: hidden; padding: 0; width: 140px; margin-bottom: 5px; border: none;
     }
     .mobile-menu-container.open .mobile-menu-items { opacity: 1; transform: translateY(0); pointer-events: auto; }
     
     .mobile-menu-item {
-        padding: 14px 22px; border-radius: 12px; background: #FFFFFF; border: none; color: var(--text-dark);
-        font-weight: 900; font-size: 15px; white-space: nowrap; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
-        font-family: 'GMarketSans', sans-serif;
+        padding: 16px 0; border-radius: 0; background: transparent; border: none; 
+        border-bottom: 1px solid #F3F4F6; color: var(--text-dark);
+        font-weight: 900; font-size: 16px; white-space: nowrap; box-shadow: none;
+        cursor: pointer; transition: color 0.2s; display: flex; align-items: center; justify-content: center; 
+        gap: 0; min-height: auto; font-family: 'GMarketSans', sans-serif;
     }
-    .mobile-menu-item:hover, .mobile-menu-item:active { color: #EAB308; }
+    .mobile-menu-item:last-child { border-bottom: none; }
+    
+    .mobile-menu-item:hover, .mobile-menu-item:active { 
+        color: #EAB308; background: transparent; 
+    }
 
     #btnMin { width: 44px !important; height: 44px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 50 !important; }
 
