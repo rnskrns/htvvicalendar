@@ -221,7 +221,7 @@ body {
 }
 
 /* 호버 및 활성화 상태 (흰배경, 노란 외곽선/폰트) */
-.memo-btn:hover, .board-active { 
+.memo-btn:hover, .memo-btn.board-active { 
     background: #FFFFFF !important;
     border-style: solid !important;
     border-color: #EAB308 !important;
@@ -613,11 +613,11 @@ body {
 
     .mobile-menu-item:last-child { border-bottom: none; }
     
-    .mobile-menu-item:hover, 
-    .mobile-menu-item:active,
-    .mobile-menu-item.active-mobile-tab { 
-        color: #EAB308 !important; background: transparent; outline: none !important;
-    }
+.mobile-menu-item:hover, 
+.mobile-menu-item:active,
+.mobile-menu-item.active-mobile-tab { 
+    color: #EAB308 !important; background: transparent; 
+}
 
     #btnMin { width: 44px !important; height: 44px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 50 !important; }
 

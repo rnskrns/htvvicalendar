@@ -995,7 +995,7 @@ window.checkAndShowPopup = async function() {
             popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
             
             if (popupImageUrl) {
-                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; height: auto; display: block;" alt="Notice Image"></div>`;
+                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`;
             }
 
             const todayLocal = new Date();
