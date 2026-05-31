@@ -995,7 +995,7 @@ window.checkAndShowPopup = async function() {
             popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
             
             if (popupImageUrl) {
-                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; object-fit: cover; max-height: 350px;" alt="Notice Image"></div>`;
+                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; height: auto; display: block;" alt="Notice Image"></div>`;
             }
 
             const todayLocal = new Date();
@@ -1376,11 +1376,10 @@ window.setSongbookFilter = function(filter) {
 
 window.showTab = async function(tab) {
     // 1. PC 상단 탭 활성화 업데이트
-    document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-    
-    // 2. 모바일 메뉴 활성화 업데이트 (추가된 부분)
-    document.querySelectorAll('.mobile-menu-item[data-tab]').forEach(btn => {
-        btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
+    document.querySelectorAll('.mobile-menu-item').forEach(btn => {
+        if (btn.dataset.tab) {
+            btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
+        }
     });
 
     const calendarTop = document.querySelector('.calendar-top'); const calendarBody = document.querySelector('.calendar-body');

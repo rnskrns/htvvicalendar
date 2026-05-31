@@ -604,6 +604,11 @@ body {
     font-weight: 900; font-size: 16px; white-space: nowrap; box-shadow: none;
     cursor: pointer; transition: color 0.2s; display: flex; align-items: center; justify-content: center; 
     gap: 8px !important; min-height: auto; font-family: 'Cafe24SurroundAir', sans-serif;
+    
+    /* 터치할 때 생기는 회색/파란색 음영 완벽 제거 */
+    -webkit-tap-highlight-color: transparent !important;
+    /* 기본 외곽선 제거 */
+    outline: none !important;
     }
 
     .mobile-menu-item:last-child { border-bottom: none; }
@@ -611,7 +616,7 @@ body {
     .mobile-menu-item:hover, 
     .mobile-menu-item:active,
     .mobile-menu-item.active-mobile-tab { 
-        color: #EAB308 !important; background: transparent; 
+        color: #EAB308 !important; background: transparent; outline: none !important;
     }
 
     #btnMin { width: 44px !important; height: 44px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 50 !important; }
