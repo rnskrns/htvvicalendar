@@ -1377,7 +1377,7 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
-    // 1. 메뉴 UI 업데이트 (즉시 실행)
+    // 1. UI 활성화 (즉시)
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
     });
@@ -1391,8 +1391,9 @@ window.showTab = async function(tab) {
     const calendarBody = document.querySelector('.calendar-body');
     const songbookSection = document.getElementById('songbookSection');
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
+    const loadingOverlay = document.getElementById('loadingOverlay'); // 전역 로딩창
 
-    // 2. 화면 UI 전환 (즉시 실행)
+    // 2. 화면 즉시 전환
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
@@ -1400,13 +1401,12 @@ window.showTab = async function(tab) {
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
         window.location.hash = '#songbook';
         
-        // 3-A. 노래책 데이터 로드
         if (!isSongbookLoaded) {
-            const loadingOverlay = document.getElementById('songbookLoading');
-            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+            const songLoading = document.getElementById('songbookLoading');
+            if (songLoading) songLoading.classList.remove('hidden');
             await loadSongbookSongs();
             isSongbookLoaded = true;
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
+            if (songLoading) songLoading.classList.add('hidden');
             renderSongbook();
             updateFavPlayerPlaylist();
         }
@@ -1417,14 +1417,13 @@ window.showTab = async function(tab) {
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
         window.location.hash = '#schedule';
 
-        // 3-B. 일정 로딩 최적화
-        // 렌더링을 먼저 수행하여 반응성을 높이고, 데이터 로드는 그 뒤에 처리
-        renderCalendar(); // 현재 가진 데이터로 즉시 그리기
+        // 일정 데이터 로드 시 로딩창 띄우기
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
         
-        // 비동기로 데이터를 다시 로드하고 갱신
-        ensureMonthsLoadedForDate(currentDate).then(() => {
-            renderCalendar(); // 데이터 로드 후 다시 그리기
-        });
+        await ensureMonthsLoadedForDate(currentDate);
+        renderCalendar();
+        
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
 }
 
