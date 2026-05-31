@@ -592,7 +592,7 @@ function renderCalendar() {
         
         const { month, week } = getWeekOfMonth(currentDate);
         const monthDisplay = document.getElementById('monthDisplay');
-        if(monthDisplay) monthDisplay.innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
+        if(monthDisplay) monthDisplay.innerText = `${month}월 ${week}째주`;
         
         const yoils = ['월', '화', '수', '목', '금', '토', '일'];
         const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
@@ -640,7 +640,7 @@ function renderCalendar() {
         
         const y = currentDate.getFullYear(); const m = currentDate.getMonth();
         const monthDisplay = document.getElementById('monthDisplay');
-        if (monthDisplay) monthDisplay.innerText = `${y}년 ${m + 1}월`;
+        if (monthDisplay) monthDisplay.innerText = `${m + 1}월`;
         
         const firstDay = new Date(y, m, 1); const lastDay = new Date(y, m + 1, 0);
         const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
