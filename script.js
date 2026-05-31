@@ -1412,18 +1412,23 @@ window.showTab = async function(tab) {
         }
     } else {
         if(calendarTop) calendarTop.style.display = 'flex';
-        if(calendarBody) calendarBody.style.display = 'flex';
-        if(songbookSection) songbookSection.classList.remove('visible');
-        if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
-        window.location.hash = '#schedule';
+    if(calendarBody) calendarBody.style.display = 'flex';
+    if(songbookSection) songbookSection.classList.remove('visible');
+    if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
+    window.location.hash = '#schedule';
 
-        // 일정 데이터 로드 시 로딩창 띄우기
-        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
-        
-        await ensureMonthsLoadedForDate(currentDate);
-        renderCalendar();
-        
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    // 2. 로딩창 띄우기 (즉시)
+    if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+
+    // 3. 핵심: UI가 먼저 바뀌도록 50ms 대기 후 데이터 로드
+    await new Promise(resolve => setTimeout(resolve, 50)); 
+    
+    // 4. 데이터 로딩 및 렌더링
+    await ensureMonthsLoadedForDate(currentDate);
+    renderCalendar();
+    
+    // 5. 로딩창 닫기
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
 }
 
