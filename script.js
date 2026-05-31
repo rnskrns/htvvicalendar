@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -34,10 +34,42 @@ let activeMemoTab = '컨텐츠';
 let activeDateId = '';
 let pickerYear = currentDate.getFullYear();
 let memoLoadToken = 0;
+let upLoadToken = 0;
 
 let favPlaylist = [];
 let currentFavIndex = 0;
 let isPlaying = false; 
+
+// 동적 스타일 주입 (버튼 점선 제거 및 활성화 상태 동일화)
+function injectDynamicStyles() {
+    if (document.getElementById('dynamic-custom-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'dynamic-custom-styles';
+    style.innerHTML = `
+        button[onclick*="toggleMemo"], button[onclick*="toggleUpBoard"], 
+        button[onclick*="toggleMobileMemo"], button[onclick*="toggleMobileUpBoard"] {
+            border-style: solid !important;
+            transition: background-color 0.2s;
+        }
+        button.board-active {
+            background-color: #fef08a !important; /* 호버 상태와 동일한 노란빛/활성 색상 */
+            border-color: #facc15 !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function updateBoardButtonsState() {
+    const memoOpen = document.getElementById('memoPanel')?.classList.contains('open') || document.getElementById('memoPanel')?.classList.contains('show-sheet');
+    const upOpen = document.getElementById('upPanel')?.classList.contains('open') || document.getElementById('upPanel')?.classList.contains('show-sheet');
+    
+    document.querySelectorAll('button[onclick*="toggleMemo"], button[onclick*="toggleMobileMemo"]').forEach(b => {
+        b.classList.toggle('board-active', !!memoOpen);
+    });
+    document.querySelectorAll('button[onclick*="toggleUpBoard"], button[onclick*="toggleMobileUpBoard"]').forEach(b => {
+        b.classList.toggle('board-active', !!upOpen);
+    });
+}
 
 window.extractYtId = function(url) {
     if(!url) return null;
@@ -47,10 +79,8 @@ window.extractYtId = function(url) {
 };
 const extractYtId = window.extractYtId;
 
-// ✨ Vercel 백엔드 호출 및 예쁜 카드 렌더링 함수 ✨
 window.loadNoticePreview = async function(url, container, manualTitle, manualDesc) {
     if (!url || !container) return;
-
     container.style.display = 'block';
 
     if (manualTitle) {
@@ -92,8 +122,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
                 <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">
-                    보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.<br>
-                    (일정 수정에서 '공지 제목'을 직접 입력하면 예쁘게 표시됩니다!)
+                    보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.
                 </p>
                 <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
             </div>
@@ -350,12 +379,16 @@ function renderMemberList() {
 
 function showToast(msg) {
     const toast = document.getElementById('toastMessage');
+    if(!toast) return;
     toast.innerText = msg; toast.style.display = 'block';
     clearTimeout(showToast.timeout);
     showToast.timeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
 }
 
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModal(id) { 
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none'; 
+}
 
 function formatTime12h(timeStr) {
     if (!timeStr) return '';
@@ -445,9 +478,21 @@ async function ensureMonthsLoadedForDate(date) {
 
 async function loadData() {
     try { 
-        await Promise.all([loadMembersFromFirebase(), loadMemos()]); 
+        await loadMembersFromFirebase();
+        await loadMemos();
+        
+        try {
+            await loadUpItems();
+        } catch (e) {
+            console.log("UP 컬렉션이 없거나 로드 실패:", e);
+        }
     }
-    catch (error) { console.error(error); }
+    catch (error) { 
+        console.error("데이터 로드 오류:", error); 
+    }
+    
+    const overlay = document.getElementById('loadingOverlay');
+    if(overlay) overlay.classList.add('hidden');
 }
 
 function openAddModal(id) {
@@ -459,11 +504,6 @@ function openAddModal(id) {
     document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
-    
-    const noticeTitleEl = document.getElementById('eventNoticeTitle');
-    if (noticeTitleEl) noticeTitleEl.value = ''; 
-    const noticeDescEl = document.getElementById('eventNoticeDesc');
-    if (noticeDescEl) noticeDescEl.value = ''; 
     
     document.getElementById('eventType').value = '개인방송';
     
@@ -488,11 +528,6 @@ function openEditModal(id, idx) {
     document.getElementById('eventType').value = ev.type;
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    
-    const noticeTitleEl = document.getElementById('eventNoticeTitle');
-    if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
-    const noticeDescEl = document.getElementById('eventNoticeDesc');
-    if (noticeDescEl) noticeDescEl.value = ev.noticeDesc || ''; 
     
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     
@@ -532,11 +567,6 @@ function openEditModalByEvent(ev) {
     document.getElementById('eventType').value = ev.type || '개인방송';
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    
-    const noticeTitleEl = document.getElementById('eventNoticeTitle');
-    if (noticeTitleEl) noticeTitleEl.value = ev.noticeTitle || ''; 
-    const noticeDescEl = document.getElementById('eventNoticeDesc');
-    if (noticeDescEl) noticeDescEl.value = ev.noticeDesc || ''; 
     
     document.getElementById('eventImageUrl').value = ev.imageUrl || '';
     if (ev.time) {
@@ -587,11 +617,6 @@ async function saveEvent() {
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
     
-    const noticeTitleEl = document.getElementById('eventNoticeTitle');
-    const noticeTitle = noticeTitleEl ? noticeTitleEl.value.trim() : ''; 
-    const noticeDescEl = document.getElementById('eventNoticeDesc');
-    const noticeDesc = noticeDescEl ? noticeDescEl.value.trim() : ''; 
-    
     const imageUrl = document.getElementById('eventImageUrl').value;
 
     const editingDocId = document.getElementById('editingEventDocId').value;
@@ -604,8 +629,6 @@ async function saveEvent() {
             type,
             members,
             noticeLink,
-            noticeTitle, 
-            noticeDesc, 
             imageUrl,
             dateId: activeDateId,
             startDate: startStr,
@@ -658,6 +681,7 @@ async function deleteEvent() {
 
 function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
+    if(!grid) return;
     grid.innerHTML = '';
     
     const isMobile = window.innerWidth < 768;
@@ -671,7 +695,8 @@ function renderCalendar() {
         const monday = new Date(target.setDate(diff));
         
         const { month, week } = getWeekOfMonth(currentDate);
-        document.getElementById('monthDisplay').innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
+        const monthDisplay = document.getElementById('monthDisplay');
+        if(monthDisplay) monthDisplay.innerText = `${currentDate.getFullYear()}년 ${month}월 ${week}째주`;
         
         const yoils = ['월', '화', '수', '목', '금', '토', '일'];
         const yoilColors = ['', '', '', '', '', 'text-blue-500', 'text-red-500'];
@@ -749,7 +774,8 @@ function renderCalendar() {
         
         const y = currentDate.getFullYear();
         const m = currentDate.getMonth();
-        document.getElementById('monthDisplay').innerText = `${y}년 ${m + 1}월`;
+        const monthDisplay = document.getElementById('monthDisplay');
+        if (monthDisplay) monthDisplay.innerText = `${y}년 ${m + 1}월`;
         
         const firstDay = new Date(y, m, 1);
         const lastDay = new Date(y, m + 1, 0);
@@ -773,13 +799,14 @@ function renderCalendar() {
         }
     }
     applyDraggable();
-    updateAdminUI(); updateSummary();
+    updateAdminUI(); 
+    updateSummary();
 }
 
 function applyDraggable() {
     document.querySelectorAll('.event-container, .week-events').forEach(el => {
         if (isAdmin) {
-            if (!el.sortableInstance) {
+            if (!el.sortableInstance && window.Sortable) {
                 el.sortableInstance = new Sortable(el, {
                     animation: 150,
                     ghostClass: 'dragging-ghost',
@@ -839,89 +866,14 @@ function createDay(num, isCurr, dayEvents = []) {
 function showInfo(id, idx) {
     const ev = events[id]?.[idx];
     if (!ev) return;
-
-    document.getElementById('infoTitle').innerText = ev.title;
-
-    let dateText = '';
-    if (ev.startDate && ev.endDate) {
-        const s = new Date(ev.startDate);
-        const e = new Date(ev.endDate);
-        const startText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}`;
-        const endText = `${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}`;
-        dateText = startText;
-        if (ev.startDate !== ev.endDate) {
-            dateText = `${startText} - ${endText}`;
-        }
-        if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
-    } else if (ev.dateId) {
-        const parts = ev.dateId.split('-');
-        dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}`;
-        if (ev.time) dateText += ` | ${formatTime12h(ev.time)}`;
-    } else {
-        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
-    }
-
-    document.getElementById('infoTime').innerText = dateText;
-
-    const infoImageContainer = document.getElementById('infoImageContainer');
-    infoImageContainer.innerHTML = '';
-    if (ev.imageUrl) {
-        const img = document.createElement('img');
-        img.src = ev.imageUrl;
-        img.alt = ev.title;
-        img.className = 'info-image';
-        img.onload = () => {
-            infoImageContainer.innerHTML = '';
-            infoImageContainer.appendChild(img);
-        };
-        img.onerror = () => {
-            infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`;
-        };
-        infoImageContainer.appendChild(img);
-    }
-    const profs = document.getElementById('infoProfiles');
-    profs.innerHTML = '';
-    if (ev.members) {
-        ev.members.split(',').forEach(nameRaw => {
-            const name = nameRaw.trim();
-            if (!name) return;
-            const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-            const card = document.createElement('div');
-            card.className = 'profile-card';
-            card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-            profs.appendChild(card);
-        });
-    }
-    
-    // ✨ HTML에 빈칸이 없어도 JS가 알아서 카드를 띄울 자리를 만들어줌 ✨
-    let noticePreview = document.getElementById('infoNoticePreview');
-    if (!noticePreview) {
-        noticePreview = document.createElement('div');
-        noticePreview.id = 'infoNoticePreview';
-        noticePreview.className = 'notice-preview';
-        noticePreview.style.display = 'none';
-        const infoBlock = document.querySelector('.info-block');
-        if(infoBlock) infoBlock.appendChild(noticePreview);
-    }
-
-    const noticeBtn = document.getElementById('infoNoticeBtn'); 
-    if(noticeBtn) noticeBtn.style.display = 'none';
-
-    if (ev.noticeLink) {
-        // ✨ 여기서 우리가 만든 Vercel 백엔드 자동 불러오기를 호출! ✨
-        if(window.loadNoticePreview && noticePreview) {
-            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
-        }
-    } else {
-        if(noticePreview) noticePreview.style.display = 'none';
-    }
-    
-    document.getElementById('infoModal').style.display = 'flex';
+    showInfoByEvent(ev);
 }
 
 function showInfoByEvent(ev) {
     if (!ev) return;
-    document.getElementById('infoTitle').innerText = ev.title;
+    const titleEl = document.getElementById('infoTitle');
+    if (titleEl) titleEl.innerText = ev.title || '';
+    
     let dateText = '';
     if (ev.startDate && ev.endDate) {
         const s = new Date(ev.startDate); const e = new Date(ev.endDate);
@@ -933,30 +885,37 @@ function showInfoByEvent(ev) {
     } else {
         dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
     }
-    document.getElementById('infoTime').innerText = dateText;
+    
+    const timeEl = document.getElementById('infoTime');
+    if (timeEl) timeEl.innerText = dateText;
+    
     const infoImageContainer = document.getElementById('infoImageContainer');
-    infoImageContainer.innerHTML = '';
-    if (ev.imageUrl) {
-        const img = document.createElement('img');
-        img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
-        img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
-        img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
-        infoImageContainer.appendChild(img);
-    }
-    const profs = document.getElementById('infoProfiles');
-    profs.innerHTML = '';
-    if (ev.members) {
-        ev.members.split(',').forEach(nameRaw => {
-            const name = nameRaw.trim(); if (!name) return;
-            const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-            const card = document.createElement('div');
-            card.className = 'profile-card';
-            card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-            profs.appendChild(card);
-        });
+    if(infoImageContainer) {
+        infoImageContainer.innerHTML = '';
+        if (ev.imageUrl) {
+            const img = document.createElement('img');
+            img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
+            img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
+            img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
+            infoImageContainer.appendChild(img);
+        }
     }
 
-    // ✨ HTML에 빈칸이 없어도 JS가 알아서 카드를 띄울 자리를 만들어줌 ✨
+    const profs = document.getElementById('infoProfiles');
+    if (profs) {
+        profs.innerHTML = '';
+        if (ev.members) {
+            ev.members.split(',').forEach(nameRaw => {
+                const name = nameRaw.trim(); if (!name) return;
+                const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
+                const card = document.createElement('div');
+                card.className = 'profile-card';
+                card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
+                profs.appendChild(card);
+            });
+        }
+    }
+
     let noticePreview = document.getElementById('infoNoticePreview');
     if (!noticePreview) {
         noticePreview = document.createElement('div');
@@ -971,7 +930,6 @@ function showInfoByEvent(ev) {
     if(noticeBtn) noticeBtn.style.display = 'none';
 
     if (ev.noticeLink) {
-        // ✨ 여기서 우리가 만든 Vercel 백엔드 자동 불러오기를 호출! ✨
         if(window.loadNoticePreview && noticePreview) {
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         }
@@ -979,33 +937,60 @@ function showInfoByEvent(ev) {
         if(noticePreview) noticePreview.style.display = 'none';
     }
     
-    document.getElementById('infoModal').style.display = 'flex';
+    const modal = document.getElementById('infoModal');
+    if(modal) modal.style.display = 'flex';
 }
 
 function updateSummary() {
     const today = new Date();
     const id = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
     const cont = document.getElementById('summaryContent');
+    if(!cont) return;
     cont.innerHTML = '';
     if (events[id] && events[id].length > 0) {
         events[id].forEach((ev, idx) => {
             const item = document.createElement('div');
             item.className = 'summary-item';
-            item.onclick = () => showInfo(id, idx);
+            item.onclick = () => showInfoByEvent(ev);
             item.innerHTML = `<span class="summary-dot type-dot-${ev.type.replace(/\s+/g, '')}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
             cont.appendChild(item);
         });
     } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
 }
 
-function toggleMemo() {
-    const panel = document.getElementById('memoPanel');
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) {
-        updateMemoTabUI();
-        loadMemos();
+// ------------------------- 메모 관련 기능 -------------------------
+window.toggleMemo = function() {
+    const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    // 메모를 열 때 UP 보드가 닫히도록 적용
+    if (upPanel) upPanel.classList.remove('open', 'show-sheet');
+    
+    if (memoPanel) {
+        memoPanel.classList.toggle('open');
+        if (memoPanel.classList.contains('open')) {
+            updateMemoTabUI();
+            loadMemos();
+        }
     }
-}
+    updateBoardButtonsState();
+};
+
+window.toggleUpBoard = function() {
+    const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    // UP 보드를 열 때 메모가 닫히도록 적용
+    if (memoPanel) memoPanel.classList.remove('open', 'show-sheet');
+    
+    if (upPanel) {
+        upPanel.classList.toggle('open');
+        if (upPanel.classList.contains('open')) {
+            loadUpItems();
+        }
+    }
+    updateBoardButtonsState();
+};
 
 function selectMemoTab(tab) {
     activeMemoTab = tab;
@@ -1066,6 +1051,7 @@ async function saveMemoItem() {
 
 async function loadMemos() {
     const list = document.getElementById('memoList');
+    if(!list) return;
     list.innerHTML = '';
     const currentLoad = ++memoLoadToken;
     
@@ -1088,11 +1074,9 @@ async function loadMemos() {
             const dateA = a.date || '9999-12-31';
             const timeA = a.time || '23:59';
             const dtA = `${dateA}T${timeA}`;
-
             const dateB = b.date || '9999-12-31';
             const timeB = b.time || '23:59';
             const dtB = `${dateB}T${timeB}`;
-
             return dtA.localeCompare(dtB); 
         } else if (hasDateTimeA && !hasDateTimeB) {
             return -1; 
@@ -1152,6 +1136,309 @@ window.deleteMemo = async (id) => {
     }
 };
 
+window.openUpInput = function() {
+    if (!isAdmin) return;
+    const inputArea = document.getElementById('upInputArea');
+    if (inputArea) inputArea.classList.remove('hidden');
+    const titleInput = document.getElementById('upTitleInput');
+    if (titleInput) titleInput.focus();
+};
+
+window.closeUpInput = function() {
+    if (document.getElementById('upTitleInput')) document.getElementById('upTitleInput').value = '';
+    if (document.getElementById('upLinkInput')) document.getElementById('upLinkInput').value = '';
+    if (document.getElementById('upDeadlineInput')) document.getElementById('upDeadlineInput').value = '';
+    const inputArea = document.getElementById('upInputArea');
+    if (inputArea) inputArea.classList.add('hidden');
+};
+
+window.saveUpItem = async function() {
+    if (!isAdmin) return;
+    const title = document.getElementById('upTitleInput').value.trim();
+    const link = document.getElementById('upLinkInput').value.trim();
+    const deadline = document.getElementById('upDeadlineInput').value;
+
+    if (!title) return showToast('컨텐츠 이름을 입력하세요.');
+    if (!link) return showToast('링크를 입력하세요.');
+
+    try {
+        await addDoc(collection(db, 'up'), {
+            title, link, deadline, createdAt: new Date()
+        });
+        closeUpInput();
+        loadUpItems();
+        showToast('항목이 추가되었습니다.');
+    } catch (error) {
+        showToast('저장 실패: ' + error.message);
+    }
+};
+
+window.loadUpItems = async function() {
+    const list = document.getElementById('upList');
+    if(!list) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, 'up'));
+        list.innerHTML = '';
+        if (snapshot.empty) {
+            list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px;">등록된 UP! 컨텐츠가 없습니다.</p>';
+            return;
+        }
+
+        let items = [];
+        snapshot.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
+        
+        items.sort((a, b) => {
+            if(a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return tB - tA;
+        });
+
+        items.forEach(data => {
+            const entry = document.createElement('div');
+            entry.className = 'up-item-card';
+            entry.style.cssText = "background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;";
+            
+            entry.onmouseover = () => entry.style.background = "#e0f2fe";
+            entry.onmouseout = () => entry.style.background = "#ffffff";
+
+            let deadlineText = '';
+            if (data.deadline) {
+                const parts = data.deadline.split('-');
+                if (parts.length === 3) {
+                    deadlineText = `<div style="color: #64748b; font-size: 13px; font-weight: 600; margin-top: 4px;">${parts[1]}.${parts[2]} 마감</div>`;
+                }
+            }
+
+            entry.innerHTML = `
+                <div style="flex: 1;" onclick="window.open('${data.link}', '_blank')">
+                    <div style="font-weight: 800; color: #1e293b; font-size: 16px;">${data.title}</div>
+                    ${deadlineText}
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+                    </a>
+                    ${isAdmin ? `<button onclick="event.stopPropagation(); deleteUpItem('${data.id}')" style="color: #aaa; font-weight: bold; cursor: pointer; border: none; background: none;">✕</button>` : ''}
+                </div>
+            `;
+            list.appendChild(entry);
+        });
+    } catch (error) {
+        console.error("데이터 로드 중 에러 발생:", error);
+    }
+};
+
+window.deleteUpItem = async function(id) {
+    if (!isAdmin) return;
+    if(confirm('이 항목을 삭제하시겠습니까?')) {
+        try {
+            await deleteDoc(doc(db, "up", id));
+            showToast('항목이 삭제되었습니다.');
+            await loadUpItems();
+        } catch (error) {
+            console.error('삭제 실패:', error);
+            showToast('삭제에 실패했습니다.');
+        }
+    }
+};
+
+// ------------------------- UP 팝업 및 관리자 메뉴 로직 -------------------------
+window.closeUpPopup = function() {
+    const isChecked = document.getElementById('hidePopupToday')?.checked;
+    if (isChecked) {
+        const today = new Date().toDateString();
+        localStorage.setItem('hideUpPopupDate', today);
+    }
+    const modal = document.getElementById('upPopupModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.checkAndShowPopup = async function() {
+    const hideDate = localStorage.getItem('hideUpPopupDate');
+    const today = new Date().toDateString();
+    if (hideDate === today) return;
+
+    const popupList = document.getElementById('popupUpList');
+    if (!popupList) return;
+
+    try {
+        let popupImageUrl = '';
+        try {
+            const settingsSnap = await getDoc(doc(db, 'settings', 'popup'));
+            if (settingsSnap.exists()) {
+                popupImageUrl = settingsSnap.data().imageUrl || '';
+            }
+        } catch(e) { console.warn('Popup image fetch error:', e); }
+
+        const snapshot = await getDocs(collection(db, 'up'));
+        
+        if (!snapshot.empty || popupImageUrl) {
+            let items = [];
+            snapshot.forEach(docSnap => items.push({ id: docSnap.id, ...docSnap.data() }));
+            
+            items.sort((a, b) => {
+                if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+                return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+            });
+            
+            popupList.innerHTML = '';
+            
+            if (popupImageUrl) {
+                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; object-fit: cover; max-height: 350px;" alt="Notice Image"></div>`;
+            }
+
+            items.forEach(data => {
+                let deadlineText = '';
+                if (data.deadline) {
+                    const parts = data.deadline.split('-');
+                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 13px; font-weight: 600; margin-top: 4px;">${parts[1]}.${parts[2]} 마감</div>`;
+                }
+                
+                // UP보드의 일정 카드와 똑같은 디자인 적용
+                popupList.innerHTML += `
+                    <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 16px;">${data.title}</div>
+                            ${deadlineText}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('upPopupModal').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error("Popup UP Load Error:", error);
+    }
+};
+
+window.showAdminMenu = function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    let menu = document.getElementById('dynamicAdminMenu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'dynamicAdminMenu';
+        menu.style.cssText = 'position:absolute; right:15px; top:60px; background:white; border:2px solid #e2e8f0; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:9999; display:flex; flex-direction:column; padding:8px; gap:4px; min-width:140px;';
+        
+        const btnManage = document.createElement('button');
+        btnManage.innerText = '관리 (팝업 이미지 설정)';
+        btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px;';
+        btnManage.onmouseover = () => btnManage.style.background = '#f1f5f9';
+        btnManage.onmouseout = () => btnManage.style.background = 'none';
+        btnManage.onclick = () => { 
+            menu.style.display = 'none'; 
+            window.openAdminSettings(); 
+        };
+        
+        const btnLogout = document.createElement('button');
+        btnLogout.innerText = '로그아웃';
+        btnLogout.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; color:#ef4444; font-size:14px;';
+        btnLogout.onmouseover = () => btnLogout.style.background = '#fef2f2';
+        btnLogout.onmouseout = () => btnLogout.style.background = 'none';
+        btnLogout.onclick = async () => { 
+            menu.style.display = 'none'; 
+            if (modifiedDates.size > 0) {
+                if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) {
+                    await saveAllModifiedOrders();
+                }
+            }
+            isAdmin = false;
+            sessionStorage.removeItem('htvvi_admin');
+            modifiedDates.clear();
+            updateAdminUI();
+            renderCalendar();
+            showToast('관리자 모드 해제');
+        };
+        
+        menu.appendChild(btnManage);
+        menu.appendChild(btnLogout);
+        document.body.appendChild(menu);
+    }
+    
+    if (menu.style.display === 'none' || menu.style.display === '') {
+        menu.style.display = 'flex';
+        setTimeout(() => {
+            const closeMenu = (evt) => {
+                if (!menu.contains(evt.target)) {
+                    menu.style.display = 'none';
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            document.addEventListener('click', closeMenu);
+        }, 0);
+    } else {
+        menu.style.display = 'none';
+    }
+};
+
+window.openAdminSettings = async function() {
+    let imgUrl = prompt("입장 팝업 상단에 표시할 이미지 URL 링크를 입력하세요.\n(비워두면 이미지가 표시되지 않습니다.)");
+    if (imgUrl !== null) {
+        try {
+            await setDoc(doc(db, 'settings', 'popup'), { imageUrl: imgUrl.trim() });
+            showToast('팝업 이미지가 설정되었습니다. 새로고침 후 확인하세요.');
+        } catch(e) {
+            showToast('설정 저장 실패: ' + e.message);
+        }
+    }
+};
+
+window.promptAdmin = async function(e) {
+    if (isAdmin) {
+        window.showAdminMenu(e);
+    } else {
+        document.getElementById('adminPw').value = '';
+        const err = document.getElementById('pwError');
+        if (err) err.classList.add('hidden');
+        document.getElementById('pwModal').style.display = 'flex';
+        document.getElementById('adminPw').focus();
+    }
+}
+
+async function saveAllModifiedOrders() {
+    showToast('순서를 서버에 저장 중입니다...');
+    const updatePromises = [];
+
+    for (const dateId of modifiedDates) {
+        const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) ||
+                          document.querySelector(`[data-date-id="${dateId}"] .week-events`);
+        if (container) {
+            const items = container.querySelectorAll('.event-tag');
+            items.forEach((item, index) => {
+                const docId = item.dataset.id;
+                if (docId) {
+                    updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
+                }
+            });
+        }
+    }
+
+    await Promise.all(updatePromises);
+    modifiedDates.clear();
+    showToast('모든 순서가 저장되었습니다.');
+}
+
+function loginAdmin() {
+    if (document.getElementById('adminPw').value === '0112') {
+        isAdmin = true; 
+        sessionStorage.setItem('htvvi_admin', 'true');
+        closeModal('pwModal'); 
+        updateAdminUI(); 
+        renderCalendar(); 
+        showToast('관리자 인증 성공!');
+    } else {
+        const err = document.getElementById('pwError');
+        if (err) err.classList.remove('hidden');
+    }
+}
+
+// 달 이동 및 UI 조작
 window.moveMonth = async function(v) {
     const isMobile = window.innerWidth < 768;
     
@@ -1210,62 +1497,6 @@ window.selectMonth = async function(m) {
     renderCalendar(); 
 }
 
-async function promptAdmin() {
-    if (isAdmin) {
-        if (modifiedDates.size > 0) {
-            if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) {
-                await saveAllModifiedOrders();
-            }
-        }
-        isAdmin = false;
-        sessionStorage.removeItem('htvvi_admin');
-        modifiedDates.clear();
-        updateAdminUI();
-        renderCalendar();
-        showToast('관리자 모드 해제');
-    }
-    else {
-        document.getElementById('adminPw').value = '';
-        document.getElementById('pwError').classList.add('hidden');
-        document.getElementById('pwModal').style.display = 'flex';
-        document.getElementById('adminPw').focus();
-    }
-}
-
-async function saveAllModifiedOrders() {
-    showToast('순서를 서버에 저장 중입니다...');
-    const updatePromises = [];
-
-    for (const dateId of modifiedDates) {
-        const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) ||
-                          document.querySelector(`[data-date-id="${dateId}"] .week-events`);
-        if (container) {
-            const items = container.querySelectorAll('.event-tag');
-            items.forEach((item, index) => {
-                const docId = item.dataset.id;
-                if (docId) {
-                    updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
-                }
-            });
-        }
-    }
-
-    await Promise.all(updatePromises);
-    modifiedDates.clear();
-    showToast('모든 순서가 저장되었습니다.');
-}
-
-function loginAdmin() {
-    if (document.getElementById('adminPw').value === '0112') {
-        isAdmin = true; 
-        sessionStorage.setItem('htvvi_admin', 'true');
-        closeModal('pwModal'); 
-        updateAdminUI(); 
-        renderCalendar(); 
-        showToast('관리자 인증 성공!');
-    } else document.getElementById('pwError').classList.remove('hidden');
-}
-
 function updateMemoEditState() {
     const memoInput = document.getElementById('memoItemText');
     if (!memoInput) return;
@@ -1274,13 +1505,18 @@ function updateMemoEditState() {
 
 function updateAdminUI() {
     document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
-    document.getElementById('adminBtn').classList.toggle('admin-active', isAdmin);
+    const btnAdmin = document.getElementById('adminBtn');
+    if(btnAdmin) btnAdmin.classList.toggle('admin-active', isAdmin);
     applyDraggable();
     updateMemoEditState();
     updateSongbookAdminUI();
     const memoPanel = document.getElementById('memoPanel');
     if (memoPanel && memoPanel.classList.contains('open')) {
         loadMemos();
+    }
+    const upPanel = document.getElementById('upPanel');
+    if (upPanel && (upPanel.classList.contains('open') || upPanel.classList.contains('show-sheet'))) {
+        loadUpItems();
     }
 }
 
@@ -1319,9 +1555,11 @@ async function loadSongbookSongs() {
 function renderSongbook() {
     const songListDiv = document.getElementById('songList');
     const artistListDiv = document.getElementById('artistList');
+    if(!songListDiv || !artistListDiv) return;
     
     songListDiv.innerHTML = '';
-    songbookSearchTerm = document.getElementById('songbookSearch').value.trim().toLowerCase();
+    const searchInput = document.getElementById('songbookSearch');
+    songbookSearchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
     
     const favorites = getFavorites();
 
@@ -1392,7 +1630,6 @@ function renderSongbook() {
     const uniqueArtists = [...new Set(songbookSongs.map(s => s.artist))].sort((a, b) => a.localeCompare(b, 'ko', { sensitivity: 'base' }));
     
     artistListDiv.innerHTML = '';
-    
     const allActive = songbookCurrentFilter === 'All' ? 'active' : '';
     artistListDiv.innerHTML += `<button class="artist-btn ${allActive}" onclick="setSongbookFilter('All')" type="button">All</button>`;
     
@@ -1479,8 +1716,10 @@ function editSong(event, id) {
 }
 
 function updateSongbookAdminUI() {
-    document.getElementById('adminSongForm').classList.toggle('visible', isAdmin);
-    document.getElementById('addSongBtn').textContent = '노래 추가';
+    const form = document.getElementById('adminSongForm');
+    if (form) form.classList.toggle('visible', isAdmin);
+    const addBtn = document.getElementById('addSongBtn');
+    if (addBtn) addBtn.textContent = '노래 추가';
     renderSongbook();
 }
 
@@ -1566,7 +1805,7 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
-    document.querySelectorAll('.tab-button').forEach(btn => {
+    document.querySelectorAll('.nav-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
     });
     const calendarTop = document.querySelector('.calendar-top');
@@ -1574,12 +1813,11 @@ window.showTab = async function(tab) {
     const songbookSection = document.getElementById('songbookSection');
     
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-    const favoritePlayerPanel = document.getElementById('favoritePlayerPanel');
 
     if (tab === 'songbook') {
-        calendarTop.style.display = 'none';
-        calendarBody.style.display = 'none';
-        songbookSection.classList.add('visible');
+        if(calendarTop) calendarTop.style.display = 'none';
+        if(calendarBody) calendarBody.style.display = 'none';
+        if(songbookSection) songbookSection.classList.add('visible');
         
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
         
@@ -1601,9 +1839,9 @@ window.showTab = async function(tab) {
         updateFavPlayerPlaylist();
         window.location.hash = '#songbook';
     } else {
-        calendarTop.style.display = 'flex';
-        calendarBody.style.display = 'flex';
-        songbookSection.classList.remove('visible');
+        if(calendarTop) calendarTop.style.display = 'flex';
+        if(calendarBody) calendarBody.style.display = 'flex';
+        if(songbookSection) songbookSection.classList.remove('visible');
         
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
         
@@ -1659,6 +1897,11 @@ window.toggleMobilePlayer = function() {
 
 window.toggleMobileMemo = function() {
     const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    // 모바일 메모를 켤 때 UP을 닫음
+    if (upPanel) upPanel.classList.remove('show-sheet');
+
     if (memoPanel) {
         memoPanel.classList.toggle('show-sheet');
         if (memoPanel.classList.contains('show-sheet')) {
@@ -1671,21 +1914,47 @@ window.toggleMobileMemo = function() {
     if (container && container.classList.contains('open')) {
         window.toggleMobileMenu();
     }
+    updateBoardButtonsState();
+};
+
+window.toggleMobileUpBoard = function() {
+    const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    // 모바일 UP을 켤 때 메모를 닫음
+    if (memoPanel) memoPanel.classList.remove('show-sheet');
+
+    if (upPanel) {
+        upPanel.classList.toggle('show-sheet');
+        if (upPanel.classList.contains('show-sheet')) {
+            loadUpItems();
+        }
+    }
+
+    const container = document.getElementById('mobileMenuContainer');
+    if (container && container.classList.contains('open')) {
+        window.toggleMobileMenu();
+    }
+    updateBoardButtonsState();
 };
 
 Object.assign(window, {
     handleEventImgUpload, handleMemberImgUpload, addMember, deleteMember,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
     setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
-    toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
-    promptAdmin, loginAdmin,
+    toggleMemo,         
+    openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
+    toggleUpBoard, openUpInput, closeUpInput, saveUpItem, toggleMobileUpBoard, loadUpItems, deleteUpItem,
+    promptAdmin, loginAdmin, showAdminMenu, openAdminSettings,
     renderSongbook, openBrowser, closeBrowser,
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
-    toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo
+    toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
+    closeUpPopup, checkAndShowPopup
 });
 
 window.onload = async () => {
+    injectDynamicStyles(); // 버튼 스타일(실선/색상 동기화) 적용
     await loadData();
     updateAdminUI(); 
     handlePlayerPosition();
@@ -1693,8 +1962,14 @@ window.onload = async () => {
     const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
     await window.showTab(initialTab);
 
-    document.getElementById('btnMin').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+    const btnMin = document.getElementById('btnMin');
+    if(btnMin) {
+        btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+    }
     
+    // 페이지 진입 시 UP 항목이 있으면 모달 표시 (오늘 하루 안 보기 체크 여부 확인)
+    window.checkAndShowPopup();
+
     let lastWidth = window.innerWidth;
     window.addEventListener('resize', () => {
         if (window.innerWidth !== lastWidth) {
