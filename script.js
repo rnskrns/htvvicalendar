@@ -624,7 +624,8 @@ function renderCalendar() {
                     const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
                     tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;                    
+                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
                     if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
                     eventsDiv.appendChild(tag);
                 });
@@ -695,7 +696,8 @@ function createDay(num, isCurr, dayEvents = []) {
             const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
             const tag = document.createElement('div');
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
+            // white-space: pre-wrap; 추가하여 PC 모드에서도 줄바꿈 적용
+            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
             evCont.appendChild(tag);
@@ -924,13 +926,14 @@ window.loadUpItems = async function() {
             entry.onmouseout = () => entry.style.background = "#ffffff";
 
             let deadlineText = '';
-                if (data.deadline) {
-                    const parts = data.deadline.split('-');
-                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'OngleipParkDahyeon', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
-                }
+            if (data.deadline) {
+                const parts = data.deadline.split('-');
+                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+            }
+            // UP 보드 폰트 Cafe24SurroundAir로 변경
             entry.innerHTML = `
                 <div style="flex: 1;" onclick="window.open('${data.link}', '_blank')">
-                    <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'GMarketSans', sans-serif;">${data.title}</div>
+                    <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
                     ${deadlineText}
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -1007,7 +1010,6 @@ window.checkAndShowPopup = async function() {
                 let deadlineText = '';
                 if (data.deadline) {
                     const parts = data.deadline.split('-');
-                    // 카페24 써라운드에어로 변경
                     if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
                 }
                 
@@ -1375,7 +1377,6 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
-    // 1. PC 상단 탭 활성화 업데이트
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) {
             btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);

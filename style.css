@@ -199,33 +199,33 @@ body {
 
 #monthDisplay { font-family: 'KerisKeduLine', sans-serif !important; }
 
-.memo-btn { 
-    position: static !important; 
-    margin: 0; 
-    flex-shrink: 0; 
-    background: transparent; 
-    border: 2px dashed #E5E1DA; 
-    border-radius: 999px; 
-    height: 50px; 
-    padding: 0 20px; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 8px; 
-    transition: all 0.2s ease; 
-    font-family: 'Cafe24SurroundAir', sans-serif !important; 
-    font-weight: 900; 
-    font-size: 15px; 
-    color: var(--text-dark); 
+.memo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important; /* 점선 및 외곽선 제거 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 그림자 효과 추가 */
+    background-color: #ffffff;
+    color: #4E4942;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-weight: 800;
+    font-family: 'Cafe24SurroundAir', sans-serif;
+    padding: 6px 12px;
+    border-radius: 8px;
 }
 
 /* 호버 및 활성화 상태 (흰배경, 노란 외곽선/폰트) */
-.memo-btn:hover, .memo-btn.board-active { 
-    background: #FFFFFF !important;
-    border-style: solid !important;
-    border-color: #EAB308 !important;
-    color: #EAB308 !important;
+.memo-btn:hover {
+    background-color: #FEF08A !important; /* 파스텔 노란색 */
+    color: #CA8A04 !important; /* 가독성을 위한 진한 노란색 */
+    border: none !important;
+}
+
+.memo-btn.board-active {
+    background-color: #FEF08A !important;
+    color: #CA8A04 !important;
+    border: none !important;
 }
 
 .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
@@ -613,11 +613,17 @@ body {
 
     .mobile-menu-item:last-child { border-bottom: none; }
     
-.mobile-menu-item:hover, 
-.mobile-menu-item:active,
-.mobile-menu-item.active-mobile-tab { 
-    color: #EAB308 !important; background: transparent; 
-}
+    .mobile-menu-item:hover, 
+    .mobile-menu-item:active,
+    .mobile-menu-item:focus,
+    .mobile-menu-item.active-mobile-tab,
+    .mobile-menu-item.board-active { 
+        color: #EAB308 !important; 
+        background: transparent !important; 
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
 
     #btnMin { width: 44px !important; height: 44px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 50 !important; }
 

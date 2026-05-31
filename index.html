@@ -26,12 +26,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
-    <!-- CSS 파일 연결 -->
     <link rel="stylesheet" href="style.css?v=20260601">
 </head>
 <body id="mainBody">
 
-    <!-- 고정 상단바 -->
     <div class="fixed-top-bar">
         <div class="top-bar-inner">
             <div class="top-bar-left">
@@ -82,7 +80,7 @@
         <div class="header-right">
             <div id="todaySchedulePanel" class="today-summary">
                 <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">
-                    <span class="w-2 h-5 bg-amber-400 rounded-full"></span>오늘 일정
+                    오늘 일정
                 </h4>
                 <div id="summaryContent"></div>
             </div>
@@ -101,9 +99,11 @@
                     
                     <div style="position: absolute; right: 0; display: flex; gap: 8px; align-items: center;">
                         <button id="upBoardBtn" class="memo-btn" title="UP! 게시판 열기/닫기" onclick="toggleUpBoard()">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
                             <span>UP!</span>
                         </button>
                         <button id="memoBoardBtn" class="memo-btn" title="메모장 열기/닫기" onclick="toggleMemo()">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             <span>MEMO</span>
                         </button>
                     </div>
@@ -151,7 +151,6 @@
                 <div id="memoList" class="memo-list"></div>
             </div>
 
-            <!-- UP 게시판 영역 -->
             <div id="upPanel" class="memo-panel-container">
                 <button class="mobile-player-close" onclick="toggleMobileUpBoard()" title="닫기" id="mobileUpCloseBtn" style="display: none;">
                     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -243,7 +242,6 @@
             </div>
         </div>
 
-        <!-- 미디어 브라우저 모달 -->
         <div id="browserModal" class="songbook-modal">
             <div class="browser-container">
                 <div class="browser-header">
@@ -260,7 +258,6 @@
         </div>
     </div>
 
-    <!-- 일정 추가/수정 모달 -->
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><h2 id="modalTitle" class="modal-title">일정 추가</h2></div>
@@ -317,15 +314,7 @@
             </div>
         </div>
     </div>
-            <div class="modal-footer btn-group">
-                <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
-                <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()" style="display:none;">삭제</button>
-                <button class="btn btn-save" onclick="saveEvent()">저장</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- 정보 표시 모달 -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <div id="infoTitle" class="info-title" style="font-family: 'Cafe24SurroundAir', sans-serif;"></div>
@@ -339,7 +328,6 @@
         </div>
     </div>
 
-    <!-- 관리자 인증 모달 -->
     <div id="pwModal" class="modal">
         <div class="modal-content pw-modal">
             <h3 class="text-center font-black mb-5" style="font-family: 'Cafe24SurroundAir', sans-serif; font-size:24px;">관리자 인증</h3>
@@ -352,7 +340,6 @@
         </div>
     </div>
     
-    <!-- 멤버 관리 모달 -->
     <div id="memberModal" class="modal">
         <div class="modal-content">
             <h3 class="modal-title">멤버 관리</h3>
@@ -368,7 +355,6 @@
         </div>
     </div>
 
-    <!-- 삭제 확인 모달 -->
     <div id="confirmModal" class="modal">
         <div class="modal-content" style="max-width: 320px; align-items: center; text-align: center;">
             <h3 id="confirmMessage" class="font-black text-lg mb-6" style="font-family: 'Cafe24SurroundAir', sans-serif;"></h3>
@@ -379,7 +365,6 @@
         </div>
     </div>
 
-    <!-- 월 선택 모달 -->
     <div id="monthPickerModal" class="modal">
         <div class="modal-content" style="max-width: 380px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -392,7 +377,6 @@
         </div>
     </div>
 
-    <!-- 관리자 설정 (입장 팝업 & UP 링크 추가) 통합 모달 -->
     <div id="popupAdminModal" class="modal">
         <div class="modal-content" style="max-width: 420px; padding: 25px;">
             <h3 class="modal-title" style="text-align: center; font-size: 20px; margin-bottom: 20px;">관리자 설정</h3>
@@ -419,7 +403,6 @@
         </div>
     </div>
 
-    <!-- 메인 UP 팝업 모달 -->
     <div id="upPopupModal" class="modal">
         <div class="modal-content" style="max-width: 550px; min-height: 300px; padding: 30px; overflow-y: auto;">
             <div id="popupUpList" style="margin-bottom: 20px;"></div>
@@ -434,7 +417,6 @@
         </div>
     </div>
 
-    <!-- 모바일 하단 메뉴 네비게이션 -->
     <div id="mobileMenuContainer" class="mobile-menu-container">
         <button class="mobile-menu-main-btn" onclick="toggleMobileMenu()">
             <svg id="menuIconDefault" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -464,10 +446,8 @@
         </div>
     </div>
 
-    <!-- 토스트 메시지 -->
     <div id="toastMessage"></div>
 
-    <!-- 분리된 자바스크립트 연결 -->
     <script type="module" src="script.js?v=20260601"></script>
 </body>
 </html>
