@@ -624,8 +624,7 @@ function renderCalendar() {
                     const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
                     tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word;">${ev.title}</div>`;
-                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
                     if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
                     eventsDiv.appendChild(tag);
                 });
@@ -993,7 +992,8 @@ window.checkAndShowPopup = async function() {
                 return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
             });
             
-            popupList.innerHTML = '';
+            popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
+            
             if (popupImageUrl) {
                 popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; border-radius: 12px; object-fit: cover; max-height: 350px;" alt="Notice Image"></div>`;
             }
@@ -1007,13 +1007,14 @@ window.checkAndShowPopup = async function() {
                 let deadlineText = '';
                 if (data.deadline) {
                     const parts = data.deadline.split('-');
-                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'OngleipParkDahyeon', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+                    // 카페24 써라운드에어로 변경
+                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
                 }
                 
                 popupList.innerHTML += `
                     <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
                         <div style="flex: 1;">
-                            <div style="font-weight: 800; color: #1e293b; font-size: 14px; font-family: 'OngleipParkDahyeon', sans-serif;">${data.title}</div>
+                            <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
                             ${deadlineText}
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
@@ -1462,6 +1463,24 @@ Object.assign(window, {
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
     closeUpPopup, checkAndShowPopup
+});
+
+document.addEventListener('contextmenu', function(e) {
+    if (!isAdmin && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener('selectstart', function(e) {
+    if (!isAdmin && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener('dragstart', function(e) {
+    if (!isAdmin && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+    }
 });
 
 window.onload = async () => {

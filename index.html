@@ -269,7 +269,7 @@
                 <input type="hidden" id="editIndex" value="-1">
                 <div class="form-group">
                     <label>일정 제목</label>
-                    <input type="text" id="eventTitle" class="admin-input" placeholder="예: 생방송, 합방 등">
+                    <textarea id="eventTitle" class="admin-input" placeholder="예: 와우 버튜버 막고라&#13;&#10;토너먼트 (엔터로 줄바꿈 가능)" style="resize: none; height: 60px; line-height: 1.3; overflow: hidden; padding-top: 18px;"></textarea>
                 </div>
                 <div class="form-group custom-time-picker">
                     <label>시간 설정</label>
@@ -310,6 +310,13 @@
                     </div>
                 </div>
             </div>
+            <div class="modal-footer btn-group">
+                <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
+                <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()" style="display:none;">삭제</button>
+                <button class="btn btn-save" onclick="saveEvent()">저장</button>
+            </div>
+        </div>
+    </div>
             <div class="modal-footer btn-group">
                 <button class="btn btn-cancel" onclick="closeModal('eventModal')">취소</button>
                 <button id="delBtn" class="btn btn-danger" onclick="deleteEvent()" style="display:none;">삭제</button>
@@ -412,7 +419,7 @@
         </div>
     </div>
 
-    <!-- 메인 UP 팝업 모달 (크기 30% 증가) -->
+    <!-- 메인 UP 팝업 모달 -->
     <div id="upPopupModal" class="modal">
         <div class="modal-content" style="max-width: 550px; min-height: 350px; padding: 30px;">
             <div id="popupUpList" style="max-height: 500px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;"></div>
@@ -426,7 +433,7 @@
         </div>
     </div>
 
-    <!-- 모바일 하단 메뉴 네비게이션 (텍스트 왼쪽에 아이콘 추가) -->
+    <!-- 모바일 하단 메뉴 네비게이션 -->
     <div id="mobileMenuContainer" class="mobile-menu-container">
         <button class="mobile-menu-main-btn" onclick="toggleMobileMenu()">
             <svg id="menuIconDefault" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
