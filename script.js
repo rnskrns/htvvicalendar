@@ -387,8 +387,12 @@ function formatTime12h(timeStr) {
 
 function setAMPM(val) {
     currentAMPM = val;
-    document.getElementById('ampmAM').classList.toggle('active', val === '오전');
-    document.getElementById('ampmPM').classList.toggle('active', val === '오후');
+    
+    const amBtn = document.getElementById('ampmAM');
+    const pmBtn = document.getElementById('ampmPM');
+    
+    if (amBtn) amBtn.classList.toggle('active', val === '오전');
+    if (pmBtn) pmBtn.classList.toggle('active', val === '오후');
 }
 
 async function loadMembersFromFirebase() {

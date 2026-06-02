@@ -706,3 +706,22 @@ body {
     border-color: #8c50c5 !important;               /* 보라색 테두리 */
     background-color: rgba(208, 132, 252, 0.15) !important; /* 연한 보라색 배경 */
 }
+
+/* 오전/오후 버튼 기본 스타일 기본 예시 */
+#ampmAM, #ampmPM {
+    padding: 8px 16px;
+    border: 2px solid #e2e8f0;
+    background-color: #ffffff;
+    color: #64748b;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* ★ 중요: 선택되었을 때(active) 바뀌는 색상 스타일 */
+#ampmAM.active, #ampmPM.active {
+    background-color: #bae6fd; /* 하늘색 배경 (기존 코드의 테두리 톤 매칭) */
+    border-color: #38bdf8;     /* 활성화된 테두리 */
+    color: #0369a1;            /* 진한 글자색 */
+}
