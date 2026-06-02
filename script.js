@@ -256,8 +256,8 @@ async function handleEventImgUpload(input) {
             const file = input.files[0];
             showToast('일정 이미지를 업로드 중입니다...');
 
-            const cloudName = "본인의_클라우드_네임"; // 변경하세요
-            const uploadPreset = "본인의_업로드_프리셋"; // 변경하세요
+            const cloudName = "dtlqzklk5";
+            const uploadPreset = "IMG_1234";
 
             const formData = new FormData();
             formData.append("file", file);
