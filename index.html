@@ -29,16 +29,17 @@
     <link rel="stylesheet" href="style.css?v=20260601">
 
     <style>
-        /* 일정 추가 모달 전용 반응형 스타일 */
+        /* 일정 추가 모달 전용 반응형 & 꾸미기 스타일 */
         .event-modal-box {
-            background: white; 
-            padding: 32px; 
-            border-radius: 12px; 
-            max-width: 850px; /* 창 크기 확대 */
+            background: #ffffff; 
+            padding: 32px 40px; 
+            border-radius: 20px; 
+            max-width: 850px; 
             width: 95%; 
             max-height: 90vh; 
             overflow-y: auto; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 30px rgba(122, 90, 47, 0.15);
+            border: 2px solid #FFF3B0;
         }
         .event-modal-grid {
             display: flex; 
@@ -48,18 +49,34 @@
         .event-modal-left, .event-modal-right {
             display: flex; 
             flex-direction: column; 
-            gap: 16px;
+            gap: 18px;
+        }
+        /* 입력창 디자인 통일 */
+        .event-custom-input {
+            width: 100%; 
+            padding: 12px 14px; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            font-size: 14px;
+            background-color: #fafaf9;
+            transition: all 0.2s;
+        }
+        .event-custom-input:focus {
+            outline: none;
+            border-color: #FDE047;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.2);
         }
         /* PC 화면(768px 이상)일 때 2단 배치 및 구분선 추가 */
         @media(min-width: 768px) {
             .event-modal-grid {
                 flex-direction: row; 
-                gap: 32px;
+                gap: 40px;
             }
             .event-modal-left {
                 flex: 1; 
-                border-right: 1px solid #e2e8f0; /* 세로 구분선 */
-                padding-right: 32px; 
+                border-right: 2px dashed #f1f5f9; 
+                padding-right: 40px; 
                 min-width: 0;
             }
             .event-modal-right {
@@ -299,9 +316,9 @@
         </div>
     </div>
 
-    <div id="eventModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="eventModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
         <div class="event-modal-box">
-            <h2 id="modalTitle" style="margin-top: 0; margin-bottom: 24px; font-family: 'GMarketSans', sans-serif; color: #333; font-size: 22px;">일정 추가</h2>
+            <h2 id="modalTitle" style="margin-top: 0; margin-bottom: 30px; font-family: 'OngleipParkDahyeon', sans-serif; color: #7A5A2F; font-size: 38px; font-weight: bold; text-align: center; letter-spacing: 1px;">일정 추가</h2>
             
             <input type="hidden" id="editIndex" value="-1">
             <input type="hidden" id="editingEventDocId" value="">
@@ -310,73 +327,74 @@
                 
                 <div class="event-modal-left">
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">제목 *</label>
-                        <input type="text" id="eventTitle" placeholder="일정 제목" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">제목 *</label>
+                        <input type="text" id="eventTitle" placeholder="일정 제목을 입력하세요" class="event-custom-input">
                     </div>
                     
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">시간</label>
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">시간</label>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <button type="button" id="ampmAM" onclick="setAMPM('오전')" class="active" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; font-size: 14px;">오전</button>
-                            <button type="button" id="ampmPM" onclick="setAMPM('오후')" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; font-size: 14px;">오후</button>
-                            <input type="number" id="timeHour" placeholder="시" min="1" max="12" style="width: 70px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; text-align: center;">
-                            <span style="font-weight: bold; color: #64748b;">:</span>
-                            <input type="number" id="timeMin" placeholder="분" min="0" max="59" style="width: 70px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; text-align: center;">
+                            <button type="button" id="ampmAM" onclick="setAMPM('오전')" class="active" style="padding: 10px 14px; border-radius: 10px; border: 1px solid #cbd5e1; cursor: pointer; font-size: 14px; font-weight: bold;">오전</button>
+                            <button type="button" id="ampmPM" onclick="setAMPM('오후')" style="padding: 10px 14px; border-radius: 10px; border: 1px solid #cbd5e1; cursor: pointer; font-size: 14px; font-weight: bold;">오후</button>
+                            <input type="number" id="timeHour" placeholder="시" min="1" max="12" class="event-custom-input" style="width: 70px; text-align: center;">
+                            <span style="font-weight: 900; color: #7A5A2F;">:</span>
+                            <input type="number" id="timeMin" placeholder="분" min="0" max="59" class="event-custom-input" style="width: 70px; text-align: center;">
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 12px;">
+                    <div style="display: flex; gap: 14px;">
                         <div style="flex: 1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">시작 날짜 *</label>
-                            <input type="date" id="eventStartDate" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                            <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">시작 날짜 *</label>
+                            <input type="date" id="eventStartDate" class="event-custom-input">
                         </div>
                         <div style="flex: 1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">종료 날짜 *</label>
-                            <input type="date" id="eventEndDate" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                            <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">종료 날짜 *</label>
+                            <input type="date" id="eventEndDate" class="event-custom-input">
                         </div>
                     </div>
 
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">유형</label>
-                        <select id="eventType" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">유형</label>
+                        <select id="eventType" class="event-custom-input" style="cursor: pointer; font-weight: bold;">
                             <option value="개인방송">개인방송</option>
                             <option value="합방">합방</option>
-                            <option value="대회">대회</option>
-                            <option value="기타">기타</option>
+                            <option value="시네티">시네티</option>
+                            <option value="LCK">LCK</option>
+                            <option value="미확정">미확정</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="event-modal-right">
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">참여 멤버 (쉼표로 구분)</label>
-                        <input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분)</label>
+                        <input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" class="event-custom-input">
                     </div>
 
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">공지 링크</label>
-                        <input type="text" id="eventNoticeLink" placeholder="https://..." style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label>
+                        <input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input">
                     </div>
 
                     <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4b5563;">포스터 / 썸네일 이미지</label>
-                        <input type="file" id="eventImgFile" accept="image/*" onchange="handleEventImgUpload(this)" style="display: block; margin-bottom: 12px; font-size: 13px; color: #64748b;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">포스터 / 썸네일 이미지</label>
+                        <input type="file" id="eventImgFile" accept="image/*" onchange="handleEventImgUpload(this)" style="display: block; margin-bottom: 12px; font-size: 13px; color: #64748b; cursor: pointer;">
                         <input type="hidden" id="eventImageUrl">
                         
-                        <div id="imagePreviewContainer" style="text-align: center; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                            <img id="eventImagePreview" src="" alt="미리보기" style="display: none; max-width: 100%; max-height: 160px; border-radius: 8px; margin: 0 auto 12px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <p id="eventImagePlaceholder" style="color: #94a3b8; font-size: 13px; margin: 0;">이미지를 업로드하면 여기에 표시됩니다.</p>
-                            <button type="button" id="removeImageBtn" onclick="removeEventImage()" style="display: none; background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s;">이미지 지우기 ✕</button>
+                        <div id="imagePreviewContainer" style="text-align: center; background: #fafaf9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1; transition: all 0.2s;">
+                            <img id="eventImagePreview" src="" alt="미리보기" style="display: none; max-width: 100%; max-height: 160px; border-radius: 8px; margin: 0 auto 12px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <p id="eventImagePlaceholder" style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: bold;">이미지를 업로드하면 여기에 표시됩니다</p>
+                            <button type="button" id="removeImageBtn" onclick="removeEventImage()" style="display: none; background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">이미지 지우기 ✕</button>
                         </div>
                     </div>
                 </div>
                 
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                <button id="delBtn" onclick="deleteEvent()" style="display: none; padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;">삭제</button>
-                <button onclick="closeModal('eventModal')" style="padding: 12px 24px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;">취소</button>
-                <button onclick="saveEvent()" style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;">저장</button>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 36px; padding-top: 24px; border-top: 1px solid #f1f5f9;">
+                <button id="delBtn" onclick="deleteEvent()" style="display: none; padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">삭제</button>
+                <button onclick="closeModal('eventModal')" style="padding: 12px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">취소</button>
+                <button onclick="saveEvent()" style="padding: 12px 24px; background: #FDE047; color: #7A5A2F; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif; box-shadow: 0 2px 8px rgba(253, 224, 71, 0.4); transition: transform 0.1s;">저장</button>
             </div>
         </div>
     </div>
