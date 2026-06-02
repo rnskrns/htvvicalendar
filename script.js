@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
@@ -17,7 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true';
 
@@ -249,15 +247,40 @@ function toggleFavorite(event, id) {
     updateFavPlayerPlaylist(); 
 }
 
+// Cloudinary 이미지 업로드 함수
 async function handleEventImgUpload(input) {
     if (input.files && input.files[0]) {
         try {
             const file = input.files[0];
             showToast('일정 이미지를 업로드 중입니다...');
-            const url = await uploadFileToStorage(file, `event-images/${Date.now()}_${file.name}`);
-            document.getElementById('eventImageUrl').value = url;
-            showToast('일정 이미지가 Firebase에 업로드되었습니다.');
-        } catch (error) { console.error(error); showToast('일정 이미지 업로드에 실패했습니다.'); }
+
+            // Cloudinary 설정 정보
+            const cloudName = "본인의_클라우드_네임"; // 변경하세요 (예: dxtz...)
+            const uploadPreset = "본인의_업로드_프리셋"; // 변경하세요
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", uploadPreset);
+
+            // Cloudinary REST API 호출
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.secure_url) {
+                // 성공 시 반환된 이미지 URL을 input 요소에 적용
+                document.getElementById('eventImageUrl').value = data.secure_url;
+                showToast('일정 이미지가 Cloudinary에 업로드되었습니다.');
+            } else {
+                throw new Error(data.error?.message || 'Cloudinary 응답 오류');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('일정 이미지 업로드에 실패했습니다.');
+        }
     }
 }
 
@@ -333,12 +356,6 @@ function setAMPM(val) {
     currentAMPM = val;
     document.getElementById('ampmAM').classList.toggle('active', val === '오전');
     document.getElementById('ampmPM').classList.toggle('active', val === '오후');
-}
-
-async function uploadFileToStorage(file, path) {
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
 }
 
 async function loadMembersFromFirebase() {
@@ -696,7 +713,6 @@ function createDay(num, isCurr, dayEvents = []) {
             const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
             const tag = document.createElement('div');
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-            // white-space: pre-wrap; 추가하여 PC 모드에서도 줄바꿈 적용
             tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
@@ -727,21 +743,16 @@ function showInfoByEvent(ev) {
     } else if (ev.dateId) {
         const parts = ev.dateId.split('-'); dateText = `${parts[0].slice(-2)}.${parts[1]}.${parts[2]}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
     } else {
-        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
-    }
-    const timeEl = document.getElementById('infoTime'); 
-    if (timeEl) {
-        // 1. 텍스트 설정: 기존 파란색 뱃지 안에 날짜, 시간, 유형을 한 번에 넣습니다.
-        timeEl.innerText = dateText + (ev.type ? ` | ${ev.type}` : '');
-
-        // 2. 이전에 남아있던 다른 일정의 유형 색상 클래스를 초기화합니다.
+        dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
+    }
+    const timeEl = document.getElementById('infoTime'); 
+    if (timeEl) {
+        timeEl.innerText = dateText + (ev.type ? ` | ${ev.type}` : '');
         timeEl.className = timeEl.className.replace(/\btype-\S+/g, '').trim();
-
-        // 3. 현재 일정의 유형에 맞는 클래스를 뱃지에 추가합니다.
         if (ev.type) {
             timeEl.classList.add(`type-${ev.type.replace(/\s+/g, '')}`);
         }
-    }
+    }
     
     const infoImageContainer = document.getElementById('infoImageContainer');
     if(infoImageContainer) {
@@ -941,7 +952,6 @@ window.loadUpItems = async function() {
                 const parts = data.deadline.split('-');
                 if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
             }
-            // UP 보드 폰트 Cafe24SurroundAir로 변경
             entry.innerHTML = `
                 <div style="flex: 1;" onclick="window.open('${data.link}', '_blank')">
                     <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
