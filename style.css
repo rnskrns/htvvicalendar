@@ -181,8 +181,17 @@ body {
 #btnMin:hover { background: #D1D5DB; color: #374151; }
 .ctrl-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-dark); transition: 0.2s; display: flex; align-items: center; justify-content: center; }
 .ctrl-btn:hover { transform: scale(1.1); color: #EAB308; }
-.play-btn { width: 48px; height: 48px; background: var(--point-yellow); border-radius: 50%; font-size: 20px; color: #5D4037; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.play-btn { width: 48px; height: 48px; background: var(--point-yellow); border-radius: 50%; font-size: 20px; color: #5D4037; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; border: none; cursor: pointer; vertical-align: middle; font-weight: 700; }
 .play-btn:hover { background: #FDE047; }
+
+#playPauseBtn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    padding-top: 7px !important;
+    padding-left: 2px !important;
+}
 .track-info { font-weight: 800; text-align: center; font-size: 15px; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; }
 .track-artist { font-size: 12px; color: #7a7a7a; text-align: center; margin-top: 4px; }
 
