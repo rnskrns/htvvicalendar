@@ -247,22 +247,22 @@ function toggleFavorite(event, id) {
     updateFavPlayerPlaylist(); 
 }
 
-// Cloudinary 이미지 업로드 함수
+// ------------------------------------------
+// Cloudinary 이미지 업로드 및 제거 기능
+// ------------------------------------------
 async function handleEventImgUpload(input) {
     if (input.files && input.files[0]) {
         try {
             const file = input.files[0];
             showToast('일정 이미지를 업로드 중입니다...');
 
-            // Cloudinary 설정 정보
-            const cloudName = "dtlqzklk5"; 
-            const uploadPreset = "IMG_1234";
+            const cloudName = "본인의_클라우드_네임"; // 변경하세요
+            const uploadPreset = "본인의_업로드_프리셋"; // 변경하세요
 
             const formData = new FormData();
             formData.append("file", file);
             formData.append("upload_preset", uploadPreset);
 
-            // Cloudinary REST API 호출
             const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
                 method: "POST",
                 body: formData
@@ -271,9 +271,21 @@ async function handleEventImgUpload(input) {
             const data = await response.json();
 
             if (data.secure_url) {
-                // 성공 시 반환된 이미지 URL을 input 요소에 적용
+                // 성공 시 URL 저장 및 미리보기 표시
                 document.getElementById('eventImageUrl').value = data.secure_url;
-                showToast('일정 이미지가 Cloudinary에 업로드되었습니다.');
+                
+                const preview = document.getElementById('eventImagePreview');
+                const removeBtn = document.getElementById('removeImageBtn');
+                const placeholder = document.getElementById('eventImagePlaceholder');
+                
+                if (preview && removeBtn) {
+                    preview.src = data.secure_url;
+                    preview.style.display = 'block';
+                    removeBtn.style.display = 'inline-block';
+                    if (placeholder) placeholder.style.display = 'none';
+                }
+
+                showToast('이미지가 성공적으로 업로드되었습니다.');
             } else {
                 throw new Error(data.error?.message || 'Cloudinary 응답 오류');
             }
@@ -283,6 +295,27 @@ async function handleEventImgUpload(input) {
         }
     }
 }
+
+// 이미지 제거 함수
+window.removeEventImage = function() {
+    document.getElementById('eventImageUrl').value = '';
+    document.getElementById('eventImgFile').value = '';
+    
+    const preview = document.getElementById('eventImagePreview');
+    const removeBtn = document.getElementById('removeImageBtn');
+    const placeholder = document.getElementById('eventImagePlaceholder');
+    
+    if (preview) {
+        preview.src = '';
+        preview.style.display = 'none';
+    }
+    if (removeBtn) {
+        removeBtn.style.display = 'none';
+    }
+    if (placeholder) {
+        placeholder.style.display = 'block';
+    }
+};
 
 async function addMember() {
     const name = document.getElementById('newMemberName').value.trim();
@@ -424,6 +457,27 @@ async function loadData() {
     if(overlay) overlay.classList.add('hidden');
 }
 
+// 모달 이미지 UI 리셋 헬퍼 함수
+function resetImagePreviewUI(imgUrl) {
+    const preview = document.getElementById('eventImagePreview');
+    const removeBtn = document.getElementById('removeImageBtn');
+    const placeholder = document.getElementById('eventImagePlaceholder');
+
+    if (preview && removeBtn) {
+        if (imgUrl) {
+            preview.src = imgUrl;
+            preview.style.display = 'block';
+            removeBtn.style.display = 'inline-block';
+            if (placeholder) placeholder.style.display = 'none';
+        } else {
+            preview.src = '';
+            preview.style.display = 'none';
+            removeBtn.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
+        }
+    }
+}
+
 function openAddModal(id) {
     activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
     document.getElementById('editIndex').value = '-1';
@@ -434,6 +488,9 @@ function openAddModal(id) {
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
     document.getElementById('eventType').value = '개인방송';
+    
+    // 이미지 UI 초기화
+    resetImagePreviewUI('');
     
     const pad = (n) => n.toString().padStart(2, '0');
     if (document.getElementById('eventStartDate')) {
@@ -456,7 +513,11 @@ function openEditModal(id, idx) {
     document.getElementById('eventType').value = ev.type;
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+    
+    const imgUrl = ev.imageUrl || '';
+    document.getElementById('eventImageUrl').value = imgUrl;
+    document.getElementById('eventImgFile').value = '';
+    resetImagePreviewUI(imgUrl);
     
     if (document.getElementById('eventStartDate')) {
         if (ev.startDate) {
@@ -494,7 +555,12 @@ function openEditModalByEvent(ev) {
     document.getElementById('eventType').value = ev.type || '개인방송';
     document.getElementById('eventMembers').value = ev.members || '';
     document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    document.getElementById('eventImageUrl').value = ev.imageUrl || '';
+    
+    const imgUrl = ev.imageUrl || '';
+    document.getElementById('eventImageUrl').value = imgUrl;
+    document.getElementById('eventImgFile').value = '';
+    resetImagePreviewUI(imgUrl);
+
     if (ev.time) {
         const [h, m] = ev.time.split(':').map(Number);
         setAMPM(h >= 12 ? '오후' : '오전');
@@ -806,7 +872,6 @@ function updateSummary() {
     } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
 }
 
-// 메모 관련
 window.toggleMemo = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
     if (upPanel) upPanel.classList.remove('open', 'show-sheet');
@@ -1026,7 +1091,7 @@ window.checkAndShowPopup = async function() {
             const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
             
             items.forEach(data => {
-                if (data.deadline && data.deadline < todayStr) return; // 만료 컨텐츠 숨김
+                if (data.deadline && data.deadline < todayStr) return;
 
                 let deadlineText = '';
                 if (data.deadline) {
@@ -1090,7 +1155,6 @@ window.showAdminMenu = function(e) {
         menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
     }
     
-    // 위치 업데이트 (버튼 바로 아래)
     menu.style.top = (rect.bottom + 8) + 'px';
     menu.style.right = (window.innerWidth - rect.right) + 'px';
     
@@ -1398,7 +1462,6 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
-    // 1. UI 활성화 (즉시)
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
     });
@@ -1412,9 +1475,8 @@ window.showTab = async function(tab) {
     const calendarBody = document.querySelector('.calendar-body');
     const songbookSection = document.getElementById('songbookSection');
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-    const loadingOverlay = document.getElementById('loadingOverlay'); // 전역 로딩창
+    const loadingOverlay = document.getElementById('loadingOverlay');
 
-    // 2. 화면 즉시 전환
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
@@ -1433,23 +1495,19 @@ window.showTab = async function(tab) {
         }
     } else {
         if(calendarTop) calendarTop.style.display = 'flex';
-    if(calendarBody) calendarBody.style.display = 'flex';
-    if(songbookSection) songbookSection.classList.remove('visible');
-    if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
-    window.location.hash = '#schedule';
+        if(calendarBody) calendarBody.style.display = 'flex';
+        if(songbookSection) songbookSection.classList.remove('visible');
+        if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
+        window.location.hash = '#schedule';
 
-    // 2. 로딩창 띄우기 (즉시)
-    if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
-    // 3. 핵심: UI가 먼저 바뀌도록 50ms 대기 후 데이터 로드
-    await new Promise(resolve => setTimeout(resolve, 50)); 
-    
-    // 4. 데이터 로딩 및 렌더링
-    await ensureMonthsLoadedForDate(currentDate);
-    renderCalendar();
-    
-    // 5. 로딩창 닫기
-    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        await new Promise(resolve => setTimeout(resolve, 50)); 
+        
+        await ensureMonthsLoadedForDate(currentDate);
+        renderCalendar();
+        
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
 }
 
@@ -1514,7 +1572,7 @@ Object.assign(window, {
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
-    closeUpPopup, checkAndShowPopup
+    closeUpPopup, checkAndShowPopup, removeEventImage 
 });
 
 document.addEventListener('contextmenu', function(e) {
