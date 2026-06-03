@@ -20,24 +20,37 @@ const db = getFirestore(app);
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true' || localStorage.getItem('htvvi_admin_remember') === 'true';
 
 const NAVER_CLIENT_ID = 'ERL_zuPPOUB0BOwWzOA_';
-const NAVER_REDIRECT_URI = encodeURIComponent(`${location.origin}${location.pathname}`);
 const NAVER_OAUTH_STATE_KEY = 'htvvi_naver_oauth_state';
 const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
 const NAVER_ACCESS_TOKEN_STORAGE_KEY = 'htvvi_naver_token';
 
 let naverUser = null;
 
-const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
+function getNaverRedirectUri() {
+    const cleanPath = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    return encodeURIComponent(`${location.origin}${cleanPath}`);
+}
 
-function parseHashParams(hash) {
-    if (!hash || hash.charAt(0) !== '#') return {};
-    return hash.substring(1).split('&').reduce((obj, item) => {
+function parseParams(paramString) {
+    if (!paramString) return {};
+    const raw = paramString.charAt(0) === '#' || paramString.charAt(0) === '?' ? paramString.substring(1) : paramString;
+    return raw.split('&').reduce((obj, item) => {
         const [key, value] = item.split('=');
         if (!key) return obj;
         obj[decodeURIComponent(key)] = decodeURIComponent(value || '');
         return obj;
     }, {});
 }
+
+function getOauthParams() {
+    const hashParams = parseParams(window.location.hash);
+    if (hashParams.access_token || hashParams.state) {
+        return hashParams;
+    }
+    return parseParams(window.location.search);
+}
+
+const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
 
 async function fetchNaverProfile(accessToken) {
     try {
@@ -93,7 +106,7 @@ async function fetchNaverProfile(accessToken) {
 }
 
 async function handleNaverCallback() {
-    const params = parseHashParams(window.location.hash);
+    const params = getOauthParams();
     const storedState = sessionStorage.getItem(NAVER_OAUTH_STATE_KEY);
     if (params.access_token && params.state && storedState && params.state === storedState) {
         sessionStorage.removeItem(NAVER_OAUTH_STATE_KEY);
@@ -118,7 +131,7 @@ function getStoredNaverUser() {
 function openNaverLogin() {
     const state = `naver_${Date.now()}`;
     sessionStorage.setItem(NAVER_OAUTH_STATE_KEY, state);
-    const authUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${NAVER_CLIENT_ID}&redirect_uri=${NAVER_REDIRECT_URI}&state=${state}`;
+    const authUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${NAVER_CLIENT_ID}&redirect_uri=${getNaverRedirectUri()}&state=${state}`;
     window.location.href = authUrl;
 }
 
