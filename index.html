@@ -26,6 +26,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
+    <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
+    
     <link rel="stylesheet" href="style.css?v=20260607">
 
     <style>
@@ -139,6 +141,8 @@
     </style>
 </head>
 <body id="mainBody">
+
+    <div id="naverIdLogin" style="display: none;"></div>
 
     <div class="fixed-top-bar">
         <div class="top-bar-inner">
@@ -473,9 +477,11 @@
                 <input type="checkbox" id="rememberAdmin" style="width:16px; height:16px; cursor:pointer;">
                 <label for="rememberAdmin" style="cursor:pointer;">로그인 상태 유지</label>
             </div>
-            <button id="naverLoginBtn" class="naver-login-btn" onclick="openNaverLogin()" title="네이버 로그인" style="margin-top:16px; width:100%;">
+            
+            <button id="naverLoginBtn" class="naver-login-btn" title="네이버 로그인" style="margin-top:16px; width:100%;">
                 <img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img">
             </button>
+
             <p id="pwError" class="pw-error hidden">틀렸습니다.</p>
             <div class="btn-group">
                 <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>

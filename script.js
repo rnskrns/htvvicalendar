@@ -20,72 +20,62 @@ const db = getFirestore(app);
 let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true' || localStorage.getItem('htvvi_admin_remember') === 'true';
 
 const NAVER_CLIENT_ID = 'ERL_zuPPOUB0BOwWzOA_';
-const NAVER_OAUTH_STATE_KEY = 'htvvi_naver_oauth_state';
 const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
-const NAVER_ACCESS_TOKEN_STORAGE_KEY = 'htvvi_naver_token';
-
 let naverUser = null;
-
-function getNaverRedirectUri() {
-    const cleanPath = location.pathname.replace(/\/index\.html$/, '/') || '/';
-    return encodeURIComponent(`${location.origin}${cleanPath}`);
-}
-
-function parseParams(paramString) {
-    if (!paramString) return {};
-    const raw = paramString.charAt(0) === '#' || paramString.charAt(0) === '?' ? paramString.substring(1) : paramString;
-    return raw.split('&').reduce((obj, item) => {
-        const [key, value] = item.split('=');
-        if (!key) return obj;
-        obj[decodeURIComponent(key)] = decodeURIComponent(value || '');
-        return obj;
-    }, {});
-}
-
-function getOauthParams() {
-    const hashParams = parseParams(window.location.hash);
-    if (hashParams.access_token || hashParams.state) {
-        return hashParams;
-    }
-    return parseParams(window.location.search);
-}
-
 const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
 
-async function fetchNaverProfile(accessToken) {
-    try {
-        // 1. CORS 에러 우회를 위해 무료 프록시 서버(corsproxy.io)를 거쳐서 네이버 API를 호출합니다.
-        const targetUrl = encodeURIComponent('https://openapi.naver.com/v1/nid/me');
-        const proxyUrl = `https://corsproxy.io/?${targetUrl}`;
+// 🌟 네이버 SDK 초기화 및 로그인 상태 처리 (기존 fetch 모두 대체) 🌟
+function initNaverLogin() {
+    if (typeof naver === 'undefined') {
+        console.warn('네이버 SDK가 로드되지 않았습니다.');
+        return;
+    }
 
-        const response = await fetch(proxyUrl, {
-            headers: { 
-                Authorization: `Bearer ${accessToken}` 
-            },
-        });
-        
-        const result = await response.json();
-        
-        if (result && result.resultcode === '00' && result.response) {
+    const naverLogin = new naver.LoginWithNaverId({
+        clientId: NAVER_CLIENT_ID,
+        callbackUrl: window.location.origin + window.location.pathname, // 리다이렉트 URL
+        isPopup: false,
+        loginButton: { color: "green", type: 3, height: 48 } // SDK가 자동 생성할 숨김 버튼
+    });
+    
+    naverLogin.init();
+    
+    // UI에 만들어둔 버튼과 SDK를 연결
+    const btn = document.getElementById('naverLoginBtn');
+    if (btn) {
+        btn.onclick = function(e) {
+            if (!naverUser) {
+                e.preventDefault();
+                // 네이버 SDK가 생성한 진짜 로그인 버튼을 강제로 클릭 트리거
+                const naverSdkBtn = document.querySelector('#naverIdLogin > a');
+                if (naverSdkBtn) naverSdkBtn.click();
+            } else {
+                logoutNaver();
+            }
+        };
+    }
+
+    // 콜백 및 로그인 상태를 자동으로 확인
+    naverLogin.getLoginStatus(function (status) {
+        if (status) {
             const profile = {
-                id: result.response.id,
-                name: result.response.name,
-                email: result.response.email,
-                profile_image: result.response.profile_image || '',
+                id: naverLogin.user.getId(),
+                name: naverLogin.user.getName(),
+                email: naverLogin.user.getEmail(),
+                profile_image: naverLogin.user.getProfileImage() || '',
             };
             
             localStorage.setItem(NAVER_USER_STORAGE_KEY, JSON.stringify(profile));
-            localStorage.setItem(NAVER_ACCESS_TOKEN_STORAGE_KEY, accessToken);
             naverUser = profile;
             updateNaverLoginUI();
 
-            // 2. 관리자 이메일 확인 로직
             if (ALLOWED_ADMIN_EMAILS.includes(profile.email)) {
                 isAdmin = true;
                 sessionStorage.setItem('htvvi_admin', 'true');
                 localStorage.setItem('htvvi_admin_remember', 'true');
                 updateAdminUI();
                 renderCalendar();
+                closeModal('pwModal');
                 showToast(`어서오세요 ${profile.name}님 환영합니다.`);
             } else {
                 isAdmin = false;
@@ -93,34 +83,18 @@ async function fetchNaverProfile(accessToken) {
                 localStorage.removeItem('htvvi_admin_remember');
                 updateAdminUI();
                 renderCalendar();
+                closeModal('pwModal');
                 showToast('관리자 권한이 없는 계정입니다.');
             }
-            return true;
+        } else {
+            // 비로그인 상태일 때 로컬에 정보가 있는지 체크
+            const storedUser = getStoredNaverUser();
+            if (storedUser) {
+                naverUser = storedUser;
+                updateNaverLoginUI();
+            }
         }
-    } catch (error) {
-        console.error('Naver profile fetch error:', error);
-        // 에러가 났을 때 화면에 안내 문구가 뜨도록 catch 문 안에도 toast를 추가했습니다.
-        showToast('네이버 로그인 정보를 가져오지 못했습니다. (통신 오류)');
-    }
-    return false;
-}
-
-async function handleNaverCallback() {
-    const params = getOauthParams();
-    const storedState = sessionStorage.getItem(NAVER_OAUTH_STATE_KEY);
-    if (params.access_token && params.state && storedState && params.state === storedState) {
-        sessionStorage.removeItem(NAVER_OAUTH_STATE_KEY);
-        history.replaceState(null, '', location.pathname + location.search);
-        await fetchNaverProfile(params.access_token);
-    } else if (params.access_token) {
-        console.warn('네이버 로그인 콜백 상태가 일치하지 않습니다.', { params, storedState });
-        showToast('네이버 로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.');
-    } else {
-        const storedUser = getStoredNaverUser();
-        if (storedUser) {
-            naverUser = storedUser;
-        }
-    }
+    });
 }
 
 function getStoredNaverUser() {
@@ -131,16 +105,8 @@ function getStoredNaverUser() {
     }
 }
 
-function openNaverLogin() {
-    const state = `naver_${Date.now()}`;
-    sessionStorage.setItem(NAVER_OAUTH_STATE_KEY, state);
-    const authUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${NAVER_CLIENT_ID}&redirect_uri=${getNaverRedirectUri()}&state=${state}`;
-    window.location.href = authUrl;
-}
-
 function logoutNaver() {
     localStorage.removeItem(NAVER_USER_STORAGE_KEY);
-    localStorage.removeItem(NAVER_ACCESS_TOKEN_STORAGE_KEY);
     naverUser = null;
     
     // 네이버 로그아웃 시 관리자 권한도 함께 해제
@@ -158,6 +124,7 @@ function updateNaverLoginUI() {
     const btn = document.getElementById('naverLoginBtn');
     const user = naverUser || getStoredNaverUser();
     if (!btn) return;
+    
     if (user && user.name) {
         btn.textContent = `네이버 ${user.name}님`;
         btn.title = '로그아웃';
@@ -165,7 +132,11 @@ function updateNaverLoginUI() {
     } else {
         btn.innerHTML = '<img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img">';
         btn.title = '네이버 로그인';
-        btn.onclick = openNaverLogin;
+        btn.onclick = function(e) {
+            e.preventDefault();
+            const naverSdkBtn = document.querySelector('#naverIdLogin > a');
+            if (naverSdkBtn) naverSdkBtn.click();
+        };
     }
 }
 
@@ -1764,8 +1735,7 @@ Object.assign(window, {
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
-    closeUpPopup, checkAndShowPopup, removeEventImage,
-    openNaverLogin
+    closeUpPopup, checkAndShowPopup, removeEventImage
 });
 
 document.addEventListener('contextmenu', function(e) {
@@ -1789,9 +1759,11 @@ document.addEventListener('dragstart', function(e) {
 window.onload = async () => {
     try {
         await loadData();
-        await handleNaverCallback();
+        
+        // 🌟 SDK를 초기화하고 리다이렉트 콜백을 자동 처리하는 함수 🌟
+        initNaverLogin();
+        
         updateAdminUI(); 
-        updateNaverLoginUI();
         handlePlayerPosition();
         
         const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
