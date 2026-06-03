@@ -84,6 +84,18 @@
                 min-width: 0;
             }
         }
+
+        /* 🌟 오늘 일정 영역 PC 화면 우측 고정 강제 설정 🌟 */
+        @media(min-width: 1025px) {
+            .header-right {
+                justify-self: end !important;
+                width: 100%;
+            }
+            .today-summary {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+            }
+        }
     </style>
 </head>
 <body id="mainBody">
@@ -473,7 +485,6 @@
         <div class="form-group" style="margin-bottom: 24px;">
             <label style="font-weight: bold; margin-bottom: 8px; display: block;">입장 팝업 상단 이미지 (업로드 또는 URL)</label>
             
-            <!-- 파일 업로드 버튼 추가 -->
             <input type="file" id="popupImgFileInput" accept="image/*" onchange="handlePopupImgUpload(this)" style="display: block; margin-bottom: 10px; font-size: 13px; color: #64748b; cursor: pointer; width: 100%;">
             
             <div style="display: flex; gap: 8px;">
