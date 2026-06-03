@@ -112,6 +112,9 @@ async function handleNaverCallback() {
         sessionStorage.removeItem(NAVER_OAUTH_STATE_KEY);
         history.replaceState(null, '', location.pathname + location.search);
         await fetchNaverProfile(params.access_token);
+    } else if (params.access_token) {
+        console.warn('네이버 로그인 콜백 상태가 일치하지 않습니다.', { params, storedState });
+        showToast('네이버 로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.');
     } else {
         const storedUser = getStoredNaverUser();
         if (storedUser) {
@@ -1761,7 +1764,8 @@ Object.assign(window, {
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
-    closeUpPopup, checkAndShowPopup, removeEventImage 
+    closeUpPopup, checkAndShowPopup, removeEventImage,
+    openNaverLogin
 });
 
 document.addEventListener('contextmenu', function(e) {
