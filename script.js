@@ -691,20 +691,30 @@ function renderCalendar() {
             const num = dayDate.getDate(); const m = dayDate.getMonth() + 1; const y = dayDate.getFullYear();
             const dateId = `${y}-${m}-${num}`;
             
-            const row = document.createElement('div'); row.className = 'week-row';
+            const row = document.createElement('div');
+            row.className = 'week-row';
+            const isToday = dayDate.getDate() === new Date().getDate() && 
+                            dayDate.getMonth() === new Date().getMonth() && 
+                            dayDate.getFullYear() === new Date().getFullYear();
+            if (isToday) row.classList.add('today-row');
             if (isAdmin) row.onclick = () => openAddModal(dateId);
             
-            const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
-            const dayName = document.createElement('span'); dayName.className = `week-day-name ${yoilColors[i] || ''}`; dayName.innerText = yoils[i];
-            const dayNumber = document.createElement('span');
-            const today = new Date();
-            const isToday = dayDate.getDate() === today.getDate() && dayDate.getMonth() === today.getMonth() && dayDate.getFullYear() === today.getFullYear();
+            // --- [중요] 요일과 날짜 박스 구조 변경 ---
+            const dayLabel = document.createElement('div'); 
+            dayLabel.className = 'week-day-label';
+
+            const dayName = document.createElement('div'); // span 대신 div 사용 (줄바꿈 강제)
+            dayName.className = `week-day-name ${yoilColors[i] || ''}`; 
+            dayName.innerText = yoils[i];
+
+            const dayNumber = document.createElement('div'); // span 대신 div 사용
+            dayNumber.className = `week-day-num`; 
+            dayNumber.innerText = num;
             
-            dayNumber.className = `week-day-num ${yoilColors[i] || ''}`; dayNumber.innerText = num;
-            if (isToday) row.classList.add('border-2', 'border-sky-400', 'rounded-xl');
-            
-            dayLabel.appendChild(dayName); dayLabel.appendChild(dayNumber);
-            
+            dayLabel.appendChild(dayName);
+            dayLabel.appendChild(dayNumber);
+            // ------------------------------------
+
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
             if (events[dateId] && events[dateId].length > 0) {
                 events[dateId].forEach((ev, idx) => {
@@ -1528,12 +1538,15 @@ window.showTab = async function(tab) {
 
         if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
-        await new Promise(resolve => setTimeout(resolve, 50)); 
-        
-        await ensureMonthsLoadedForDate(currentDate);
-        renderCalendar();
-        
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        try {
+            await new Promise(resolve => setTimeout(resolve, 50)); 
+            await ensureMonthsLoadedForDate(currentDate);
+            renderCalendar();
+        } catch (error) {
+            console.error('일정 탭 렌더링 중 오류 발생:', error);
+        } finally {
+            if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        }
     }
 }
 
@@ -1621,12 +1634,16 @@ document.addEventListener('dragstart', function(e) {
 });
 
 window.onload = async () => {
-    await loadData();
-    updateAdminUI(); 
-    handlePlayerPosition();
-    
-    const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
-    await window.showTab(initialTab);
+    try {
+        await loadData();
+        updateAdminUI(); 
+        handlePlayerPosition();
+        
+        const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
+        await window.showTab(initialTab);
+    } catch (error) {
+        console.error('초기 로딩 중 오류 발생:', error);
+    }
 
     const btnMin = document.getElementById('btnMin');
     if(btnMin) btnMin.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
@@ -1647,3 +1664,14 @@ window.onload = async () => {
         if (loadingOverlay) { loadingOverlay.classList.add('hidden'); setTimeout(() => { loadingOverlay.remove(); }, 500); }
     }, 1000);
 };
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+});
+
+window.addEventListener('error', () => {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+});

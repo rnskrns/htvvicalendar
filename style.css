@@ -26,6 +26,27 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'JejuStoneWall';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@1.0/EF_jejudoldam.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Paperozi';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'RomanticGumi';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-1@1.0/GumiRomanceTTF.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
@@ -212,29 +233,40 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none !important; /* 점선 및 외곽선 제거 */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 그림자 효과 추가 */
+    border: none !important; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* 버튼이 커진 만큼 그림자도 살짝 더 넓고 부드럽게 */
     background-color: #ffffff;
     color: #4E4942;
     transition: all 0.2s ease;
     cursor: pointer;
     font-weight: 800;
     font-family: 'Cafe24SurroundAir', sans-serif;
-    padding: 6px 12px;
-    border-radius: 8px;
+    
+    /* 🌟 버튼을 훨씬 더 크고 둥글게! */
+    padding: 12px 24px;  /* 위아래 12px, 양옆 24px로 큼직하게 */
+    font-size: 17px;     /* 글씨 크기도 시원하게 */
+    border-radius: 30px; /* 완전 동글동글한 모양 */
 }
 
-/* 호버 및 활성화 상태 (흰배경, 노란 외곽선/폰트) */
+/* 🌟 버튼 안의 아이콘(svg)도 글씨 크기에 맞춰 더 크게 */
+.memo-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 8px; /* 아이콘과 글씨 사이 간격도 여유 있게 */
+}
+
+/* 호버 및 활성화 상태 */
 .memo-btn:hover {
-    background-color: #FEF08A !important; /* 파스텔 노란색 */
-    color: #CA8A04 !important; /* 가독성을 위한 진한 노란색 */
+    background-color: #fffdee !important; 
+    color: #e0ac00 !important; 
     border: none !important;
+    transform: translateY(-2px); /* 마우스 올렸을 때 살짝 위로 떠오르는 효과 (예쁨!) */
 }
 
 .memo-btn.board-active {
-    background-color: #FEF08A !important;
-    color: #CA8A04 !important;
-    border: none !important;
+    background-color: #fffdee !important;
+    color: #e0ac00 !important;
+    border: 2.5px solid #e0ac00 !important;
 }
 
 .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
@@ -357,20 +389,47 @@ body {
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
 .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
 
-.week-row { display: grid; grid-template-columns: 72px 1fr; gap: 16px; padding: 16px; border: 1px solid #F3F4F6; border-radius: var(--radius-md); align-items: center; background: #FFFFFF; transition: all 0.2s ease; }
-.week-row:hover { border-color: var(--point-yellow); background: #FFFDF5; }
-.week-day-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.week-day-name { font-weight: 800; font-size: 13px; color: #A09586; margin-bottom: 2px; }
-.week-day-num { font-size: 20px; font-weight: 900; color: var(--text-dark); }
-.event-container { display: flex !important; flex-direction: column !important; height: 100% !important; gap: 4px; padding: 4px; }
-.week-events { display: flex !important; flex-direction: column !important; gap: 4px; }
-.week-no-event { color: #A1A1AA; font-size: 13px; font-weight: 700; padding: 10px 14px; background: #FAFAFA; border-radius: 12px; border: 1.5px dashed #E4E4E7; }
+    .week-row {
+        display: grid !important;
+        grid-template-columns: 100px 1fr !important; /* 요일 박스 100px, 나머지 일정 */
+        align-items: stretch !important;
+        gap: 0 !important;
+        padding: 0 !important; /* 전체 패딩 제거하여 박스 일체감 */
+        border: 1px solid #F3F4F6;
+        border-radius: 12px;
+        overflow: hidden; /* 테두리 밖으로 배경 안나가게 */
+    }
+    .week-row:hover { border-color: var(--point-yellow); background: #FFFDF5; }
+    .week-day-label {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+    }
 
-.day-label { padding-bottom: 15px; text-align: center; font-weight: 900; font-size: 15px; color: #C0B7A9; }
+    .week-day-name {
+        font-family: 'Paperozi', sans-serif !important;
+        font-weight: 800;
+        font-size: 14px; /* 기존 13px에서 가독성을 위해 살짝 조절 가능 */
+        color: #A09586;
+        margin-bottom: 2px;
+    }
+
+    .week-row.today-row .week-day-name,
+    .week-row.today-row .week-day-num {
+        color: #FFFFFF !important;
+    }
+    .week-day-num {
+        font-family: 'RomanticGumi', sans-serif !important;
+        font-size: 20px; font-weight: 900; color: var(--text-dark);
+    }
+    .event-container { display: flex !important; flex-direction: column !important; height: 100% !important; gap: 4px; padding: 4px; }
+    .week-events { padding: 10px; }
 .day { min-height: 200px; height: auto; display: flex; flex-direction: column; background: transparent; border: 1px dashed #E5E1DA; transition: 0.2s; overflow: hidden; }
 .day:hover { background: #FFFEF5; border-style: solid; border-color: var(--point-yellow); z-index: 10; }
 .day.not-current { pointer-events: none; border-color: #F0F0F0; }
-.day-num { padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
+.day-num { font-family: 'RomanticGumi', sans-serif !important; padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
 
 .event-tag {
     position: relative; width: 100%; flex: 1 1 0px; min-height: 45px; padding: 6px 8px;
@@ -450,8 +509,19 @@ body {
 .nav-btn { background: transparent; border: none; width: 50px; height: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; font-family: 'Cafe24SurroundAir', sans-serif;}
 .nav-btn:hover { transform: translateY(-2px); opacity: 0.7; }
 
-.today-circle { background: #B3E5FC; color: #0277BD; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; margin-left: 0 !important; }
-#toastMessage { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 30px; z-index: 9999; font-weight: 700; font-size: 14px; font-family: 'Cafe24SurroundAir', sans-serif;}
+.today-circle {
+    background-color: #B3E5FC !important; /* 하늘색 배경 */
+    color: #0277BD !important;             /* 진한 파란색(하늘색 계열) 텍스트 */
+    border: none !important;               /* 혹시 모를 테두리 제거 */
+    border-radius: 50% !important;         /* 완벽한 원형 */
+    width: 32px !important; 
+    height: 32px !important; 
+    display: inline-flex !important; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 900; 
+    font-size: 16px; 
+}
 
 .pw-modal { width: 320px; }
 .admin-pw { width: 100%; padding: 16px; border-radius: 2rem; border: 2px solid #E5E7EB; margin-bottom: 12px; font-family: 'Cafe24SurroundAir', sans-serif;}
@@ -511,7 +581,42 @@ body {
     .header-center { width: 100%; padding: 0; }
     .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
     .today-summary { width: 100%; max-width: 100%; }
-    
+    .week-row {
+        display: grid !important;
+        grid-template-columns: 100px 1fr !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        border: 1px solid #F3F4F6;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* 2. 오늘 날짜 전체 테두리 */
+    .week-row.today-row {
+        border: 2px solid #FDE047 !important;
+    }
+
+    /* 3. 오늘 날짜의 왼쪽 요일/날짜 박스 */
+    .week-row.today-row .week-day-label {
+        background-color: #FDE047 !important;
+        color: #FFFFFF !important;
+    }
+
+    .week-row.today-row .week-day-name {
+        color: #FFFFFF !important;
+    }
+
+    /* 4. [변경됨] 오늘 날짜 일정 카드의 외곽선 제거 */
+    .week-row.today-row .event-tag {
+        border: none !important; 
+        /* background-color를 제거하거나 아래와 같이 설정하여 기존 색상 클래스(.type-*)가 동작하게 함 */
+        background-color: transparent;         
+    }
+
+    .day.today { background-color: #FFFDF0 !important; border: 2px solid #FDE047 !important; /* 노란색 테두리 */}
+    .day.today .week-day-num, 
+    .day.today .week-day-name { color: #CA8A04 !important; }
     .fixed-top-bar { padding: 0 16px; justify-content: flex-end; }
     .top-bar-inner { width: 100%; justify-content: flex-end; }
     .top-bar-left { display: none; }
@@ -524,7 +629,20 @@ body {
     .memo-btn { position: static; margin-top: 12px; }
     .calendar-header h2 { font-size: 1.25rem !important; line-height: 1.75rem !important; text-align: center; min-width: 170px !important; }
     .calendar-grid { grid-template-columns: 1fr; gap: 14px; }
-    .day-label { text-align: left; padding-left: 15px; font-size: 14px; }
+    .day-label {
+        font-family: 'RomanticGumi', sans-serif !important;
+        font-weight: 900;
+        font-size: 16px;
+        color: #C0B7A9;
+        padding-bottom: 15px;
+        display: flex;
+        justify-content: center; /* 가로 가운데 정렬 */
+        align-items: center;     /* 세로 가운데 정렬 */
+        text-align: center;
+    }
+    .day-num {
+        font-family: 'RomanticGumi', sans-serif !important;
+    }
     .day { min-height: 160px; }
     .event-tag { font-size: 14px; min-height: 50px; }
     .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
@@ -650,6 +768,17 @@ body {
         background: var(--white) !important; border: none !important;
     }
     .fav-player-panel.show-sheet { bottom: 0 !important; }
+    .week-row.today-row .event-tag.type-개인방송 { background-color: var(--color-personal) !important; color: #B45309 !important; }
+    .week-row.today-row .event-tag.type-합방 { background-color: var(--color-collab) !important; color: #01579B !important; }
+    .week-row.today-row .event-tag.type-휴방 { background-color: var(--color-off) !important; color: #616161 !important; }
+    .week-row.today-row .event-tag.type-미확정 { background-color: var(--color-tbd) !important; color: #4A148C !important; }
+    .week-row.today-row .event-tag.type-LCK { background-color: #FFE0B2 !important; color: #E65100 !important; }
+    .week-row.today-row .event-tag.type-시네티 { background-color: #DCEDC8 !important; color: #33691E !important; }
+    .week-row.today-row .event-tag { border: none !important; }
+    .week-day-num {
+        font-family: 'RomanticGumi', sans-serif !important;
+        font-weight: 700 !important;
+    }
 }
 
 .notice-preview { margin-top: 20px; padding: 0; background: transparent; border: none; width: 100%; text-align: left; box-sizing: border-box; box-shadow: none; }
@@ -725,3 +854,48 @@ body {
     border-color: #38bdf8;     /* 활성화된 테두리 */
     color: #0369a1;            /* 진한 글자색 */
 }
+
+.week-no-event {
+    color: #A1A1AA;
+    font-size: 13px;
+    font-weight: 700;
+    
+    /* 점선 박스 스타일 */
+    border: 1.5px dashed #E4E4E7; /* 점선 테두리 */
+    background: #FAFAFA;          /* 배경색 */
+    border-radius: 12px;          /* 둥근 모서리 */
+    
+    /* 배치 및 정렬 */
+    padding: 16px;                /* 안쪽 여백을 넓혀 카드 느낌 강조 */
+    display: flex;
+    justify-content: center;      /* 가로 중앙 정렬 */
+    align-items: center;          /* 세로 중앙 정렬 */
+    min-height: 50px;             /* 최소 높이 */
+    text-align: center;
+}
+
+@media screen and (min-width: 768px) {
+    .day-label {
+        font-family: 'Paperozi', sans-serif !important;
+        font-weight: 800;
+        font-size: 16px;
+        color: #C0B7A9;
+        padding-bottom: 15px;
+        display: flex;
+        justify-content: center; /* 가로 가운데 정렬 */
+        align-items: center;     /* 세로 가운데 정렬 */
+        text-align: center;
+    }
+}
+
+.calendar-grid.weekly-view .week-row .week-day-label .week-day-num {
+        font-family: 'RomanticGumi', sans-serif !important;
+        font-weight: 800;
+}
+
+/* (선택) PC/모바일 상관없이 '오늘 날짜 동그라미' 안의 숫자도 폰트 통일 */
+.today-circle {
+    font-family: 'RomanticGumi', sans-serif !important;
+    font-weight: 700 !important;
+}
+
