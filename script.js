@@ -41,10 +41,18 @@ function parseHashParams(hash) {
 
 async function fetchNaverProfile(accessToken) {
     try {
-        const response = await fetch('https://openapi.naver.com/v1/nid/me', {
-            headers: { Authorization: `Bearer ${accessToken}` },
+        // 1. CORS 에러 우회를 위해 무료 프록시 서버(corsproxy.io)를 거쳐서 네이버 API를 호출합니다.
+        const targetUrl = encodeURIComponent('https://openapi.naver.com/v1/nid/me');
+        const proxyUrl = `https://corsproxy.io/?${targetUrl}`;
+
+        const response = await fetch(proxyUrl, {
+            headers: { 
+                Authorization: `Bearer ${accessToken}` 
+            },
         });
+        
         const result = await response.json();
+        
         if (result && result.resultcode === '00' && result.response) {
             const profile = {
                 id: result.response.id,
@@ -52,21 +60,21 @@ async function fetchNaverProfile(accessToken) {
                 email: result.response.email,
                 profile_image: result.response.profile_image || '',
             };
+            
             localStorage.setItem(NAVER_USER_STORAGE_KEY, JSON.stringify(profile));
             localStorage.setItem(NAVER_ACCESS_TOKEN_STORAGE_KEY, accessToken);
             naverUser = profile;
             updateNaverLoginUI();
 
-            // 등록된 이메일인지 확인하여 관리자 권한 부여
+            // 2. 관리자 이메일 확인 로직
             if (ALLOWED_ADMIN_EMAILS.includes(profile.email)) {
                 isAdmin = true;
                 sessionStorage.setItem('htvvi_admin', 'true');
-                localStorage.setItem('htvvi_admin_remember', 'true'); // 필요시 자동 유지
+                localStorage.setItem('htvvi_admin_remember', 'true');
                 updateAdminUI();
                 renderCalendar();
-                showToast(`어서오세요 햇비님 환영합니다.`);
+                showToast(`어서오세요 ${profile.name}님 환영합니다.`);
             } else {
-                // 관리자가 아닌 경우 권한 해제 및 안내 문구 출력
                 isAdmin = false;
                 sessionStorage.removeItem('htvvi_admin');
                 localStorage.removeItem('htvvi_admin_remember');
@@ -78,8 +86,9 @@ async function fetchNaverProfile(accessToken) {
         }
     } catch (error) {
         console.error('Naver profile fetch error:', error);
+        // 에러가 났을 때 화면에 안내 문구가 뜨도록 catch 문 안에도 toast를 추가했습니다.
+        showToast('네이버 로그인 정보를 가져오지 못했습니다. (통신 오류)');
     }
-    showToast('네이버 로그인 정보를 가져오지 못했습니다.');
     return false;
 }
 
