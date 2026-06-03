@@ -345,9 +345,6 @@ function toggleFavorite(event, id) {
     updateFavPlayerPlaylist(); 
 }
 
-// ------------------------------------------
-// Cloudinary 이미지 업로드 및 제거 기능
-// ------------------------------------------
 async function handleEventImgUpload(input) {
     if (input.files && input.files[0]) {
         try {
@@ -369,7 +366,6 @@ async function handleEventImgUpload(input) {
             const data = await response.json();
 
             if (data.secure_url) {
-                // 성공 시 URL 저장 및 미리보기 표시
                 document.getElementById('eventImageUrl').value = data.secure_url;
                 
                 const preview = document.getElementById('eventImagePreview');
@@ -394,7 +390,6 @@ async function handleEventImgUpload(input) {
     }
 }
 
-// 이미지 제거 함수
 window.removeEventImage = function() {
     document.getElementById('eventImageUrl').value = '';
     document.getElementById('eventImgFile').value = '';
@@ -559,7 +554,6 @@ async function loadData() {
     if(overlay) overlay.classList.add('hidden');
 }
 
-// 모달 이미지 UI 리셋 헬퍼 함수
 function resetImagePreviewUI(imgUrl) {
     const preview = document.getElementById('eventImagePreview');
     const removeBtn = document.getElementById('removeImageBtn');
@@ -591,7 +585,6 @@ function openAddModal(id) {
     document.getElementById('eventNoticeLink').value = ''; 
     document.getElementById('eventType').value = '개인방송';
     
-    // 이미지 UI 초기화
     resetImagePreviewUI('');
     
     const pad = (n) => n.toString().padStart(2, '0');
@@ -797,21 +790,19 @@ function renderCalendar() {
             if (isToday) row.classList.add('today-row');
             if (isAdmin) row.onclick = () => openAddModal(dateId);
             
-            // --- [중요] 요일과 날짜 박스 구조 변경 ---
             const dayLabel = document.createElement('div'); 
             dayLabel.className = 'week-day-label';
 
-            const dayName = document.createElement('div'); // span 대신 div 사용 (줄바꿈 강제)
+            const dayName = document.createElement('div'); 
             dayName.className = `week-day-name ${yoilColors[i] || ''}`; 
             dayName.innerText = yoils[i];
 
-            const dayNumber = document.createElement('div'); // span 대신 div 사용
+            const dayNumber = document.createElement('div'); 
             dayNumber.className = `week-day-num`; 
             dayNumber.innerText = num;
             
             dayLabel.appendChild(dayName);
             dayLabel.appendChild(dayNumber);
-            // ------------------------------------
 
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
             if (events[dateId] && events[dateId].length > 0) {
@@ -1261,7 +1252,13 @@ window.showAdminMenu = function(e) {
             if (modifiedDates.size > 0) {
                 if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders();
             }
-            isAdmin = false; sessionStorage.removeItem('htvvi_admin'); modifiedDates.clear();
+            
+            // 🌟 로그아웃 시 로컬 기록을 완전히 삭제 🌟
+            isAdmin = false; 
+            sessionStorage.removeItem('htvvi_admin'); 
+            localStorage.removeItem('htvvi_admin_remember'); 
+            
+            modifiedDates.clear();
             updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제');
         };
         menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
@@ -1316,7 +1313,6 @@ window.handlePopupImgUpload = async function(input) {
             const data = await response.json();
 
             if (data.secure_url) {
-                // 업로드가 완료되면 URL 입력창에 자동으로 주소를 넣어줍니다.
                 document.getElementById('popupImageUrlInput').value = data.secure_url;
                 showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
             }

@@ -85,7 +85,7 @@
             }
         }
 
-        /* 🌟 오늘 일정 영역 PC 화면 우측 고정 강제 설정 🌟 */
+        /* 오늘 일정 영역 PC 화면 우측 고정 강제 설정 */
         @media(min-width: 1025px) {
             .header-right {
                 justify-self: end !important;
@@ -95,6 +95,46 @@
                 margin-left: auto !important;
                 margin-right: 0 !important;
             }
+        }
+
+        /* 🌟 관리자 프사 스타일 추가 🌟 */
+        .admin-profile-img {
+            display: none; /* 기본은 숨김 */
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        /* 로그인 상태 클래스 적용 시 (logged-in, admin-active 등) */
+        #adminBtn.logged-in, 
+        #adminBtn.admin-active,
+        body.admin-mode #adminBtn {
+            min-width: 0 !important;
+            width: 36px !important;
+            height: 36px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            background: transparent !important;
+        }
+
+        #adminBtn.logged-in .login-text, 
+        #adminBtn.admin-active .login-text,
+        body.admin-mode #adminBtn .login-text {
+            display: none; /* 텍스트 숨김 */
+        }
+
+        #adminBtn.logged-in .admin-profile-img, 
+        #adminBtn.admin-active .admin-profile-img,
+        body.admin-mode #adminBtn .admin-profile-img {
+            display: block; /* 프사 표시 */
+        }
+
+        #adminBtn:hover .admin-profile-img {
+            border-color: #FDE047;
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -125,7 +165,10 @@
                     <button id="memberManagerBtn" class="top-icon-btn admin-only-btn" title="멤버 관리" onclick="openMemberManager()">
                         <svg viewBox="0 0 24 24" width="22" style="fill: #4E4942;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                     </button>
-                    <button id="adminBtn" class="top-icon-btn top-text-btn" title="관리자 설정" onclick="promptAdmin(event)">로그인</button>
+                    <button id="adminBtn" class="top-icon-btn top-text-btn" title="관리자 설정" onclick="promptAdmin(event)">
+                        <span class="login-text">로그인</span>
+                        <img src="https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg" class="admin-profile-img" alt="관리자 프사">
+                    </button>
                 </div>
             </div>
         </div>
