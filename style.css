@@ -100,17 +100,20 @@ body {
 .top-bar-left { display: flex; gap: 12px; }
 .top-bar-right { display: flex; gap: 16px; align-items: center; }
 .nav-tab {
-    background: transparent; border: none; font-weight: 900; font-size: 16px;
+    background: transparent; border: 2px solid transparent; font-weight: 900; font-size: 16px;
     color: #A09586; cursor: pointer; padding: 8px 16px; border-radius: 12px;
     transition: all 0.2s; display: flex; align-items: center; font-family: 'Cafe24SurroundAir', sans-serif;
 }
-.nav-tab:hover { background: #FFFDF5; color: #EAB308; }
-.nav-tab.active { 
-    background: #FFFDF0; /* 글자가 잘 보이게 배경은 밝게 유지 */
-    color: #EAB308 !important; /* 노란색 글자 */
-    border: 2px solid #EAB308; /* 테두리도 노란색 포인트 */
+.nav-tab:hover {
+    background: #ffffff;
+    color: #4B4737;
+    border-color: #FDE047;
 }
-
+.nav-tab.active {
+    background: #FDE047;
+    color: #4B4737 !important;
+    border-color: transparent;
+}
 .top-bar-link {
     display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
     border-radius: 50%; transition: transform 0.2s ease; overflow: hidden;
@@ -132,6 +135,47 @@ body {
 .top-icon-btn:hover { background: #F3F4F6; }
 .top-icon-btn svg { transition: 0.2s; }
 .top-icon-btn:hover svg { transform: translateY(-1px); }
+.top-text-btn {
+    width: auto; min-width: 70px; height: auto; padding: 8px 14px;
+    border-radius: 12px; font-weight: 800; font-size: 14px; color: #4B4737;
+    background: transparent; border: none; justify-content: center;
+}
+.top-text-btn:hover {
+    background: #F3F4F6;
+}
+
+.naver-login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.naver-login-btn:hover {
+    transform: translateY(-1px);
+}
+
+.naver-login-btn .naver-icon {
+    display: none;
+}
+
+.naver-login-img {
+    display: block;
+    width: 100%;
+    max-width: 440px;
+    height: auto;
+    border-radius: 10px;
+}
+
+    color: #03c75a;
+    font-weight: 900;
+    font-size: 16px;
+}
 
 .main-header {
     width: 96%; max-width: 1600px; display: grid; grid-template-columns: 1fr auto minmax(320px, 1fr);
@@ -228,15 +272,16 @@ body {
 .calendar-header-title { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; }
 
 #monthDisplay { font-family: 'KerisKeduLine', sans-serif !important; }
+#monthDisplay:hover { color: #FDE047; }
 
 .memo-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none !important; 
+    border: 2px solid transparent !important;
     box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* 버튼이 커진 만큼 그림자도 살짝 더 넓고 부드럽게 */
-    background-color: #ffffff;
-    color: #4E4942;
+    background-color: transparent;
+    color: #4B4737;
     transition: all 0.2s ease;
     cursor: pointer;
     font-weight: 800;
@@ -257,16 +302,16 @@ body {
 
 /* 호버 및 활성화 상태 */
 .memo-btn:hover {
-    background-color: #fffdee !important; 
-    color: #e0ac00 !important; 
-    border: none !important;
+    background-color: #ffffff !important;
+    color: #4B4737 !important;
+    border-color: #FDE047 !important;
     transform: translateY(-2px); /* 마우스 올렸을 때 살짝 위로 떠오르는 효과 (예쁨!) */
 }
 
 .memo-btn.board-active {
-    background-color: #fffdee !important;
-    color: #e0ac00 !important;
-    border: 2.5px solid #e0ac00 !important;
+    background-color: #FDE047 !important;
+    color: #4B4737 !important;
+    border-color: transparent !important;
 }
 
 .calendar-body { display: flex; align-items: stretch; gap: 24px; width: 100%; }
@@ -531,7 +576,7 @@ body {
 .member-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
 .info-block { background: transparent; padding: 10px 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
 .month-btn { padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center; font-family: 'Cafe24SurroundAir', sans-serif;}
-.month-btn:hover, .month-btn.active { background: var(--point-yellow); border-color: var(--point-yellow); color: #5D4037; }
+.month-btn:hover, .month-btn.active { background: #FDE047; border-color: #FDE047; color: #5D4037; }
 
 .loading-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;

@@ -17,7 +17,105 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true';
+let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true' || localStorage.getItem('htvvi_admin_remember') === 'true';
+
+const NAVER_CLIENT_ID = 'ERL_zuPPOUB0BOwWzOA_';
+const NAVER_REDIRECT_URI = encodeURIComponent(`${location.origin}${location.pathname}`);
+const NAVER_OAUTH_STATE_KEY = 'htvvi_naver_oauth_state';
+const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
+const NAVER_ACCESS_TOKEN_STORAGE_KEY = 'htvvi_naver_token';
+
+let naverUser = null;
+
+function parseHashParams(hash) {
+    if (!hash || hash.charAt(0) !== '#') return {};
+    return hash.substring(1).split('&').reduce((obj, item) => {
+        const [key, value] = item.split('=');
+        if (!key) return obj;
+        obj[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        return obj;
+    }, {});
+}
+
+async function fetchNaverProfile(accessToken) {
+    try {
+        const response = await fetch('https://openapi.naver.com/v1/nid/me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const result = await response.json();
+        if (result && result.resultcode === '00' && result.response) {
+            const profile = {
+                id: result.response.id,
+                name: result.response.name,
+                email: result.response.email,
+                profile_image: result.response.profile_image || '',
+            };
+            localStorage.setItem(NAVER_USER_STORAGE_KEY, JSON.stringify(profile));
+            localStorage.setItem(NAVER_ACCESS_TOKEN_STORAGE_KEY, accessToken);
+            naverUser = profile;
+            updateNaverLoginUI();
+            showToast('네이버 로그인 성공!');
+            return true;
+        }
+    } catch (error) {
+        console.error('Naver profile fetch error:', error);
+    }
+    showToast('네이버 로그인 정보를 가져오지 못했습니다.');
+    return false;
+}
+
+async function handleNaverCallback() {
+    const params = parseHashParams(window.location.hash);
+    const storedState = sessionStorage.getItem(NAVER_OAUTH_STATE_KEY);
+    if (params.access_token && params.state && storedState && params.state === storedState) {
+        sessionStorage.removeItem(NAVER_OAUTH_STATE_KEY);
+        history.replaceState(null, '', location.pathname + location.search);
+        await fetchNaverProfile(params.access_token);
+    } else {
+        const storedUser = getStoredNaverUser();
+        if (storedUser) {
+            naverUser = storedUser;
+        }
+    }
+}
+
+function getStoredNaverUser() {
+    try {
+        return JSON.parse(localStorage.getItem(NAVER_USER_STORAGE_KEY) || 'null');
+    } catch {
+        return null;
+    }
+}
+
+function openNaverLogin() {
+    const state = `naver_${Date.now()}`;
+    sessionStorage.setItem(NAVER_OAUTH_STATE_KEY, state);
+    const authUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${NAVER_CLIENT_ID}&redirect_uri=${NAVER_REDIRECT_URI}&state=${state}`;
+    window.location.href = authUrl;
+}
+
+function logoutNaver() {
+    localStorage.removeItem(NAVER_USER_STORAGE_KEY);
+    localStorage.removeItem(NAVER_ACCESS_TOKEN_STORAGE_KEY);
+    naverUser = null;
+    updateNaverLoginUI();
+    showToast('네이버 로그아웃 되었습니다.');
+}
+
+function updateNaverLoginUI() {
+    const btn = document.getElementById('naverLoginBtn');
+    const user = naverUser || getStoredNaverUser();
+    if (!btn) return;
+    if (user && user.name) {
+        btn.textContent = `네이버 ${user.name}님`;
+        btn.title = '로그아웃';
+        btn.onclick = logoutNaver;
+    } else {
+        btn.innerHTML = '<img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img">';
+        btn.title = '네이버 로그인';
+        btn.onclick = openNaverLogin;
+    }
+}
 
 let modifiedDates = new Set();
 let currentDate = new Date();
@@ -1256,6 +1354,12 @@ async function saveAllModifiedOrders() {
 function loginAdmin() {
     if (document.getElementById('adminPw').value === '0112') {
         isAdmin = true; sessionStorage.setItem('htvvi_admin', 'true');
+        const rememberAdmin = document.getElementById('rememberAdmin');
+        if (rememberAdmin && rememberAdmin.checked) {
+            localStorage.setItem('htvvi_admin_remember', 'true');
+        } else {
+            localStorage.removeItem('htvvi_admin_remember');
+        }
         closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
     } else { const err = document.getElementById('pwError'); if (err) err.classList.remove('hidden'); }
 }
@@ -1636,7 +1740,9 @@ document.addEventListener('dragstart', function(e) {
 window.onload = async () => {
     try {
         await loadData();
+        await handleNaverCallback();
         updateAdminUI(); 
+        updateNaverLoginUI();
         handlePlayerPosition();
         
         const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
