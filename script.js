@@ -41,18 +41,10 @@ function parseHashParams(hash) {
 
 async function fetchNaverProfile(accessToken) {
     try {
-        // CORS 프록시 서비스인 cors-anywhere를 앞에 붙여서 우회 호출합니다.
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const targetUrl = 'https://openapi.naver.com/v1/nid/me';
-        
-        const response = await fetch(proxyUrl + targetUrl, {
-            headers: { 
-                Authorization: `Bearer ${accessToken}`,
-                'X-Requested-With': 'XMLHttpRequest' // 프록시 필수 헤더
-            },
+        const response = await fetch('https://openapi.naver.com/v1/nid/me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
         });
         const result = await response.json();
-        
         if (result && result.resultcode === '00' && result.response) {
             const profile = {
                 id: result.response.id,
@@ -69,11 +61,12 @@ async function fetchNaverProfile(accessToken) {
             if (ALLOWED_ADMIN_EMAILS.includes(profile.email)) {
                 isAdmin = true;
                 sessionStorage.setItem('htvvi_admin', 'true');
-                localStorage.setItem('htvvi_admin_remember', 'true');
+                localStorage.setItem('htvvi_admin_remember', 'true'); // 필요시 자동 유지
                 updateAdminUI();
                 renderCalendar();
                 showToast(`어서오세요 햇비님 환영합니다.`);
             } else {
+                // 관리자가 아닌 경우 권한 해제 및 안내 문구 출력
                 isAdmin = false;
                 sessionStorage.removeItem('htvvi_admin');
                 localStorage.removeItem('htvvi_admin_remember');
@@ -86,13 +79,23 @@ async function fetchNaverProfile(accessToken) {
     } catch (error) {
         console.error('Naver profile fetch error:', error);
     }
-    
-    // 에러 발생 시 토스트 문구가 무조건 실행되도록 보장
-    setTimeout(() => {
-        showToast('네이버 로그인 정보를 가져오지 못했습니다.');
-    }, 500); 
-    
+    showToast('네이버 로그인 정보를 가져오지 못했습니다.');
     return false;
+}
+
+async function handleNaverCallback() {
+    const params = parseHashParams(window.location.hash);
+    const storedState = sessionStorage.getItem(NAVER_OAUTH_STATE_KEY);
+    if (params.access_token && params.state && storedState && params.state === storedState) {
+        sessionStorage.removeItem(NAVER_OAUTH_STATE_KEY);
+        history.replaceState(null, '', location.pathname + location.search);
+        await fetchNaverProfile(params.access_token);
+    } else {
+        const storedUser = getStoredNaverUser();
+        if (storedUser) {
+            naverUser = storedUser;
+        }
+    }
 }
 
 function getStoredNaverUser() {
