@@ -27,6 +27,8 @@ const NAVER_ACCESS_TOKEN_STORAGE_KEY = 'htvvi_naver_token';
 
 let naverUser = null;
 
+const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
+
 function parseHashParams(hash) {
     if (!hash || hash.charAt(0) !== '#') return {};
     return hash.substring(1).split('&').reduce((obj, item) => {
@@ -54,7 +56,24 @@ async function fetchNaverProfile(accessToken) {
             localStorage.setItem(NAVER_ACCESS_TOKEN_STORAGE_KEY, accessToken);
             naverUser = profile;
             updateNaverLoginUI();
-            showToast('네이버 로그인 성공!');
+
+            // 등록된 이메일인지 확인하여 관리자 권한 부여
+            if (ALLOWED_ADMIN_EMAILS.includes(profile.email)) {
+                isAdmin = true;
+                sessionStorage.setItem('htvvi_admin', 'true');
+                localStorage.setItem('htvvi_admin_remember', 'true'); // 필요시 자동 유지
+                updateAdminUI();
+                renderCalendar();
+                showToast(`어서오세요 햇비님 환영합니다.`);
+            } else {
+                // 관리자가 아닌 경우 권한 해제 및 안내 문구 출력
+                isAdmin = false;
+                sessionStorage.removeItem('htvvi_admin');
+                localStorage.removeItem('htvvi_admin_remember');
+                updateAdminUI();
+                renderCalendar();
+                showToast('관리자 권한이 없는 계정입니다.');
+            }
             return true;
         }
     } catch (error) {
@@ -63,7 +82,6 @@ async function fetchNaverProfile(accessToken) {
     showToast('네이버 로그인 정보를 가져오지 못했습니다.');
     return false;
 }
-
 async function handleNaverCallback() {
     const params = parseHashParams(window.location.hash);
     const storedState = sessionStorage.getItem(NAVER_OAUTH_STATE_KEY);
@@ -98,8 +116,16 @@ function logoutNaver() {
     localStorage.removeItem(NAVER_USER_STORAGE_KEY);
     localStorage.removeItem(NAVER_ACCESS_TOKEN_STORAGE_KEY);
     naverUser = null;
+    
+    // 네이버 로그아웃 시 관리자 권한도 함께 해제
+    isAdmin = false;
+    sessionStorage.removeItem('htvvi_admin');
+    localStorage.removeItem('htvvi_admin_remember');
+    updateAdminUI();
+    renderCalendar();
+    
     updateNaverLoginUI();
-    showToast('네이버 로그아웃 되었습니다.');
+    showToast('로그아웃 되었습니다.');
 }
 
 function updateNaverLoginUI() {
