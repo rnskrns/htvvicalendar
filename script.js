@@ -1197,6 +1197,28 @@ window.savePopupImage = async function() {
     }
 };
 
+window.handlePopupImgUpload = async function(input) {
+    if (input.files && input.files[0]) {
+        try {
+            showToast('팝업 이미지를 서버에 업로드 중입니다...');
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+            formData.append("upload_preset", "IMG_1234");
+            const response = await fetch(`https://api.cloudinary.com/v1_1/dtlqzklk5/image/upload`, { method: "POST", body: formData });
+            const data = await response.json();
+
+            if (data.secure_url) {
+                // 업로드가 완료되면 URL 입력창에 자동으로 주소를 넣어줍니다.
+                document.getElementById('popupImageUrlInput').value = data.secure_url;
+                showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('이미지 업로드에 실패했습니다.');
+        }
+    }
+};
+
 window.promptAdmin = async function(e) {
     if (isAdmin) { window.showAdminMenu(e); } 
     else {
@@ -1567,6 +1589,7 @@ window.toggleMobileUpBoard = function() {
 
 Object.assign(window, {
     handleEventImgUpload, addMember, deleteMember,
+    handlePopupImgUpload: window.handlePopupImgUpload,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
     setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
     toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
