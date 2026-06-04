@@ -1425,6 +1425,7 @@ function updateMemoEditState() {
 }
 
 function updateAdminUI() {
+    document.body.classList.toggle('admin-mode', isAdmin);
     document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
     const btnAdmin = document.getElementById('adminBtn');
     if(btnAdmin) btnAdmin.classList.toggle('admin-active', isAdmin);

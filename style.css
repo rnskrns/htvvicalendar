@@ -1043,6 +1043,7 @@ body {
 
     /* 4. 우측 사이드바 표시 및 스타일링 */
     .right-sidebar {
+        width: 142px !important;
         display: flex !important;
         position: fixed;
         right: 40px; /* 화면 우측 여백 */
@@ -1091,26 +1092,47 @@ body {
     }
     .sidebar-item.yt-link:hover { color: #FF0000; }
     
-    /* 로그인 상태 연동용 (모바일과 충돌 방지) */
-    #adminBtn_pc.logged-in .login-text, 
-    #adminBtn_pc.admin-active .login-text,
-    body.admin-mode #adminBtn_pc .login-text { display: block !important; }
-
     #adminBtn_pc.logged-in .login-icon, 
     #adminBtn_pc.admin-active .login-icon,
-    body.admin-mode #adminBtn_pc .login-icon { display: none !important; }
-    
-    #adminBtn_pc.logged-in, #adminBtn_pc.admin-active, body.admin-mode #adminBtn_pc {
-        width: 100% !important;
-        height: auto !important;
-        padding: 12px 14px !important;
-        border-radius: 12px !important;
-        background: transparent !important;
+    body.admin-mode #adminBtn_pc .login-icon,
+    body.admin-mode #adminBtn_pc .login-text { 
+        display: none !important; 
+    }
+    #adminBtn_pc.admin-active .login-text,
+    body.admin-mode #adminBtn_pc .login-text { 
+        display: none !important; 
     }
 
+    /* PC 버튼 기본 레이아웃 (프사가 가운데 오도록 유지) */
+    #adminBtn_pc.logged-in, 
+    #adminBtn_pc.admin-active, 
+    body.admin-mode #adminBtn_pc {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 52px !important;  /* 🌟 버튼 너비 (더 키우고 싶으면 숫자 UP) */
+        height: 52px !important; /* 🌟 버튼 높이 */
+        padding: 0 !important;   /* 내부 여백을 없애서 사진이 꽉 차게 */
+        margin: 0 auto !important; /* 사이드바 가운데 정렬 */
+        background: transparent !important;
+        border-radius: 14px !important; /* 모서리가 부드러운 둥근 정사각형 */
+        overflow: hidden !important; /* 사진이 삐져나가지 않도록 */
+    }
+    /* 프사만 나타나게 하기 */
     #adminBtn_pc.logged-in .admin-profile-img, 
     #adminBtn_pc.admin-active .admin-profile-img,
-    body.admin-mode #adminBtn_pc .admin-profile-img { display: block !important; }
+    body.admin-mode #adminBtn_pc .admin-profile-img { 
+        display: block !important; 
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        border-radius: 14px !important; /* 버튼 모서리와 동일하게 설정 */
+        object-fit: cover !important;
+    }
+
+    body.admin-mode #adminBtn_pc:hover .admin-profile-img {
+    transform: scale(1.08);
+    transition: transform 0.2s ease;
     }
 
     .sidebar-item:hover .cafe-img-1 {
@@ -1121,3 +1143,4 @@ body {
     .sidebar-item:hover .cafe-img-2 {
         display: block !important;
     }
+}    
