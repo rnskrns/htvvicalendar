@@ -1150,12 +1150,39 @@ body {
             gap: 16px; /* 사진과 LOADING 글씨 사이 간격 */
     }
 
+    .loading-wrapper {
+        position: relative;
+        width: 130px;  /* 120px보다 10px 정도 여유를 둡니다 */
+        height: 130px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 2. 테두리 빙글빙글 (박스 크기에 맞춤) */
+    .loading-wrapper::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 5px solid transparent; /* 두께를 조금 더 두껍게 설정 */
+        border-top: 5px solid #FDE047;
+        animation: rotate-border 1s linear infinite;
+    }
+
+    /* 3. 사진 크기를 120px로 변경 */
     .loading-profile-img {
-            width: 120px;  /* 사진 너비 (원하는 크기로 조절) */
-            height: 120px; /* 사진 높이 */
-            border-radius: 50%; /* 완전한 원형으로 만들기 */
-            object-fit: cover;
-            border: 3px solid #FDE047; /* 노란색 테두리 */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* 살짝 그림자 추가 */
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #ffffff; /* 흰색 테두리 두께도 살짝 보강 */
+    }
+
+    /* 회전 애니메이션은 그대로 유지 */
+    @keyframes rotate-border {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 }    
