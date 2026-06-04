@@ -437,7 +437,8 @@
                 <div class="event-modal-left">
                     <div>
                         <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">제목 *</label>
-                        <input type="text" id="eventTitle" placeholder="일정 제목을 입력하세요" class="event-custom-input">
+                        <!-- input 대신 textarea를 사용하고, 높이와 크기조절 옵션을 추가했습니다 -->
+                        <textarea id="eventTitle" placeholder="일정 제목을 입력하세요 (엔터키로 줄바꿈 가능)" class="event-custom-input" style="resize: vertical; min-height: 70px; font-family: inherit; line-height: 1.4;"></textarea>
                     </div>
                     
                     <div>
