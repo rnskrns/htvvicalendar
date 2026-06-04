@@ -47,11 +47,18 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'YeogiOttaeJalnan';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
     --light-yellow: #FFF9C4;
-    --bg-cream: #FFFDF0;
+    --bg-cream: #fffef6;
     --text-dark: #4E4942;
     --white: #FFFFFF;
     --radius-xl: 40px;
@@ -101,17 +108,17 @@ body {
 .top-bar-right { display: flex; gap: 16px; align-items: center; }
 .nav-tab {
     background: transparent; border: 2px solid transparent; font-weight: 900; font-size: 16px;
-    color: #A09586; cursor: pointer; padding: 8px 16px; border-radius: 12px;
+    color: #4B4737; cursor: pointer; padding: 8px 16px; border-radius: 12px;
     transition: all 0.2s; display: flex; align-items: center; font-family: 'Cafe24SurroundAir', sans-serif;
 }
 .nav-tab:hover {
     background: #ffffff;
-    color: #4B4737;
+    color: #FDE047;
     border-color: #FDE047;
 }
 .nav-tab.active {
-    background: #FDE047;
-    color: #4B4737 !important;
+    background: none !important;
+    color: #FDE047 !important;
     border-color: transparent;
 }
 .top-bar-link {
@@ -207,8 +214,14 @@ body {
 .fallback-logo { font-size: 48px; font-weight: 900; color: var(--text-dark); letter-spacing: -1px; display: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
 .today-summary {
-    background: var(--white); padding: 20px; border-radius: var(--radius-lg);
-    width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #F5F5F5;
+    background: var(--white); 
+    padding: 20px; 
+    border-radius: var(--radius-lg);
+    width: 320px; 
+    border: 2px solid #fffac3;
+    
+    /* 기존 그림자를 지우고 새로운 그림자 적용 */
+    box-shadow: 7px 7px 0px #fffac3 !important; 
 }
 .summary-item {
     display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
@@ -259,17 +272,35 @@ body {
 .track-artist { font-size: 12px; color: #7a7a7a; text-align: center; margin-top: 4px; }
 
 .container {
-    width: 96%; max-width: 1600px; background: var(--white); border-radius: var(--radius-xl);
-    padding: 45px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.04);
-    position: relative; display: flex; flex-direction: column;
+    width: 96%; 
+    max-width: 1600px; 
+    background: var(--white); 
+    border-radius: var(--radius-xl);
+    padding: 45px; 
+    box-sizing: border-box; 
+    position: relative; 
+    display: flex; 
+    flex-direction: column;
+    Border: 2px solid #fffac3;
+    
+    /* 기존 그림자를 지우고 새로운 그림자 적용 */
+    box-shadow: 10px 10px 0px #fffac3 !important; 
 }
 
-.calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; width: 100%; }
-.calendar-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; max-width: none; margin: 0 auto; }
-.calendar-header-top { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; }
+.calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 5px; width: 100%; }
+.calendar-header {
+        margin-bottom: 20px !important; 
+}
+.calendar-header-top {
+    position: relative !important;
+    display: flex !important;
+    justify-content: center !important; /* 'O월' 글씨는 가운데 유지 */
+    align-items: center !important;
+    width: 100% !important;
+}
 .calendar-header-title { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; }
 
-#monthDisplay { font-family: 'KerisKeduLine', sans-serif !important; }
+#monthDisplay { font-family: 'YeogiOttaeJalnan', sans-serif !important; }
 #monthDisplay:hover { color: #FDE047; }
 
 .memo-btn {
@@ -301,14 +332,14 @@ body {
 /* 호버 및 활성화 상태 */
 .memo-btn:hover {
     background-color: #ffffff !important;
-    color: #4B4737 !important;
+    color: #FDE047 !important;
     border-color: #FDE047 !important;
     transform: translateY(-2px); /* 마우스 올렸을 때 살짝 위로 떠오르는 효과 (예쁨!) */
 }
 
 .memo-btn.board-active {
-    background-color: #FDE047 !important;
-    color: #4B4737 !important;
+    background-color: #ffffff !important;
+    color: #FDE047 !important;
     border-color: transparent !important;
 }
 
@@ -467,21 +498,42 @@ body {
         font-family: 'RomanticGumi', sans-serif !important;
         font-size: 20px; font-weight: 900; color: var(--text-dark);
     }
-    .event-container { display: flex !important; flex-direction: column !important; height: 100% !important; gap: 4px; padding: 4px; }
-    .week-events { padding: 10px; }
+.event-container {
+    flex: 1 1 0% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    
+    /* 🌟 핵심 추가: 숨통 틔워주기! */
+    gap: 6px !important;       /* 카드와 카드 사이의 간격을 띄움 */
+    padding: 6px !important;   /* 칸 테두리와 카드 사이의 안쪽 여백을 줌 */
+    box-sizing: border-box !important;
+}
+.week-events { padding: 10px; }
 .day { min-height: 200px; height: auto; display: flex; flex-direction: column; background: transparent; border: 1px dashed #E5E1DA; transition: 0.2s; overflow: hidden; }
 .day:hover { background: #FFFEF5; border-style: solid; border-color: var(--point-yellow); z-index: 10; }
 .day.not-current { pointer-events: none; border-color: #F0F0F0; }
 .day-num { font-family: 'RomanticGumi', sans-serif !important; padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
 
 .event-tag {
-    position: relative; width: 100%; flex: 1 1 0px; min-height: 45px; padding: 6px 8px;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    box-sizing: border-box; overflow: hidden; text-align: center; transition: 0.2s;
-    border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 4px;
-    font-family: 'Cafe24SurroundAir', sans-serif !important; font-weight: 700; font-size: 15px; line-height: 1.3;
+    /* 🌟 이 한 줄이 핵심입니다! 시간 뱃지가 도망가지 않게 잡아주는 기준점 */
+    position: relative !important; 
+    
+    flex: 1 1 0% !important; /* 여전히 개수에 따라 1:1:1 로 늘어남 */
+    min-height: 45px !important; 
+    
+    /* 텍스트 중앙 정렬 */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important; 
+    
+    /* 둥근 라운드 카드 모양 유지 */
+    border-radius: 10px !important; 
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
-.event-tag:hover { transform: scale(0.98); }
+.event-tag:hover { transform: scale(0.97); }
 .event-time-badge {
     position: absolute; top: 5px; left: 5px; display: inline-block; border: 1.5px solid #FFFFFF;
     background-color: #FFFFFF; border-radius: 12px; padding: 3px 7px; font-size: 10px;
@@ -620,32 +672,52 @@ body {
 
 @media screen and (max-width: 768px) {
     .calendar-header-top .memo-btn { display: none !important; }
+    .container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 16px !important;
+        width: 100% !important;
+    }
+
+    /* 2. 노래책 화면이 열렸을 때, 노래책 구역 자체에 귀여운 박스를 씌워줍니다 */
+    #songbookSection.visible {
+        background: var(--white) !important;
+        border: 2px solid #fffac3 !important;
+        box-shadow: 8px 8px 0px #fffac3 !important;
+        border-radius: var(--radius-xl) !important;
+        padding: 15px !important;
+        margin-top: 10px !important; /* 위쪽이랑 너무 안 붙게 살짝 띄워줌 */
+    }
     .main-header { display: flex; flex-direction: column; grid-template-columns: none; width: 100%; padding: 20px 16px 20px; gap: 16px; }
     .header-center { width: 100%; padding: 0; }
     .header-left, .header-right { padding: 0; width: 100%; justify-content: center; }
     .today-summary { width: 100%; max-width: 100%; }
     .week-row {
-        display: grid !important;
-        grid-template-columns: 100px 1fr !important;
-        align-items: stretch !important;
-        gap: 0 !important;
-        padding: 0 !important;
-        border: 1px solid #F3F4F6;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
+            display: grid !important;
+            grid-template-columns: 75px 1fr !important; /* 사진처럼 왼쪽 요일칸을 살짝 좁게 */
+            background-color: #FFFFFF !important;
+            border: 1px solid #fffac3 !important;
+            border-radius: 12px !important;
+            /* 사진 특유의 입체적인 우측 하단 꽉 찬 그림자 효과 */
+            box-shadow: 3px 4px 0px #fffac3 !important; 
+            margin-bottom: 16px !important; /* 요일 사이 간격 */
+            padding: 0 !important;
+            overflow: visible !important;
+            min-height: 85px !important;
+        }
     /* 2. 오늘 날짜 전체 테두리 */
     .week-row.today-row {
-        border: 2px solid #FDE047 !important;
-    }
-
+            border: 2px solid #b3e5fc !important; /* 노란/주황 테두리 */
+            box-shadow: 3px 4px 0px #8bdaff !important; /* 그림자도 약간 따뜻한 톤으로 */
+        }
     /* 3. 오늘 날짜의 왼쪽 요일/날짜 박스 */
     .week-row.today-row .week-day-label {
-        background-color: #FDE047 !important;
-        color: #FFFFFF !important;
-    }
-
+            background-color: #b3e5fc !important; /* 사진처럼 노란색 꽉 채우기 */
+            color: #FFFFFF !important;
+            border-right: none !important;
+        }
+        
     .week-row.today-row .week-day-name {
         color: #FFFFFF !important;
     }
@@ -654,10 +726,10 @@ body {
     .week-row.today-row .event-tag {
         border: none !important; 
         /* background-color를 제거하거나 아래와 같이 설정하여 기존 색상 클래스(.type-*)가 동작하게 함 */
-        background-color: transparent;         
+        background-color: transparent;        
     }
 
-    .day.today { background-color: #FFFDF0 !important; border: 2px solid #FDE047 !important; /* 노란색 테두리 */}
+    .day.today { background-color: #FFFDF0 !important; border: 2px solid #b3e5fc !important; /* 노란색 테두리 */}
     .day.today .week-day-num, 
     .day.today .week-day-name { color: #CA8A04 !important; }
     .fixed-top-bar { padding: 0 16px; justify-content: flex-end; }
@@ -688,11 +760,13 @@ body {
     }
     .day { min-height: 160px; }
     .event-tag { font-size: 14px; min-height: 50px; }
-    .container { width: 100%; padding: 24px 16px; border-radius: var(--radius-lg); }
     .main-logo { height: 90px; }
     .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
-    .calendar-main { flex: 1; min-width: 0; width: 100%; }
-    
+    .calendar-main {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }    
     .mobile-nav-arrow {
         display: flex; position: fixed; top: 50%; transform: translateY(-50%);
         width: 44px; height: 44px; background: rgba(255, 255, 255, 0.8);
@@ -942,3 +1016,99 @@ body {
     font-weight: 700 !important;
 }
 
+/* 기본 상태(모바일 포함)에서는 우측 사이드바를 숨깁니다 */
+.right-sidebar { 
+    display: none; 
+}
+
+/* --- PC 화면(가로 1025px 이상) 전용 스타일 --- */
+@media screen and (min-width: 1025px) {
+    /* 1. PC에서는 기존 상단바를 숨김 */
+    .fixed-top-bar { display: none !important; }
+    
+    /* 2. PC에서는 달력 상단 우측에 있던 메모/UP 둥근 버튼을 숨김 */
+    .calendar-header-top > div:last-child { display: none !important; }
+
+    /* 3. 상단바가 사라진 만큼 바디 여백 조정 */
+    body { padding-top: 30px !important; }
+
+    /* 4. 우측 사이드바 표시 및 스타일링 */
+    .right-sidebar {
+        display: flex !important;
+        position: fixed;
+        right: 40px; /* 화면 우측 여백 */
+        top: 50%;
+        transform: translateY(-50%);
+        flex-direction: column;
+        gap: 6px;
+        background: var(--white);
+        padding: 20px 16px;
+        border-radius: var(--radius-lg);
+        border: 2px solid #fffac3;
+        /* 컨테이너와 완벽히 동일한 우측 하단 그림자 */
+        box-shadow: 5px 5px 0px #fffac3 !important; 
+        z-index: 9990;
+        min-width: 135px;
+    }
+
+    /* 5. 사이드바 내부 버튼 스타일 (아이콘 좌, 글씨 우) */
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        background: transparent;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        color: #4B4737;
+        font-weight: 800;
+        font-family: 'Cafe24SurroundAir', sans-serif;
+        font-size: 16px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        width: 100%;
+        box-sizing: border-box;
+        /* 메모/UP 버튼의 기존 그림자 강제 제거 */
+        box-shadow: none !important; 
+    }
+
+    /* 마우스 올렸을 때 효과 */
+    .sidebar-item:hover, .sidebar-item.active {
+        background: #FFFDF0;
+        color: #FDE047;
+        transform: translateY(-2px);
+    }
+    .sidebar-item.yt-link:hover { color: #FF0000; }
+    
+    /* 로그인 상태 연동용 (모바일과 충돌 방지) */
+    #adminBtn_pc.logged-in .login-text, 
+    #adminBtn_pc.admin-active .login-text,
+    body.admin-mode #adminBtn_pc .login-text { display: block !important; }
+
+    #adminBtn_pc.logged-in .login-icon, 
+    #adminBtn_pc.admin-active .login-icon,
+    body.admin-mode #adminBtn_pc .login-icon { display: none !important; }
+    
+    #adminBtn_pc.logged-in, #adminBtn_pc.admin-active, body.admin-mode #adminBtn_pc {
+        width: 100% !important;
+        height: auto !important;
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+        background: transparent !important;
+    }
+
+    #adminBtn_pc.logged-in .admin-profile-img, 
+    #adminBtn_pc.admin-active .admin-profile-img,
+    body.admin-mode #adminBtn_pc .admin-profile-img { display: block !important; }
+    }
+
+    .sidebar-item:hover .cafe-img-1 {
+        display: none !important;
+    }
+
+    /* 마우스를 올렸을 때: 1번은 숨기고 2번을 보여줌 */
+    .sidebar-item:hover .cafe-img-2 {
+        display: block !important;
+    }
