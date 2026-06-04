@@ -1186,6 +1186,7 @@ window.checkAndShowPopup = async function() {
     const hideDate = localStorage.getItem('hideUpPopupDate');
     const today = new Date().toDateString();
     if (hideDate === today) return;
+    
     const popupList = document.getElementById('popupUpList');
     if (!popupList) return;
 
@@ -1198,52 +1199,59 @@ window.checkAndShowPopup = async function() {
 
         const snapshot = await getDocs(collection(db, 'up'));
         
-        if (!snapshot.empty || popupImageUrl) {
-            let items = [];
-            snapshot.forEach(docSnap => items.push({ id: docSnap.id, ...docSnap.data() }));
-            
-            items.sort((a, b) => {
-                if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
-                return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
-            });
-            
-            popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
-            
-            if (popupImageUrl) {
-                popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`;
-            }
+        let validItems = [];
+        const todayLocal = new Date();
+        const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
 
-            const todayLocal = new Date();
-            const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
-            
-            items.forEach(data => {
-                if (data.deadline && data.deadline < todayStr) return;
+        // 마감 기한이 지나지 않은 유효한 UP 링크만 걸러내기
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            validItems.push({ id: docSnap.id, ...data });
+        });
 
-                let deadlineText = '';
-                if (data.deadline) {
-                    const parts = data.deadline.split('-');
-                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
-                }
-                
-                popupList.innerHTML += `
-                    <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
-                            ${deadlineText}
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
-                            </a>
-                        </div>
-                    </div>
-                `;
-            });
-
-            if (popupImageUrl || popupList.innerHTML.trim() !== '') {
-                document.getElementById('upPopupModal').style.display = 'flex';
-            }
+        // 🚨 핵심 로직: 이미지도 없고 유효한 링크도 없으면 팝업창을 띄우지 않고 종료
+        if (!popupImageUrl && validItems.length === 0) {
+            return;
         }
+
+        // 유효한 항목이 있을 경우 정렬 및 렌더링
+        validItems.sort((a, b) => {
+            if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+            return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+        });
+        
+        popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
+        
+        if (popupImageUrl) {
+            popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`;
+        }
+
+        validItems.forEach(data => {
+            let deadlineText = '';
+            if (data.deadline) {
+                const parts = data.deadline.split('-');
+                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+            }
+            
+            popupList.innerHTML += `
+                <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
+                        ${deadlineText}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+
+        // 팝업 열기
+        document.getElementById('upPopupModal').style.display = 'flex';
+        
     } catch (error) { console.error("Popup UP Load Error:", error); }
 };
 
@@ -1322,6 +1330,17 @@ window.savePopupImage = async function() {
         showToast('팝업 이미지가 설정되었습니다. 새로고침 후 확인하세요.');
     } catch(e) {
         showToast('설정 저장 실패: ' + e.message);
+    }
+};
+
+window.deletePopupImage = async function() {
+    if (!confirm('설정된 팝업 이미지를 삭제하시겠습니까?')) return;
+    try {
+        await deleteDoc(doc(db, 'settings', 'popup'));
+        document.getElementById('popupImageUrlInput').value = '';
+        showToast('팝업 이미지가 삭제되었습니다.');
+    } catch(e) {
+        showToast('삭제 실패: ' + e.message);
     }
 };
 
@@ -1725,7 +1744,7 @@ window.toggleMobileUpBoard = function() {
 };
 
 Object.assign(window, {
-    handleEventImgUpload, addMember, deleteMember,
+    handleEventImgUpload, addMember, deleteMember,deletePopupImage,
     handlePopupImgUpload: window.handlePopupImgUpload,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
     setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
