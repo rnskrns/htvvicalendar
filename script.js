@@ -1805,9 +1805,9 @@ window.addEventListener('error', () => {
 });
 
 const loadingGifs = [
-    "https://i.postimg.cc/V6q6fJj2/Honeycam-2026-06-04-23-23-45.webp",
-    "https://i.postimg.cc/4d6dfYzM/Honeycam-2026-06-04-23-23-54.webp",
-    "https://i.postimg.cc/1tGtm8pk/Honeycam-2026-06-04-23-23-58.webp"
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/kqd0ua6kwuvtgwurzkw0.webp",
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/v8yulqs8c3txxna0lijr.webp",
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/ponpy2tj1mr4kdugip7i.webp"
 ];
 
 // 3개 중 하나를 랜덤으로 뽑아서 적용 (페이지가 로드되기 직전에 즉시 실행)
