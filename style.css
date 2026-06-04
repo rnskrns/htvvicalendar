@@ -347,17 +347,17 @@ body {
 .calendar-main { flex: 1; min-width: 0; width: 100%; }
 
 .memo-panel-container {
-    display: none; width: 360px; min-width: 280px; border-radius: var(--radius-lg); background: #FFFDF5;
-    border: 1px solid #F5F5F5; box-shadow: 0 20px 45px rgba(0,0,0,0.08); padding: 22px; box-sizing: border-box;
+    display: none; width: 360px; min-width: 280px; border-radius: var(--radius-lg); background: #fffef7;
+    border: 1px solid #FFF3B0; box-shadow: 2px 2px 0 #FFF3B0; padding: 22px; box-sizing: border-box;
     align-self: stretch; overflow: hidden;
 }
 .memo-panel-container.open { display: flex; flex-direction: column; }
 .memo-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; }
 .memo-tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.memo-tab { background: #F5F5F5; border: none; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: 'Cafe24SurroundAir', sans-serif; }
-.memo-tab.memo-tab-active { background: #B3E5FC; color: #0D47A1; }
+.memo-tab { background: #ffffff; border: 1px solid #F5F5F5; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: 'Cafe24SurroundAir', sans-serif; }
+.memo-tab.memo-tab-active { background: #ffffff; color: #68cfff; border: 2px solid #68cfff; }
 
-.memo-add-button { background: var(--point-yellow); color: #5D4037; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-weight: 900; font-size: 24px; line-height: 1; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+.memo-add-button { color: #FDE047; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-weight: 900; font-size: 24px; line-height: 1; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
 .memo-add-button:hover { opacity: 0.9; }
 .memo-input-area { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; align-items: center; }
 .memo-input-area.hidden { display: none; }
@@ -516,7 +516,6 @@ body {
 .day-num { font-family: 'RomanticGumi', sans-serif !important; padding: 10px 15px; font-weight: 800; font-size: var(--font-date); position: relative; z-index: 5; background: transparent; height: 45px; display: flex; align-items: center; box-sizing: border-box; }
 
 .event-tag {
-    /* 🌟 이 한 줄이 핵심입니다! 시간 뱃지가 도망가지 않게 잡아주는 기준점 */
     position: relative !important; 
     
     flex: 1 1 0% !important; /* 여전히 개수에 따라 1:1:1 로 늘어남 */
@@ -540,8 +539,7 @@ body {
     font-weight: 800; line-height: 1; color: inherit; font-family: 'Cafe24SurroundAir', sans-serif !important;
 }
 
-.event-tag div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
-.dragging-ghost { background-color: #FFF3B0 !important; opacity: 0.4; border: 2px dashed #EAB308; }
+.event-tag div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; font-weight: 900 !important; }.dragging-ghost { background-color: #FFF3B0 !important; opacity: 0.4; border: 2px dashed #EAB308; }
 .event-tag.long-term { font-size: 14px !important; padding: 4px; white-space: nowrap; }
 
 .type-개인방송 { background-color: var(--color-personal); color: #B45309; }
@@ -668,9 +666,19 @@ body {
     .calendar-top { flex-direction: column; }
     .calendar-body { flex-direction: column; }
     .today-summary { width: 100%; max-width: 400px; }
+    
 }
 
 @media screen and (max-width: 768px) {
+    .top-bar-right .top-bar-link + span {
+        display: none !important;
+    }
+
+    /* 만약 상단바 구성에 따라 span이 직접 포함되어 있다면 아래 코드도 함께 확인해주세요 */
+    .top-bar-link span {
+        display: none !important;
+    }
+
     .calendar-header-top .memo-btn { display: none !important; }
     .container {
         background: transparent !important;
@@ -697,7 +705,7 @@ body {
             display: grid !important;
             grid-template-columns: 75px 1fr !important; /* 사진처럼 왼쪽 요일칸을 살짝 좁게 */
             background-color: #FFFFFF !important;
-            border: 1px solid #fffac3 !important;
+            border: 2px solid #fffac3 !important;
             border-radius: 12px !important;
             /* 사진 특유의 입체적인 우측 하단 꽉 찬 그림자 효과 */
             box-shadow: 3px 4px 0px #fffac3 !important; 
@@ -716,6 +724,8 @@ body {
             background-color: #b3e5fc !important; /* 사진처럼 노란색 꽉 채우기 */
             color: #FFFFFF !important;
             border-right: none !important;
+            border-radius: 8px 0px 0px 8px !important; 
+            overflow: hidden;   /* 배경이 모서리 밖으로 나가는 것을 방지 */
         }
         
     .week-row.today-row .week-day-name {
@@ -784,8 +794,7 @@ body {
     .memo-panel-container.open { width: 100%; padding-left: 0; height: auto; max-height: none; }
     .memo-panel-header { flex-direction: column; align-items: stretch; gap: 12px; }
     .memo-tabs { width: 100%; display: flex; justify-content: center; overflow-x: auto; padding: 0 12px 8px; margin: 0 -12px 10px -12px; }
-    .memo-tab { flex: 0 0 auto; min-width: auto; padding: 10px 14px; margin-right: 8px; }
-    .memo-tab:last-child { margin-right: 0; }
+    .memo-tab { background: #FFFFFF; border: none; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: 'Cafe24SurroundAir', sans-serif; }    .memo-tab:last-child { margin-right: 0; }
     .memo-add-button { align-self: flex-end; }
     .memo-input-area { gap: 14px; align-items: center; margin-left: 8px; }
     .memo-item-input { min-height: 120px; padding: 16px; width: 100%; max-width: 100%; }
@@ -802,7 +811,7 @@ body {
         display: flex !important; flex-direction: column !important; position: fixed !important;
         bottom: -120% !important; left: 0 !important; right: 0 !important; top: auto !important;
         width: 100% !important; margin: 0 !important; border-radius: 28px 28px 0 0 !important;
-        z-index: 9995 !important; box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2) !important;
+        z-index: 9995 !important; box-shadow: 0 -10px 40px fffac3(0, 0, 0, 0.2) !important;
         transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; background: var(--white) !important;
         padding: 50px 24px 40px 24px !important; border: none !important; height: 85vh !important; max-height: none !important;
     }
