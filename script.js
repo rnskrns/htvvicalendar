@@ -1804,3 +1804,15 @@ window.addEventListener('error', () => {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
 });
 
+const loadingGifs = [
+    "https://i.postimg.cc/V6q6fJj2/Honeycam-2026-06-04-23-23-45.webp",
+    "https://i.postimg.cc/4d6dfYzM/Honeycam-2026-06-04-23-23-54.webp",
+    "https://i.postimg.cc/1tGtm8pk/Honeycam-2026-06-04-23-23-58.webp"
+];
+
+// 3개 중 하나를 랜덤으로 뽑아서 적용 (페이지가 로드되기 직전에 즉시 실행)
+const randomLoadingImg = document.getElementById('randomLoadingImg');
+if (randomLoadingImg) {
+    const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
+    randomLoadingImg.src = randomGif;
+}
