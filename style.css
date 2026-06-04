@@ -1152,35 +1152,43 @@ body {
 
     .loading-wrapper {
         position: relative;
-        width: 130px;  /* 120px보다 10px 정도 여유를 둡니다 */
+        width: 130px; 
         height: 130px;
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 글자가 없어졌으므로 아래 여백을 0으로 만들어 정중앙에 위치하게 합니다 */
+        margin-bottom: 0; 
+    }
+    /* 1. 로딩중 글자 스타일 */
+    .loading-text {
+        font-size: 16px;
+        font-weight: 800;
+        color: #7A5A2F;
+        font-family: 'Cafe24SurroundAir', sans-serif;
+        letter-spacing: 1px;
     }
 
-    /* 2. 테두리 빙글빙글 (박스 크기에 맞춤) */
+    /* 2. 테두리 빙글빙글 (기존 코드 유지) */
     .loading-wrapper::before {
         content: "";
         position: absolute;
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        border: 5px solid transparent; /* 두께를 조금 더 두껍게 설정 */
+        border: 5px solid transparent;
         border-top: 5px solid #FDE047;
         animation: rotate-border 1s linear infinite;
     }
 
-    /* 3. 사진 크기를 120px로 변경 */
     .loading-profile-img {
         width: 120px;
         height: 120px;
         border-radius: 50%;
         object-fit: cover;
-        border: 4px solid #ffffff; /* 흰색 테두리 두께도 살짝 보강 */
+        border: 4px solid #ffffff;
     }
 
-    /* 회전 애니메이션은 그대로 유지 */
     @keyframes rotate-border {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
