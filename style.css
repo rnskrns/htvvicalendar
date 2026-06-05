@@ -413,55 +413,86 @@ body {
 .artist-btn:hover { background: #FFF9C4; color: #5D4037; }
 .artist-btn.active { background: #E1F5FE; color: #0288D1; font-weight: bold; }
 
+.search-input-wrapper {
+    position: relative;
+    flex: 1; /* 남은 공간을 꽉 채움 */
+    display: flex;
+    align-items: center;
+    min-width: 0; /* 🚨 화면이 좁아질 때 밖으로 삐져나가는 현상 방지 */
+}
+
+/* 🌟 2. 회원님의 별 버튼 디자인 (검색창 안으로 쏙 들어가게 수정) */
 #favFilterBtn {
-    width: 48px;
-    height: 48px;
+    position: absolute; /* 검색창 위로 띄우기 */
+    left: 8px; /* 검색창 왼쪽 끝에서 8px 띄움 */
+    width: 38px; /* 검색창 안에 예쁘게 들어가도록 크기를 48->38로 살짝 줄임 */
+    height: 38px;
     padding: 0;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    /* 기본 배경 및 테두리 */
-    background: #fffac3;
-    border: 1px solid #FDE047;
-    
-    /* 기본 별 색상 (흰색) */
+    background: transparent; /* 검색창 배경과 어우러지게 투명 처리 */
     color: #ffffff; 
+    border: none;
     transition: all 0.2s ease;
     cursor: pointer;
+    z-index: 2; /* 입력창보다 위에 오도록 설정 */
 }
 
-/* 1. 기본 별 색상 설정 */
+/* 별 기본 색상 (회원님 코드 그대로) */
 #favFilterBtn svg {
-    fill: #ffffff; /* 별 내부 색상 */
-    stroke: #FDE047; /* 별 외곽선 색상 */
+    fill: #ffffff; 
+    stroke: #FDE047; 
     stroke-width: 1px;
 }
 
-/* 2. 호버 시: 배경 변화 및 별 색상 변경 */
+/* 호버 시: 동그란 노란 배경과 별 색상 변화 */
 #favFilterBtn:hover {
-    background: #FFFBEA;
-    border-color: #FDE047;
+    background: #ffffff;
 }
 #favFilterBtn:hover svg {
-    fill: #FDE047; /* 별 색상이 FDE047로 변함 */
+    fill: #FDE047;
     stroke: #FDE047;
 }
 
-/* 3. 액티브 시: 배경 유지 및 별 색상만 변경 */
+/* 액티브 시: 활성화된 상태 유지 */
 #favFilterBtn.active {
-    background: #fffac3; /* 배경색 기본과 동일하게 유지 */
-    border-color: #FDE047;
+    background: #ffffff; 
 }
 #favFilterBtn.active svg {
-    fill: #FDE047; /* 별 색상만 FDE047 */
+    fill: #FDE047; 
     stroke: #FDE047;
 }
 
-.songbook-main-content { flex: 1 1 66.6667%; padding: 40px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
-.songbook-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
-.songbook-search { flex: 1; padding: 15px 25px; border-radius: 30px; background: #fffac3; outline: none; font-size: 1rem; color: #7A5A2F !important; font-family: 'Cafe24SurroundAir', sans-serif; border: 1px solid #FDE047 !important; }.songbook-content { display: flex; flex-direction: column; gap: 14px; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 24px; }
+/* 🌟 3. 검색창 패딩 조절 */
+.songbook-search { 
+    width: 100%;
+    /* 🚨 중요: 별 아이콘이 들어갈 자리(왼쪽 여백)를 25px -> 52px로 늘려줍니다 */
+    padding: 15px 25px 15px 52px !important; 
+    border-radius: 30px; 
+    background: #ffffff; 
+    outline: none; 
+    font-size: 1rem; 
+    color: #7A5A2F !important; 
+    font-family: 'Cafe24SurroundAir', sans-serif; 
+    border: 1px solid #FDE047 !important; 
+}
+
+.songbook-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    gap: 12px !important; /* 검색창과 + 버튼 사이의 간격 */
+    margin-bottom: 30px !important; 
+    flex-wrap: nowrap !important; /* 🚨 핵심: 공간이 좁아도 다음 줄로 안 떨어지게 꽉 잡아줌 */
+}
+
+.songbook-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px !important; /* 카드가 너무 붙어있다면 16px ~ 20px 정도로 조절해 보세요 */
+}
 
 .song-item {
     background: white;
@@ -506,8 +537,30 @@ body {
 
 .song-delete-btn { background: #fee2e2; color: #ef4444; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 900; font-size: 16px; transition: transform 0.2s, background-color 0.2s; padding: 0; flex-shrink: 0; margin-left: 4px; }
 .song-delete-btn:hover { transform: scale(1.1); background: #fca5a5; color: #991b1b; }
-.add-song-btn { background: var(--point-yellow); color: var(--text-dark); border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; font-weight: 900; font-size: 28px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.2s, opacity 0.2s; font-family: 'Cafe24SurroundAir', sans-serif; }
-.add-song-btn:hover { transform: scale(1.1); opacity: 0.95; }
+.add-song-btn { 
+    background: transparent !important; 
+    color: #C0B7A9; 
+    border: none; 
+    width: 48px; 
+    height: 48px; 
+    cursor: pointer; 
+    font-weight: 900; 
+    font-size: 42px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    line-height: 1; 
+    transition: transform 0.2s, color 0.2s; 
+    font-family: 'Cafe24SurroundAir', sans-serif; 
+    padding: 0;
+    
+    flex-shrink: 0 !important; /* 🚨 핵심: 검색창이 아무리 길어져도 + 기호는 온전한 크기 유지 */
+}
+
+.add-song-btn:hover { 
+    transform: scale(1.15); 
+    color: #FBBF24; 
+}
 
 .songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
 .songbook-modal.visible { display: flex; }
@@ -523,12 +576,25 @@ body {
 .modal-favorite-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
 .modal-favorite-btn.active { border-color: #FDE047; background: #FFFDF0; color: #D97706; }
 
-.admin-song-form { display: none; background: white; border: 1px solid #F5F5F5; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box; }
-.admin-song-form.visible { display: block; }
+.admin-song-form { display: none; background: white; border: 1px solid #F5F5F5; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box; }.admin-song-form.visible {
+    display: block; 
+    animation: fadeInDown 0.3s ease; /* (선택) 스르륵 부드럽게 열리는 효과 */
+}
 .admin-form-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
 .admin-input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid #E5E7EB; background: #F8FAFC; font-size: 1rem; color: var(--text-dark); outline: none; font-family: 'Cafe24SurroundAir', sans-serif;}
 .admin-add-btn { background: var(--point-yellow); color: var(--text-dark); border: none; border-radius: 999px; padding: 12px 18px; cursor: pointer; font-weight: 800; transition: transform 0.2s, opacity 0.2s; font-family: 'Cafe24SurroundAir', sans-serif;}
 .admin-add-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+
+@keyframes fadeInDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-15px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
 
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
 .calendar-grid.weekly-view { display: flex; flex-direction: column; gap: 12px; }
@@ -768,7 +834,7 @@ body {
 
 @media screen and (max-width: 1050px) {
 
-    /* 여기서 부터 모바일 레이아웃 */
+    /* 여기서 부터 모바일 */
     .header-center { 
         display: none !important; 
     } 
@@ -1326,5 +1392,7 @@ body {
     .sidebar-item:hover .cafe-img-2 {
         display: block !important;
     }
+
+    
     
 }    

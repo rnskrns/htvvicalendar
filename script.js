@@ -580,7 +580,7 @@ async function ensureMonthsLoadedForDate(date) {
     const m = date.getMonth() + 1;
     await loadEventsForMonth(y, m);
 
-    const isMobile = window.innerWidth < 1049;
+    const isMobile = window.innerWidth < 1050;
     if (isMobile) {
         const target = new Date(date);
         const dayNum = target.getDay();
@@ -849,7 +849,7 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    const isMobile = window.innerWidth < 1049;
+    const isMobile = window.innerWidth < 1050;
     
     // 🌟 DB의 모든 고유 일정을 평탄화 (모바일, PC 공통 사용)
     const allEventsRaw = [];
@@ -1545,7 +1545,7 @@ function loginAdmin() {
 }
 
 window.moveMonth = async function(v) {
-    const isMobile = window.innerWidth < 1049;
+    const isMobile = window.innerWidth < 1050;
     if (isMobile) {
         const target = new Date(currentDate);
         const dayNum = target.getDay();
@@ -1742,7 +1742,9 @@ function editSong(event, id) {
 }
 
 function updateSongbookAdminUI() {
-    const form = document.getElementById('adminSongForm'); if (form) form.classList.toggle('visible', isAdmin);
+    const form = document.getElementById('adminSongForm'); 
+    /* 🚨 관리자로 로그인해도 폼이 기본으로 닫혀있게 변경! */
+    if (form) form.classList.remove('visible'); 
     const addBtn = document.getElementById('addSongBtn'); if (addBtn) addBtn.textContent = '노래 추가';
     renderSongbook();
 }
@@ -1765,6 +1767,10 @@ async function addSong() {
         document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
         document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
         document.getElementById('addSongBtn').textContent = '노래 추가';
+        
+        /* 🚨 저장이 완료되면 폼을 닫아줍니다! */
+        document.getElementById('adminSongForm').classList.remove('visible');
+
         await loadSongbookSongs(); renderSongbook(); showToast('노래가 저장되었습니다.');
     } catch (error) { showToast('노래 저장에 실패했습니다.'); }
 }
@@ -1773,6 +1779,9 @@ function cancelEdit() {
     document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
     document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
     songbookIsEditing = null; document.getElementById('addSongBtn').textContent = '노래 추가';
+    
+    /* 🚨 취소 버튼을 누르면 폼을 다시 닫아줍니다! */
+    document.getElementById('adminSongForm').classList.remove('visible');
 }
 
 async function deleteSong(id) {
@@ -1858,7 +1867,7 @@ function handlePlayerPosition() {
     const sidebar = document.querySelector('.songbook-sidebar');
     if (!playerPanel || !sidebar) return;
 
-    if (window.innerWidth <= 1049) {
+    if (window.innerWidth <= 1050) {
         if (playerPanel.parentElement !== document.body) document.body.appendChild(playerPanel);
     } else {
         if (playerPanel.parentElement !== sidebar) { sidebar.insertBefore(playerPanel, sidebar.firstChild); playerPanel.classList.remove('show-sheet'); }
