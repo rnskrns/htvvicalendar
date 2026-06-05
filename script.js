@@ -580,7 +580,7 @@ async function ensureMonthsLoadedForDate(date) {
     const m = date.getMonth() + 1;
     await loadEventsForMonth(y, m);
 
-    const isMobile = window.innerWidth < 768;
+    const isMobile = window.innerWidth < 1049;
     if (isMobile) {
         const target = new Date(date);
         const dayNum = target.getDay();
@@ -849,7 +849,7 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    const isMobile = window.innerWidth < 768;
+    const isMobile = window.innerWidth < 1049;
     
     // 🌟 DB의 모든 고유 일정을 평탄화 (모바일, PC 공통 사용)
     const allEventsRaw = [];
@@ -1545,7 +1545,7 @@ function loginAdmin() {
 }
 
 window.moveMonth = async function(v) {
-    const isMobile = window.innerWidth < 768;
+    const isMobile = window.innerWidth < 1049;
     if (isMobile) {
         const target = new Date(currentDate);
         const dayNum = target.getDay();
@@ -1858,7 +1858,7 @@ function handlePlayerPosition() {
     const sidebar = document.querySelector('.songbook-sidebar');
     if (!playerPanel || !sidebar) return;
 
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 1049) {
         if (playerPanel.parentElement !== document.body) document.body.appendChild(playerPanel);
     } else {
         if (playerPanel.parentElement !== sidebar) { sidebar.insertBefore(playerPanel, sidebar.firstChild); playerPanel.classList.remove('show-sheet'); }

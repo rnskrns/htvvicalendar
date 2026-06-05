@@ -731,18 +731,99 @@ body {
     50% { transform: translateY(-10px); color: #FDE047; } /* 노란색 */
 }
 
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1050px) {
+    /* 기존 1024px에 있던 레이아웃 변경 설정들 */
     .main-header { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 40px 45px 20px; align-items: center; }
     .header-left, .header-right { justify-content: center; width: 100%; padding: 0; }
     .header-right { margin-left: 0; align-items: center; position: static; justify-self: center; }
-    .header-center { grid-column: 1; justify-self: center; }
     .calendar-top { flex-direction: column; }
     .calendar-body { flex-direction: column; }
     .today-summary { width: 100%; max-width: 400px; }
+
+    /* 기존 중앙에 있던 커다란 로고 숨김 및 빈 공간 축소 */
+    .header-center {
+        display: none !important;
+    }
+    .main-header {
+        padding-top: 10px !important;
+        padding-bottom: 0 !important;
+        min-height: 0 !important;
+    }
     
+    /* 상단 탭 왼쪽에 추가한 모바일 로고 확실하게 표시 */
+    .mobile-top-logo {
+        display: flex !important;
+        align-items: center;
+        margin-right: 15px;
+        flex-shrink: 0 !important;
+    }
+    .mobile-top-logo img {
+        height: 24px !important; 
+        width: auto !important;
+        display: block !important;
+    }
 }
 
-@media screen and (max-width: 768px) {
+.mobile-top-logo { display: none !important; }
+
+@media screen and (max-width: 1050px) {
+
+    /* 여기서 부터 모바일 레이아웃 */
+    .header-center { 
+        display: none !important; 
+    } 
+    
+    .main-header {
+        display: flex !important; /* 다시 화면에 보이게! */
+        flex-direction: column !important; /* 세로 방향으로 자연스럽게 떨어지도록 */
+        padding: 10px 16px 20px !important;
+        min-height: 0 !important;
+    }
+
+    /* 오늘 일정이 모바일 화면 가로에 꽉 차고 예쁘게 나오도록 정렬 */
+    .header-right {
+        width: 100% !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+    
+    .today-summary {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }    
+    /* 2. 상단 탭 일정/노래책 버튼 완전히 소멸시키기 */
+    .top-bar-left, 
+    .fixed-top-bar .nav-tab {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+
+    /* 3. 모바일 로고 왼쪽 위에 강제 고정 */
+    .fixed-top-bar .top-bar-inner {
+        justify-content: space-between !important; /* 양끝 정렬 강제 활성화 */
+    }
+
+    .fixed-top-bar .top-bar-inner .mobile-top-logo {
+        display: flex !important;
+        align-items: center;
+        margin-right: auto !important; /* 로고를 무조건 왼쪽 끝으로 밀어냅니다 */
+        flex-shrink: 0 !important; /* 로고 찌그러짐 방지 */
+    }
+
+    .fixed-top-bar .top-bar-inner .mobile-top-logo img {
+        height: 26px !important; 
+        width: auto !important;
+        display: block !important;
+    }
+    
     .top-bar-right .top-bar-link + span {
         display: none !important;
     }
@@ -817,7 +898,9 @@ body {
     .day.today .week-day-name { color: #CA8A04 !important; }
     .fixed-top-bar { padding: 0 16px; justify-content: flex-end; }
     .top-bar-inner { width: 100%; justify-content: flex-end; }
-    .top-bar-left { display: none; }
+    .top-bar-left {
+        display: none !important;
+    }
     .top-admin-actions { border-left: none; }
     
     .nav-btn { width: 44px; height: 44px; }
@@ -977,6 +1060,33 @@ body {
     .week-day-num {
         font-family: 'RomanticGumi', sans-serif !important;
         font-weight: 700 !important;
+    }
+
+    .top-bar-right .cafe-icon,
+    .top-bar-right .sidebar-item img {
+        flex-shrink: 0 !important;
+        min-width: 20px !important;
+        min-height: 20px !important;
+        object-fit: cover !important;
+    }
+    
+    .fixed-top-bar .top-bar-right {
+        gap: 0 !important; /* 전체가 똑같이 벌어지는 기본 띄어쓰기 제거 */
+    }
+    
+    /* 1. 카페 버튼 (우측에 여백을 줘서 유튜브와 거리 유지) */
+    .fixed-top-bar .top-bar-right > .sidebar-item {
+        margin-right: 14px !important; /* 카페와 유튜브 사이의 간격 */
+    }
+    
+    /* 2. 유튜브 버튼 (우측 여백을 최소화해서 로그인 그룹에 찰싹 붙임) */
+    .fixed-top-bar .top-bar-right .yt-link {
+        margin-right: 0px !important; /* 유튜브와 로그인 사이의 간격 (더 붙이려면 0px~2px 로 수정) */
+    }
+    
+    /* 3. 로그인 그룹 좌측 여백 초기화 */
+    .top-admin-actions {
+        margin-left: 0 !important; 
     }
 }
 
@@ -1216,4 +1326,5 @@ body {
     .sidebar-item:hover .cafe-img-2 {
         display: block !important;
     }
+    
 }    
