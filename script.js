@@ -525,25 +525,15 @@ async function loadEventsForMonth(year, month) {
     const monthKey = `${year}-${month}`;
     if (loadedMonths.has(monthKey)) return;
 
-    const q = query(collection(db, 'events'), where('dateId', '>=', `${year}-${month}-`), where('dateId', '<=', `${year}-${month}-\uf8ff`));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, 'events'));
     const docs = [];
-    snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (!data || !data.dateId) return;
-        docs.push({ ...data, id: docSnap.id });
-    });
+    snapshot.forEach(docSnap => docs.push({ ...docSnap.data(), id: docSnap.id }));
 
-    docs.sort((a, b) => {
-        const dateA = new Date(a.startDate || a.dateId).getTime();
-        const dateB = new Date(b.startDate || b.dateId).getTime();
-        if (dateA !== dateB) return dateA - dateB;
-        return (a.order ?? 9999) - (b.order ?? 9999);
-    });
-
+    events = {};
     docs.forEach(data => {
-        if (!events[data.dateId]) events[data.dateId] = [];
-        if (!events[data.dateId].some(e => e.id === data.id)) events[data.dateId].push(data);
+        const sDate = data.startDate || data.dateId;
+        if (!events[sDate]) events[sDate] = [];
+        events[sDate].push(data);
     });
     loadedMonths.add(monthKey);
 }
@@ -734,19 +724,15 @@ async function saveEvent() {
     try {
         const data = {
             title, time: timeStr, type, members, noticeLink, imageUrl,
-            dateId: activeDateId, startDate: startStr, endDate: endStr,
+            dateId: startStr, // 대표 날짜 하나만 지정
+            startDate: startStr, endDate: endStr,
         };
 
         if (isEditing) {
             await setDoc(doc(db, 'events', editingDocId), data);
             showToast('일정이 수정되었습니다.');
         } else {
-            const sDate = new Date(startStr);
-            const eDate = new Date(endStr);
-            for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
-                const dateId = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                await addDoc(collection(db, 'events'), { ...data, dateId });
-            }
+            await addDoc(collection(db, 'events'), data); // 반복문 없이 딱 한 번만 저장!
             showToast('일정이 추가되었습니다.');
         }
 
@@ -762,20 +748,60 @@ async function saveEvent() {
 
 async function deleteEvent() {
     const idx = parseInt(document.getElementById('editIndex').value, 10);
-    if (!confirm('이 일정을 삭제할까요?')) return;
+    if (!confirm('이 일정을 삭제할까요? (연속된 일정은 함께 삭제됩니다)')) return;
+    
     try {
         const editingDocId = document.getElementById('editingEventDocId') ? document.getElementById('editingEventDocId').value : '';
+        
+        // 1. 현재 삭제하려는 대상의 정보를 찾습니다.
+        let targetEvent = null;
         if (editingDocId) {
-            await deleteDoc(doc(db, 'events', editingDocId));
+            for (const date in events) {
+                const found = events[date].find(e => e.id === editingDocId);
+                if (found) { targetEvent = found; break; }
+            }
         } else {
-            const existingEvent = events[activeDateId] && events[activeDateId][idx];
-            if (existingEvent && existingEvent.id) await deleteDoc(doc(db, 'events', existingEvent.id));
+            targetEvent = events[activeDateId] && events[activeDateId][idx];
         }
-        loadedMonths.clear(); events = {};
+
+        if (targetEvent) {
+            // 2. 시작일과 종료일이 존재하는 장기 일정인지 확인합니다.
+            if (targetEvent.startDate && targetEvent.endDate && targetEvent.startDate !== targetEvent.endDate) {
+                // DB에서 제목과 기간이 완전히 똑같은 일정들을 한 번에 조회합니다.
+                const q = query(
+                    collection(db, 'events'),
+                    where('title', '==', targetEvent.title),
+                    where('startDate', '==', targetEvent.startDate),
+                    where('endDate', '==', targetEvent.endDate)
+                );
+                const snapshot = await getDocs(q);
+                const deletePromises = [];
+                
+                // 찾은 문서들을 모두 삭제 리스트에 넣습니다.
+                snapshot.forEach(docSnap => {
+                    deletePromises.push(deleteDoc(doc(db, 'events', docSnap.id)));
+                });
+                
+                // 일괄 삭제 실행!
+                await Promise.all(deletePromises);
+            } else {
+                // 일반(단일) 일정은 기존처럼 하나만 삭제합니다.
+                await deleteDoc(doc(db, 'events', targetEvent.id));
+            }
+        }
+
+        // 3. 화면 초기화 및 다시 그리기
+        loadedMonths.clear(); 
+        events = {};
         await ensureMonthsLoadedForDate(currentDate);
         if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
-        closeModal('eventModal'); renderCalendar(); showToast('일정이 삭제되었습니다.');
-    } catch (error) { console.error(error); showToast('일정 삭제에 실패했습니다.'); }
+        closeModal('eventModal'); 
+        renderCalendar(); 
+        showToast('일정이 삭제되었습니다.');
+    } catch (error) { 
+        console.error(error); 
+        showToast('일정 삭제에 실패했습니다.'); 
+    }
 }
 
 function renderCalendar() {
@@ -784,6 +810,13 @@ function renderCalendar() {
     grid.innerHTML = '';
     const isMobile = window.innerWidth < 768;
     
+    // DB의 모든 고유 일정을 평탄화
+    const allEventsRaw = [];
+    const seenIds = new Set();
+    Object.values(events).flat().forEach(ev => {
+        if (!seenIds.has(ev.id)) { seenIds.add(ev.id); allEventsRaw.push(ev); }
+    });
+
     if (isMobile) {
         grid.className = 'calendar-grid weekly-view';
         const target = new Date(currentDate);
@@ -801,41 +834,40 @@ function renderCalendar() {
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(monday);
             dayDate.setDate(monday.getDate() + i);
-            
             const num = dayDate.getDate(); const m = dayDate.getMonth() + 1; const y = dayDate.getFullYear();
             const dateId = `${y}-${m}-${num}`;
             
-            const row = document.createElement('div');
-            row.className = 'week-row';
-            const isToday = dayDate.getDate() === new Date().getDate() && 
-                            dayDate.getMonth() === new Date().getMonth() && 
-                            dayDate.getFullYear() === new Date().getFullYear();
+            const row = document.createElement('div'); row.className = 'week-row';
+            const isToday = dayDate.getDate() === new Date().getDate() && dayDate.getMonth() === new Date().getMonth() && dayDate.getFullYear() === new Date().getFullYear();
             if (isToday) row.classList.add('today-row');
             if (isAdmin) row.onclick = () => openAddModal(dateId);
             
-            const dayLabel = document.createElement('div'); 
-            dayLabel.className = 'week-day-label';
+            const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
+            const dayName = document.createElement('div'); dayName.className = `week-day-name ${yoilColors[i] || ''}`; dayName.innerText = yoils[i];
+            const dayNumber = document.createElement('div'); dayNumber.className = `week-day-num`; dayNumber.innerText = num;
+            dayLabel.appendChild(dayName); dayLabel.appendChild(dayNumber);
 
-            const dayName = document.createElement('div'); 
-            dayName.className = `week-day-name ${yoilColors[i] || ''}`; 
-            dayName.innerText = yoils[i];
+            const todaysEvents = allEventsRaw.filter(ev => {
+                const start = new Date(ev.startDate || ev.dateId); const end = new Date(ev.endDate || ev.dateId);
+                start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+                return dayDate >= start && dayDate <= end;
+            });
 
-            const dayNumber = document.createElement('div'); 
-            dayNumber.className = `week-day-num`; 
-            dayNumber.innerText = num;
-            
-            dayLabel.appendChild(dayName);
-            dayLabel.appendChild(dayNumber);
+            todaysEvents.sort((a, b) => {
+                const startA = new Date(a.startDate || a.dateId).getTime(); const startB = new Date(b.startDate || b.dateId).getTime();
+                if (startA !== startB) return startA - startB;
+                return (a.order ?? 9999) - (b.order ?? 9999);
+            });
 
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
-            if (events[dateId] && events[dateId].length > 0) {
-                events[dateId].forEach((ev, idx) => {
+            if (todaysEvents.length > 0) {
+                todaysEvents.forEach((ev, idx) => {
                     const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
                     tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;                    
+                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
                     tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
+                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
                     eventsDiv.appendChild(tag);
                 });
             } else {
@@ -855,32 +887,23 @@ function renderCalendar() {
         const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
         const prevLastDay = new Date(y, m, 0).getDate();
         
-        for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
+        for (let i = startIdx; i > 0; i--) {
+            const tempD = new Date(y, m, 1 - i);
+            createDay(tempD.getDate(), false, [], tempD);
+        }
         for (let i = 1; i <= lastDay.getDate(); i++) {
-            const d = new Date(y, m, i); const dateId = `${y}-${m + 1}-${i}`;
-            const allEvents = Object.values(events).flat();
-            
-            // 1차 필터링: 시작일~종료일 사이에 포함되는 일정들 모두 가져오기
-            const todaysEventsRaw = allEvents.filter(ev => {
-                if (!ev.startDate) return ev.dateId === dateId;
-                const start = new Date(ev.startDate); const end = new Date(ev.endDate);
+            const d = new Date(y, m, i);
+            const todaysEvents = allEventsRaw.filter(ev => {
+                const start = new Date(ev.startDate || ev.dateId); const end = new Date(ev.endDate || ev.dateId);
                 start.setHours(0,0,0,0); end.setHours(0,0,0,0);
                 return d >= start && d <= end;
             });
-
-            // ✨ 핵심: 중복 제거 로직 추가 (화면에 그리기 전에 똑같은 일정은 1개로 합침)
-            const uniqueEvents = [];
-            const seen = new Set();
-            todaysEventsRaw.forEach(ev => {
-                const key = `${ev.title}_${ev.time || ''}_${ev.type || ''}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    uniqueEvents.push(ev);
-                }
+            todaysEvents.sort((a, b) => {
+                const startA = new Date(a.startDate || a.dateId).getTime(); const startB = new Date(b.startDate || b.dateId).getTime();
+                if (startA !== startB) return startA - startB;
+                return (a.order ?? 9999) - (b.order ?? 9999);
             });
-
-            // 필터링된 진짜 일정만 그리기
-            createDay(i, true, uniqueEvents);
+            createDay(i, true, todaysEvents, d);
         }
     }
     applyDraggable(); updateAdminUI(); updateSummary();

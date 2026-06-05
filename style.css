@@ -540,7 +540,10 @@ body {
 }
 
 .event-tag div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; font-weight: 900 !important; }.dragging-ghost { background-color: #FFF3B0 !important; opacity: 0.4; border: 2px dashed #EAB308; }
-.event-tag.long-term { font-size: 14px !important; padding: 4px; white-space: nowrap; }
+.event-tag.long-term {
+    position: relative;
+    height: 28px !important; /* 세로 높이를 고정해야 옆 날짜 막대와 수평이 예쁘게 맞습니다 */
+}
 
 .type-개인방송 { background-color: var(--color-personal); color: #B45309; }
 .type-합방 { background-color: var(--color-collab); color: #01579B; }
