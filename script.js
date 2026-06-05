@@ -921,7 +921,8 @@ function renderCalendar() {
                     eventsDiv.appendChild(item);
                 });
             } else {
-                eventsDiv.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
+                /* 🚨 p 태그를 지우고, 점선 카드를 그리는 empty-event-card 클래스의 div로 교체합니다 */
+                eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>";
             }
 
             row.appendChild(dayLabel);
