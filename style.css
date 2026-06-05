@@ -843,7 +843,7 @@ body {
     }
     .day { min-height: 160px; }
     .event-tag { font-size: 14px; min-height: 50px; }
-    .main-logo { height: 90px; }
+    .main-logo { height: 70px; }
     .calendar-body { display: flex; align-items: flex-start; gap: 16px; width: 100%; flex-direction: column; }
     .calendar-main {
         background-color: transparent !important;

@@ -880,7 +880,7 @@ function renderCalendar() {
             const num = dayDate.getDate(); const m = dayDate.getMonth() + 1; const y = dayDate.getFullYear();
             const dateId = `${y}-${m}-${num}`;
             
-            const row = document.createElement('div'); row.className = 'week-row';
+            const row = document.createElement('div'); row.className = 'week-row'; row.dataset.dateId = dateId;
             const isToday = dayDate.getDate() === new Date().getDate() && dayDate.getMonth() === new Date().getMonth() && dayDate.getFullYear() === new Date().getFullYear();
             if (isToday) row.classList.add('today-row');
             if (isAdmin) row.onclick = () => openAddModal(dateId);
@@ -895,7 +895,7 @@ function renderCalendar() {
                 const end = new Date(ev.endDate || ev.dateId);
                 start.setHours(0, 0, 0, 0); 
                 end.setHours(0, 0, 0, 0);
-                return todayLocal >= start && todayLocal <= end;
+                return dayDate >= start && dayDate <= end;
             });
 
             todaysEvents.sort((a, b) => {
@@ -908,19 +908,25 @@ function renderCalendar() {
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
             if (todaysEvents.length > 0) {
                 todaysEvents.forEach((ev, idx) => {
-                    const item = document.createElement('div'); 
-                    item.className = 'summary-item'; 
-                    item.onclick = () => showInfoByEvent(ev);
-                    
-                    // ev.type이 비어있을 경우를 대비해 기본값 처리 추가
+                    const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
-                    item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
-                    
-                    cont.appendChild(item);
+                    const item = document.createElement('div');
+                    item.className = `event-tag type-${typeClass}${isLong ? ' long-term' : ''}`;
+                    item.onclick = () => showInfoByEvent(ev);
+                    if (ev.time) {
+                        item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`;
+                    } else {
+                        item.innerHTML = `<div>${ev.title}</div>`;
+                    }
+                    eventsDiv.appendChild(item);
                 });
             } else {
-                cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
+                eventsDiv.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
             }
+
+            row.appendChild(dayLabel);
+            row.appendChild(eventsDiv);
+            grid.appendChild(row);
         }
     } else {
         grid.className = 'calendar-grid';
