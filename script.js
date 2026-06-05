@@ -143,10 +143,8 @@ function updateNaverLoginUI() {
 let modifiedDates = new Set();
 let currentDate = new Date();
 let events = {};
-
 let loadedMonths = new Set();
 let isSongbookLoaded = false;
-
 let members = {};
 let currentAMPM = '오전';
 let activeMemoTab = '컨텐츠';
@@ -157,6 +155,32 @@ let memoLoadToken = 0;
 let favPlaylist = [];
 let currentFavIndex = 0;
 let isPlaying = false; 
+
+let globalServerLastUpdated = null;
+
+async function getServerLastUpdated() {
+    if (globalServerLastUpdated !== null) return globalServerLastUpdated;
+    try {
+        const statusSnap = await getDoc(doc(db, 'settings', 'db_status'));
+        if (statusSnap.exists()) {
+            globalServerLastUpdated = statusSnap.data().lastUpdated || 0;
+        } else {
+            globalServerLastUpdated = 0;
+        }
+    } catch(e) {
+        globalServerLastUpdated = 0;
+    }
+    return globalServerLastUpdated;
+}
+
+// 관리자가 데이터를 추가/수정/삭제하면 서버의 '버전(시간)'을 최신으로 갱신하는 함수
+async function updateDbStatus() {
+    try {
+        const now = new Date().getTime();
+        await setDoc(doc(db, 'settings', 'db_status'), { lastUpdated: now });
+        globalServerLastUpdated = now; 
+    } catch(e) { console.error("상태 업데이트 실패:", e); }
+}
 
 function updateBoardButtonsState() {
     const memoOpen = document.getElementById('memoPanel')?.classList.contains('open') || document.getElementById('memoPanel')?.classList.contains('show-sheet');
@@ -525,9 +549,22 @@ async function loadEventsForMonth(year, month) {
     const monthKey = `${year}-${month}`;
     if (loadedMonths.has(monthKey)) return;
 
-    const snapshot = await getDocs(collection(db, 'events'));
-    const docs = [];
-    snapshot.forEach(docSnap => docs.push({ ...docSnap.data(), id: docSnap.id }));
+    // 서버 업데이트 시간 확인 (비용: 단 1회)
+    const serverTime = await getServerLastUpdated();
+    const localCache = JSON.parse(localStorage.getItem('htvvi_events_cache') || '{"time": 0, "data": []}');
+    let docs = [];
+
+    // 로컬 저장소가 최신 버전이면 서버 조회 생략 (비용: 0회)
+    if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
+        docs = localCache.data;
+        console.log("일정을 캐시에서 무료로 불러왔습니다! 💸");
+    } else {
+        // 관리자가 새로 추가한 게 있으면 서버에서 불러오고 내 폰에 저장
+        const snapshot = await getDocs(collection(db, 'events'));
+        snapshot.forEach(docSnap => docs.push({ ...docSnap.data(), id: docSnap.id }));
+        localStorage.setItem('htvvi_events_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: docs }));
+        console.log("일정 업데이트 완료 (서버 조회)");
+    }
 
     events = {};
     docs.forEach(data => {
@@ -717,24 +754,25 @@ async function saveEvent() {
     const members = document.getElementById('eventMembers').value;
     const noticeLink = document.getElementById('eventNoticeLink').value.trim();
     const imageUrl = document.getElementById('eventImageUrl').value;
-
     const editingDocId = document.getElementById('editingEventDocId').value;
     const isEditing = editingDocId !== '';
 
     try {
         const data = {
             title, time: timeStr, type, members, noticeLink, imageUrl,
-            dateId: startStr, // 대표 날짜 하나만 지정
-            startDate: startStr, endDate: endStr,
+            dateId: startStr, startDate: startStr, endDate: endStr,
         };
 
         if (isEditing) {
             await setDoc(doc(db, 'events', editingDocId), data);
             showToast('일정이 수정되었습니다.');
         } else {
-            await addDoc(collection(db, 'events'), data); // 반복문 없이 딱 한 번만 저장!
+            const customDocId = `${startStr}_${title.replace(/\//g, '-')}`; 
+            await setDoc(doc(db, 'events', customDocId), data); 
             showToast('일정이 추가되었습니다.');
         }
+
+        await updateDbStatus(); // ✨ 데이터 변동 알림!
 
         loadedMonths.clear();
         events = {};
@@ -743,7 +781,7 @@ async function saveEvent() {
         document.getElementById('editingEventDocId').value = '';
         document.getElementById('editIndex').value = '-1';
         closeModal('eventModal'); renderCalendar();
-    } catch (error) { console.error(error); showToast(`저장 실패: ${error.message}`); }
+    } catch (error) { showToast(`저장 실패: ${error.message}`); }
 }
 
 async function deleteEvent() {
@@ -789,6 +827,9 @@ async function deleteEvent() {
                 await deleteDoc(doc(db, 'events', targetEvent.id));
             }
         }
+
+        // ✨ 삭제가 완료된 직후, 서버 상태를 업데이트하여 시청자들의 캐시를 갱신시킵니다!
+        await updateDbStatus();
 
         // 3. 화면 초기화 및 다시 그리기
         loadedMonths.clear(); 
@@ -1437,7 +1478,11 @@ async function saveAllModifiedOrders() {
             });
         }
     }
-    await Promise.all(updatePromises); modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
+    await Promise.all(updatePromises); 
+    
+    await updateDbStatus(); // ✨ 데이터 변동 알림!
+
+    modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
 }
 
 function loginAdmin() {
@@ -1513,21 +1558,32 @@ let songbookIsEditing = null;
 let currentModalSongId = null;
 
 async function loadSongbookSongs() {
-    songbookSongs = [];
-    try {
-        const snapshot = await getDocs(collection(db, 'songbook_songs'));
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data && data.title && data.artist) {
-                songbookSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', isConditionSong: data.isConditionSong || false });
-            }
-        });
-        songbookSongs.sort((a, b) => {
-            const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
-            if (titleCompare !== 0) return titleCompare;
-            return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
-        });
-    } catch (error) { console.error('노래 데이터 로드 실패:', error); }
+    const serverTime = await getServerLastUpdated();
+    const localCache = JSON.parse(localStorage.getItem('htvvi_songs_cache') || '{"time": 0, "data": []}');
+
+    if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
+        songbookSongs = localCache.data;
+        console.log("노래책을 캐시에서 무료로 불러왔습니다! 💸");
+    } else {
+        songbookSongs = [];
+        try {
+            const snapshot = await getDocs(collection(db, 'songbook_songs'));
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data && data.title && data.artist) {
+                    songbookSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', isConditionSong: data.isConditionSong || false });
+                }
+            });
+            localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
+            console.log("노래책 업데이트 완료 (서버 조회)");
+        } catch (error) { console.error('노래 데이터 로드 실패:', error); }
+    }
+
+    songbookSongs.sort((a, b) => {
+        const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
+        if (titleCompare !== 0) return titleCompare;
+        return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
+    });
 }
 
 function renderSongbook() {
@@ -1646,11 +1702,10 @@ function updateSongbookAdminUI() {
 }
 
 async function addSong() {
-    const titleInput = document.getElementById('newSongTitle'); const artistInput = document.getElementById('newSongArtist');
-    const urlInput = document.getElementById('newSongUrl'); const conditionCheckbox = document.getElementById('isConditionSong');
-    
-    const title = titleInput.value.trim(); const artist = artistInput.value.trim();
-    const url = urlInput.value.trim(); const isConditionSong = conditionCheckbox.checked;
+    const title = document.getElementById('newSongTitle').value.trim();
+    const artist = document.getElementById('newSongArtist').value.trim();
+    const url = document.getElementById('newSongUrl').value.trim();
+    const isConditionSong = document.getElementById('isConditionSong').checked;
     
     if (!title || !artist) { showToast('노래 제목과 가수명을 입력해주세요.'); return; }
     try {
@@ -1658,10 +1713,14 @@ async function addSong() {
             await setDoc(doc(db, 'songbook_songs', songbookIsEditing), { title, artist, url, isConditionSong });
             songbookIsEditing = null;
         } else { await addDoc(collection(db, 'songbook_songs'), { title, artist, url, isConditionSong }); }
-        titleInput.value = ''; artistInput.value = ''; urlInput.value = ''; conditionCheckbox.checked = false;
+        
+        await updateDbStatus(); // ✨ 데이터 변동 알림!
+
+        document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
+        document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
         document.getElementById('addSongBtn').textContent = '노래 추가';
         await loadSongbookSongs(); renderSongbook(); showToast('노래가 저장되었습니다.');
-    } catch (error) { console.error('노래 저장 실패:', error); showToast('노래 저장에 실패했습니다.'); }
+    } catch (error) { showToast('노래 저장에 실패했습니다.'); }
 }
 
 function cancelEdit() {
@@ -1673,8 +1732,12 @@ function cancelEdit() {
 async function deleteSong(id) {
     if (!isAdmin) return;
     if (!confirm('이 노래를 삭제하시겠습니까?')) return;
-    try { await deleteDoc(doc(db, 'songbook_songs', id)); await loadSongbookSongs(); renderSongbook(); showToast('노래가 삭제되었습니다.'); }
-    catch (error) { console.error('노래 삭제 실패:', error); showToast('노래 삭제에 실패했습니다.'); }
+    try { 
+        await deleteDoc(doc(db, 'songbook_songs', id)); 
+        await updateDbStatus(); // ✨ 데이터 변동 알림!
+        await loadSongbookSongs(); renderSongbook(); showToast('노래가 삭제되었습니다.'); 
+    }
+    catch (error) { showToast('노래 삭제에 실패했습니다.'); }
 }
 
 window.setSongbookFilter = function(filter) {
