@@ -143,6 +143,11 @@
             border-color: #FDE047;
             transform: scale(1.05);
         }
+
+        @keyframes force-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body id="mainBody">
@@ -226,9 +231,18 @@
 
     <div id="loadingOverlay" class="loading-overlay">
         <div class="custom-loading-container">
-            <div class="loading-wrapper">
-                <img id="randomLoadingImg" src="" alt="로딩중" class="loading-profile-img">
+            
+            <!-- 🌟 로딩 이미지와 회전 띠를 감싸는 영역 (인라인 스타일로 강제 고정) -->
+            <div style="position: relative; width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; margin: 0 auto;">
+                
+                <!-- 🌟 빙글빙글 돌아가는 노란색 띠 -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 5px solid transparent; border-top-color: #FDE047; box-sizing: border-box; animation: force-spin 1s linear infinite;"></div>
+                
+                <!-- 🌟 가운데 동그란 프로필 사진 -->
+                <img id="randomLoadingImg" src="" alt="로딩중" style="position: relative; width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-sizing: border-box; z-index: 2;">
+                
             </div>
+
         </div>
         
         <div class="cute-loading-text">

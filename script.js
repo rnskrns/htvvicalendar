@@ -859,13 +859,28 @@ function renderCalendar() {
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const d = new Date(y, m, i); const dateId = `${y}-${m + 1}-${i}`;
             const allEvents = Object.values(events).flat();
-            const todaysEvents = allEvents.filter(ev => {
+            
+            // 1차 필터링: 시작일~종료일 사이에 포함되는 일정들 모두 가져오기
+            const todaysEventsRaw = allEvents.filter(ev => {
                 if (!ev.startDate) return ev.dateId === dateId;
                 const start = new Date(ev.startDate); const end = new Date(ev.endDate);
                 start.setHours(0,0,0,0); end.setHours(0,0,0,0);
                 return d >= start && d <= end;
             });
-            createDay(i, true, todaysEvents);
+
+            // ✨ 핵심: 중복 제거 로직 추가 (화면에 그리기 전에 똑같은 일정은 1개로 합침)
+            const uniqueEvents = [];
+            const seen = new Set();
+            todaysEventsRaw.forEach(ev => {
+                const key = `${ev.title}_${ev.time || ''}_${ev.type || ''}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueEvents.push(ev);
+                }
+            });
+
+            // 필터링된 진짜 일정만 그리기
+            createDay(i, true, uniqueEvents);
         }
     }
     applyDraggable(); updateAdminUI(); updateSummary();
@@ -1824,9 +1839,10 @@ window.addEventListener('error', () => {
 });
 
 const loadingGifs = [
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/kqd0ua6kwuvtgwurzkw0.webp",
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/v8yulqs8c3txxna0lijr.webp",
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1780584414/ponpy2tj1mr4kdugip7i.webp"
+    // 원본 URL 중간에 /w_120,h_120,c_fill,r_max/ 를 추가했습니다.
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/kqd0ua6kwuvtgwurzkw0.webp",
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/v8yulqs8c3txxna0lijr.webp",
+    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/ponpy2tj1mr4kdugip7i.webp"
 ];
 
 // 3개 중 하나를 랜덤으로 뽑아서 적용 (페이지가 로드되기 직전에 즉시 실행)
