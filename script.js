@@ -810,13 +810,6 @@ function renderCalendar() {
     grid.innerHTML = '';
     const isMobile = window.innerWidth < 768;
     
-    // DB의 모든 고유 일정을 평탄화
-    const allEventsRaw = [];
-    const seenIds = new Set();
-    Object.values(events).flat().forEach(ev => {
-        if (!seenIds.has(ev.id)) { seenIds.add(ev.id); allEventsRaw.push(ev); }
-    });
-
     if (isMobile) {
         grid.className = 'calendar-grid weekly-view';
         const target = new Date(currentDate);
@@ -834,40 +827,41 @@ function renderCalendar() {
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(monday);
             dayDate.setDate(monday.getDate() + i);
+            
             const num = dayDate.getDate(); const m = dayDate.getMonth() + 1; const y = dayDate.getFullYear();
             const dateId = `${y}-${m}-${num}`;
             
-            const row = document.createElement('div'); row.className = 'week-row';
-            const isToday = dayDate.getDate() === new Date().getDate() && dayDate.getMonth() === new Date().getMonth() && dayDate.getFullYear() === new Date().getFullYear();
+            const row = document.createElement('div');
+            row.className = 'week-row';
+            const isToday = dayDate.getDate() === new Date().getDate() && 
+                            dayDate.getMonth() === new Date().getMonth() && 
+                            dayDate.getFullYear() === new Date().getFullYear();
             if (isToday) row.classList.add('today-row');
             if (isAdmin) row.onclick = () => openAddModal(dateId);
             
-            const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
-            const dayName = document.createElement('div'); dayName.className = `week-day-name ${yoilColors[i] || ''}`; dayName.innerText = yoils[i];
-            const dayNumber = document.createElement('div'); dayNumber.className = `week-day-num`; dayNumber.innerText = num;
-            dayLabel.appendChild(dayName); dayLabel.appendChild(dayNumber);
+            const dayLabel = document.createElement('div'); 
+            dayLabel.className = 'week-day-label';
 
-            const todaysEvents = allEventsRaw.filter(ev => {
-                const start = new Date(ev.startDate || ev.dateId); const end = new Date(ev.endDate || ev.dateId);
-                start.setHours(0,0,0,0); end.setHours(0,0,0,0);
-                return dayDate >= start && dayDate <= end;
-            });
+            const dayName = document.createElement('div'); 
+            dayName.className = `week-day-name ${yoilColors[i] || ''}`; 
+            dayName.innerText = yoils[i];
 
-            todaysEvents.sort((a, b) => {
-                const startA = new Date(a.startDate || a.dateId).getTime(); const startB = new Date(b.startDate || b.dateId).getTime();
-                if (startA !== startB) return startA - startB;
-                return (a.order ?? 9999) - (b.order ?? 9999);
-            });
+            const dayNumber = document.createElement('div'); 
+            dayNumber.className = `week-day-num`; 
+            dayNumber.innerText = num;
+            
+            dayLabel.appendChild(dayName);
+            dayLabel.appendChild(dayNumber);
 
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
-            if (todaysEvents.length > 0) {
-                todaysEvents.forEach((ev, idx) => {
+            if (events[dateId] && events[dateId].length > 0) {
+                events[dateId].forEach((ev, idx) => {
                     const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
                     const tag = document.createElement('div');
                     tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
+                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;                    
                     tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
+                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(dateId, idx); };
                     eventsDiv.appendChild(tag);
                 });
             } else {
@@ -887,46 +881,35 @@ function renderCalendar() {
         const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
         const prevLastDay = new Date(y, m, 0).getDate();
         
-        for (let i = startIdx; i > 0; i--) {
-            const tempD = new Date(y, m, 1 - i);
-            createDay(tempD.getDate(), false, [], tempD);
-        }
+        for (let i = startIdx; i > 0; i--) createDay(prevLastDay - i + 1, false);
         for (let i = 1; i <= lastDay.getDate(); i++) {
-            const d = new Date(y, m, i);
-            const todaysEvents = allEventsRaw.filter(ev => {
-                const start = new Date(ev.startDate || ev.dateId); const end = new Date(ev.endDate || ev.dateId);
+            const d = new Date(y, m, i); const dateId = `${y}-${m + 1}-${i}`;
+            const allEvents = Object.values(events).flat();
+            
+            // 1차 필터링: 시작일~종료일 사이에 포함되는 일정들 모두 가져오기
+            const todaysEventsRaw = allEvents.filter(ev => {
+                if (!ev.startDate) return ev.dateId === dateId;
+                const start = new Date(ev.startDate); const end = new Date(ev.endDate);
                 start.setHours(0,0,0,0); end.setHours(0,0,0,0);
                 return d >= start && d <= end;
             });
-            todaysEvents.sort((a, b) => {
-                const startA = new Date(a.startDate || a.dateId).getTime(); const startB = new Date(b.startDate || b.dateId).getTime();
-                if (startA !== startB) return startA - startB;
-                return (a.order ?? 9999) - (b.order ?? 9999);
+
+            // ✨ 핵심: 중복 제거 로직 추가 (화면에 그리기 전에 똑같은 일정은 1개로 합침)
+            const uniqueEvents = [];
+            const seen = new Set();
+            todaysEventsRaw.forEach(ev => {
+                const key = `${ev.title}_${ev.time || ''}_${ev.type || ''}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueEvents.push(ev);
+                }
             });
-            createDay(i, true, todaysEvents, d);
+
+            // 필터링된 진짜 일정만 그리기
+            createDay(i, true, uniqueEvents);
         }
     }
     applyDraggable(); updateAdminUI(); updateSummary();
-}
-
-function applyDraggable() {
-    document.querySelectorAll('.event-container, .week-events').forEach(el => {
-        if (isAdmin) {
-            if (!el.sortableInstance && window.Sortable) {
-                el.sortableInstance = new Sortable(el, {
-                    animation: 150, ghostClass: 'dragging-ghost', fallbackOnBody: true, delay: 200, delayOnTouchOnly: true, fallbackTolerance: 5,
-                    onStart: function(evt) { evt.item.style.height = evt.item.offsetHeight + 'px'; },
-                    onEnd: function (evt) {
-                        evt.item.style.height = '';
-                        const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
-                        if (dateId) modifiedDates.add(dateId);
-                    }
-                });
-            }
-        } else {
-            if (el.sortableInstance) { el.sortableInstance.destroy(); el.sortableInstance = null; }
-        }
-    });
 }
 
 function createDay(num, isCurr, dayEvents = []) {
