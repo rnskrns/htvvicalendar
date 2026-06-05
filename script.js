@@ -891,13 +891,16 @@ function renderCalendar() {
             dayLabel.appendChild(dayName); dayLabel.appendChild(dayNumber);
 
             const todaysEvents = allEventsRaw.filter(ev => {
-                const start = new Date(ev.startDate || ev.dateId); const end = new Date(ev.endDate || ev.dateId);
-                start.setHours(0,0,0,0); end.setHours(0,0,0,0);
-                return dayDate >= start && dayDate <= end;
+                const start = new Date(ev.startDate || ev.dateId); 
+                const end = new Date(ev.endDate || ev.dateId);
+                start.setHours(0, 0, 0, 0); 
+                end.setHours(0, 0, 0, 0);
+                return todayLocal >= start && todayLocal <= end;
             });
 
             todaysEvents.sort((a, b) => {
-                const startA = new Date(a.startDate || a.dateId).getTime(); const startB = new Date(b.startDate || b.dateId).getTime();
+                const startA = new Date(a.startDate || a.dateId).getTime(); 
+                const startB = new Date(b.startDate || b.dateId).getTime();
                 if (startA !== startB) return startA - startB;
                 return (a.order ?? 9999) - (b.order ?? 9999);
             });
@@ -905,18 +908,19 @@ function renderCalendar() {
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
             if (todaysEvents.length > 0) {
                 todaysEvents.forEach((ev, idx) => {
-                    const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
-                    const tag = document.createElement('div');
-                    tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-                    tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
-                    tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-                    if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
-                    eventsDiv.appendChild(tag);
+                    const item = document.createElement('div'); 
+                    item.className = 'summary-item'; 
+                    item.onclick = () => showInfoByEvent(ev);
+                    
+                    // ev.type이 비어있을 경우를 대비해 기본값 처리 추가
+                    const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
+                    item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
+                    
+                    cont.appendChild(item);
                 });
             } else {
-                const noEvent = document.createElement('div'); noEvent.className = 'week-no-event'; noEvent.innerText = '등록된 일정이 없습니다.'; eventsDiv.appendChild(noEvent);
+                cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
             }
-            row.appendChild(dayLabel); row.appendChild(eventsDiv); grid.appendChild(row);
         }
     } else {
         grid.className = 'calendar-grid';
@@ -1078,16 +1082,51 @@ function showInfoByEvent(ev) {
 }
 
 function updateSummary() {
-    const today = new Date(); const id = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-    const cont = document.getElementById('summaryContent'); if(!cont) return;
+    const cont = document.getElementById('summaryContent'); 
+    if(!cont) return;
     cont.innerHTML = '';
-    if (events[id] && events[id].length > 0) {
-        events[id].forEach((ev, idx) => {
-            const item = document.createElement('div'); item.className = 'summary-item'; item.onclick = () => showInfoByEvent(ev);
-            item.innerHTML = `<span class="summary-dot type-dot-${ev.type.replace(/\s+/g, '')}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
+
+    const todayLocal = new Date();
+    todayLocal.setHours(0, 0, 0, 0);
+
+    const allEventsRaw = [];
+    const seenIds = new Set();
+    Object.values(events).flat().forEach(ev => {
+        if (!seenIds.has(ev.id)) { 
+            seenIds.add(ev.id); 
+            allEventsRaw.push(ev); 
+        }
+    });
+
+    const todaysEvents = allEventsRaw.filter(ev => {
+        const start = new Date(ev.startDate || ev.dateId); 
+        const end = new Date(ev.endDate || ev.dateId);
+        start.setHours(0, 0, 0, 0); 
+        end.setHours(0, 0, 0, 0);
+        return todayLocal >= start && todayLocal <= end;
+    });
+
+    todaysEvents.sort((a, b) => {
+        const startA = new Date(a.startDate || a.dateId).getTime(); 
+        const startB = new Date(b.startDate || b.dateId).getTime();
+        if (startA !== startB) return startA - startB;
+        return (a.order ?? 9999) - (b.order ?? 9999);
+    });
+
+    if (todaysEvents.length > 0) {
+        todaysEvents.forEach((ev, idx) => {
+            const item = document.createElement('div'); 
+            item.className = 'summary-item'; 
+            item.onclick = () => showInfoByEvent(ev);
+            
+            const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
+            item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
+            
             cont.appendChild(item);
         });
-    } else cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
+    } else {
+        cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
+    }
 }
 
 window.toggleMemo = function() {
@@ -1216,6 +1255,7 @@ window.loadUpItems = async function() {
         });
 
         const todayLocal = new Date();
+        todayLocal.setHours(0, 0, 0, 0);
         const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
         
         let renderCount = 0;
