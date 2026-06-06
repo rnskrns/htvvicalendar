@@ -6,16 +6,18 @@ export default async function handler(req, res) {
     }
 
     try {
-        // ✨ 핵심: SOOP 서버는 디스코드나 카카오톡 봇이 접근하면 
-        // 공유용 썸네일을 만들기 위해 진짜 제목과 내용이 담긴 데이터를 줍니다! (위장 접근)
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'facebookexternalhit/1.1; kakaotalk-scrap/1.0; Discordbot/2.0; Twitterbot/1.0;',
-                'Accept': 'text/html,application/xhtml+xml',
-            }
-        });
+        // ✨ 핵심 변경: Vercel 서버 IP 차단을 피하기 위해 무료 프록시(allorigins)를 경유합니다.
+        // 이렇게 하면 SOOP 서버는 Vercel이 아니라 프록시 서버가 접속한 것으로 인식합니다.
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
-        const html = await response.text();
+        const response = await fetch(proxyUrl);
+        const proxyData = await response.json();
+        
+        if (!proxyData.contents) {
+            return res.status(500).json({ error: '데이터를 가져오지 못했습니다.' });
+        }
+
+        const html = proxyData.contents;
 
         // 메타 태그 추출 함수
         const getMeta = (prop) => {
