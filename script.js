@@ -253,7 +253,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         // 5. 실패 시 버튼 모드로 전환
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">.</p>
+                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;"></p>
                 <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
             </div>
         `;
