@@ -660,7 +660,6 @@ function ensureDayManagerModal() {
     if (document.getElementById('dayManagerModal')) return;
     const html = `
     <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-        <!-- 기존 일정 모달 클래스(event-modal-box) 적용 -->
         <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:95%; max-width:850px;">
             
             <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
@@ -668,10 +667,13 @@ function ensureDayManagerModal() {
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;">
             </div>
             
-            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:30px; padding-top:24px; border-top:1px solid #f1f5f9; flex-shrink:0;">
-                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; margin-right:auto;">+ 새 일정</button>
-                <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
-                <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4); transition:transform 0.1s;">저장</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px; padding-top:24px; border-top:1px solid #f1f5f9; flex-shrink:0; flex-wrap:wrap; gap:12px;">
+                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">+ 새 일정</button>
+                <div style="display:flex; flex:1; justify-content:flex-end; gap:12px; align-items:center;">
+                    <input type="text" id="dayManagerNoticeInput" placeholder="오늘의 공지 링크 (전체 적용)" style="width: 250px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px; outline: none; transition: border-color 0.2s;">
+                    <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
+                    <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4); transition:transform 0.1s;">저장</button>
+                </div>
             </div>
         </div>
     </div>`;
@@ -726,6 +728,11 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
     
     dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
     
+    // 👇 저장된 공지 링크를 찾아 메인 입력창에 할당합니다
+    const firstNotice = dayManagerItems.find(item => item.noticeLink)?.noticeLink || '';
+    const noticeInput = document.getElementById('dayManagerNoticeInput');
+    if (noticeInput) noticeInput.value = firstNotice;
+
     renderDayManagerList();
     document.getElementById('dayManagerModal').style.display = 'flex';
 }
@@ -763,7 +770,6 @@ window.renderDayManagerList = function() {
             renderDayManagerList(); 
         };
         
-        // ... (상단 헤더 구성은 기존과 동일) ...
         const orderDiv = document.createElement('div');
         orderDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; align-items:center;';
         orderDiv.innerHTML = `<button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button><button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>`;
@@ -785,6 +791,7 @@ window.renderDayManagerList = function() {
             const types = ['개인방송', '합방', '휴방', '미확정', 'LCK', '시네티'];
             let typeOpts = types.map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('');
             
+            // 👇 개별 공지 링크 입력창을 삭제했습니다.
             body.innerHTML = `
                 <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><input type="text" class="event-custom-input mgr-title" value="${item.title || ''}"></div>
@@ -806,7 +813,6 @@ window.renderDayManagerList = function() {
                 <div style="border-left: 1px solid #e2e8f0; margin: 0 10px;"></div>
                 <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">참여 멤버</label><input type="text" class="event-custom-input mgr-members" value="${item.members || ''}"></div>
-                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">공지 링크</label><input type="text" class="event-custom-input mgr-notice" value="${item.noticeLink || ''}"></div>
                     <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">이미지 URL</label>
                         <div style="display:flex; gap:8px;">
@@ -836,7 +842,6 @@ function saveTempValues(card, idx) {
     item.endDate = card.querySelector('.mgr-end').value;
     item.type = card.querySelector('.mgr-type').value;
     item.members = card.querySelector('.mgr-members').value;
-    item.noticeLink = card.querySelector('.mgr-notice').value;
     item.imageUrl = card.querySelector('.mgr-image').value;
 }
 
@@ -900,6 +905,9 @@ window.saveDayManager = async function() {
     const btn = document.querySelector('#dayManagerModal button[onclick="saveDayManager()"]');
     if (btn) { btn.innerText = '저장 중...'; btn.disabled = true; }
     
+    // 👇 새롭게 추가된 하단 통합 공지 링크 값을 가져옵니다.
+    const globalNotice = document.getElementById('dayManagerNoticeInput')?.value.trim() || '';
+
     try {
         const promises = [];
         let orderCounter = 0;
@@ -920,7 +928,7 @@ window.saveDayManager = async function() {
                     time: timeStr,
                     type: item.type || '개인방송',
                     members: item.members || '',
-                    noticeLink: item.noticeLink || '',
+                    noticeLink: globalNotice, // 👈 개별값이 아닌 일괄값 적용
                     imageUrl: item.imageUrl || '',
                     startDate: item.startDate || dayManagerFormattedDateId,
                     endDate: item.endDate || dayManagerFormattedDateId,
@@ -2049,6 +2057,8 @@ function ensureDayInfoModal() {
             
             <div id="dayInfoList" style="flex:1; display:flex; flex-direction:row; gap:20px; align-items:stretch; overflow-x:auto; overflow-y:auto; padding:10px 0;"></div>
             
+            <div id="dayInfoNoticeArea" style="width: 100%; max-width: 600px; margin: 15px auto 0; display: none;"></div>
+            
             <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
                 <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius:12px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
             </div>
@@ -2065,8 +2075,6 @@ window.showDayInfo = function(dateId, dayEvents) {
     const list = document.getElementById('dayInfoList');
     list.innerHTML = '';
 
-    // 🔥 핵심 수정: 일정이 1개일 때, 혹은 2개인데 가로폭이 넉넉할 때(PC 등)는 정중앙 정렬!
-    // (모바일처럼 좁은 화면에서 2개 이상일 때는 글씨가 잘리지 않게 왼쪽 정렬을 유지합니다)
     if (dayEvents && (dayEvents.length === 1 || (dayEvents.length === 2 && window.innerWidth > 768))) {
         list.style.justifyContent = 'center';
     } else {
@@ -2090,7 +2098,6 @@ window.showDayInfo = function(dateId, dayEvents) {
             }
             const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
             
-            // 기존 상세 모달과 동일한 유형 색상 클래스
             const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
 
             // 2. 프로필 카드 렌더링
@@ -2107,9 +2114,7 @@ window.showDayInfo = function(dateId, dayEvents) {
                 });
             }
 
-            const safeId = ev.id || `temp_${Math.random().toString(36).substr(2, 9)}`;
-
-            // 3. 개별 일정 카드 생성
+            // 3. 개별 일정 카드 생성 (공지사항 영역 삭제됨)
             const cardWrapper = document.createElement('div');
             cardWrapper.style.cssText = 'flex: 1; min-width: 320px; max-width: 450px; display: flex; flex-direction: column;';
             
@@ -2131,30 +2136,36 @@ window.showDayInfo = function(dateId, dayEvents) {
                     <div class="info-profiles" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom: 20px;">
                         ${profsHtml}
                     </div>
-                    
-                    <div id="day_notice_${safeId}" class="notice-preview" style="display:none; margin-top:auto;"></div>
                 </div>
             `;
             
             list.appendChild(cardWrapper);
 
-            // 4. 공지사항 불러오기
-            if (ev.noticeLink) {
-                setTimeout(() => {
-                    const noticeContainer = document.getElementById(`day_notice_${safeId}`);
-                    if (noticeContainer && window.loadNoticePreview) {
-                        window.loadNoticePreview(ev.noticeLink, noticeContainer, ev.noticeTitle, ev.noticeDesc);
-                    }
-                }, 0);
-            }
-
-            // 5. 카드 사이에 세로 구분선(Divider) 넣기 (마지막 카드 제외)
+            // 4. 카드 사이에 세로 구분선(Divider) 넣기
             if (index < dayEvents.length - 1) {
                 const divider = document.createElement('div');
                 divider.style.cssText = 'width: 2px; background-color: #f1f5f9; margin: 15px 10px; flex-shrink: 0; border-radius: 2px;';
                 list.appendChild(divider);
             }
         });
+    }
+
+    // 👇 5. 통합 공지사항 로드 로직 (루프 밖 하단에서 단 1번만 실행)
+    const noticeArea = document.getElementById('dayInfoNoticeArea');
+    if (noticeArea) {
+        noticeArea.innerHTML = '';
+        noticeArea.style.display = 'none';
+        
+        // 해당 날짜 일정 중 공지 링크가 있는 첫 번째 데이터를 찾습니다.
+        const evWithNotice = dayEvents?.find(e => e.noticeLink);
+        if (evWithNotice) {
+            noticeArea.style.display = 'block';
+            setTimeout(() => {
+                if (window.loadNoticePreview) {
+                    window.loadNoticePreview(evWithNotice.noticeLink, noticeArea, evWithNotice.noticeTitle, evWithNotice.noticeDesc);
+                }
+            }, 0);
+        }
     }
 
     document.getElementById('dayInfoModal').style.display = 'flex';
