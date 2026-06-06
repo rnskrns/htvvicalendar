@@ -812,23 +812,23 @@ async function deleteEvent() {
 function ensureDayManagerModal() {
     if (document.getElementById('dayManagerModal')) return;
     const html = `
-    <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-        <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:95%; max-width:850px;">
+    <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px); box-sizing:border-box; padding:10px;">
+        <div class="event-modal-box mgr-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:100%; max-width:850px; background:#fff; border-radius:16px; box-sizing:border-box;">
             <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
             
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
-            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fafaf9;">
+            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 2px solid #FDE047; border-radius: 12px; background: #fffdf0;">
                 <input type="text" id="dayManagerNoticeTitle" placeholder="공지 제목을 입력하세요" class="event-custom-input" style="margin-bottom: 8px;">
                 <textarea id="dayManagerNoticeDesc" placeholder="공지 내용을 입력하세요" class="event-custom-input" style="height: 80px; resize: vertical;"></textarea>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9; flex-shrink:0;">
-                <div style="display:flex; gap:10px;">
-                    <button onclick="deleteAllDayManagerItems()" style="padding:12px 24px; background:#fee2e2; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">일괄 삭제</button>
-                    <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
+            <div class="mgr-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9; flex-shrink:0;">
+                <div class="mgr-footer-left" style="display:flex; gap:10px;">
+                    <button onclick="deleteAllDayManagerItems()" style="padding:12px 24px; background:#fee2e2; color:#ef4444; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">일괄 삭제</button>
+                    <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center;">
+                <div class="mgr-footer-right" style="display:flex; gap:8px; align-items:center;">
                     <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="padding:10px 15px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#7A5A2F;">공지 상세 ▼</button>
                     <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px;">
                     <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800;">닫기</button>
@@ -933,12 +933,27 @@ window.renderDayManagerList = function() {
     const list = document.getElementById('dayManagerList');
     list.innerHTML = '';
     
-    // CSS 추가 (스타일 충돌 방지 및 레이아웃 수정)
+    // 모바일 반응형 UI를 위한 추가 CSS (@media 부분이 추가되었습니다)
     const style = document.createElement('style');
     style.innerHTML = `
         .event-custom-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
         .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; }
+        
+        @media (max-width: 768px) {
+            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; }
+            .mgr-body { padding: 15px !important; flex-direction: column !important; gap: 15px !important; }
+            .mgr-col { min-width: 100% !important; }
+            .mgr-divider { display: none !important; }
+            
+            .mgr-footer { flex-direction: column; gap: 12px; align-items: stretch !important; height: auto !important; }
+            .mgr-footer-left { justify-content: space-between; width: 100%; }
+            .mgr-footer-right { flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 6px; }
+            
+            .mgr-footer-left button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; margin: 0 4px; }
+            .mgr-footer-right input { width: 100% !important; margin-bottom: 8px; order: -1; }
+            .mgr-footer-right button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; white-space: nowrap; }
+        }
     `;
     if (!document.getElementById('mgr-style')) { style.id = 'mgr-style'; document.head.appendChild(style); }
 
@@ -949,14 +964,13 @@ window.renderDayManagerList = function() {
         card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s;';
         
         if (item.isExpanded) {
-            card.style.borderColor = '#d1d5db';
-            card.style.boxShadow = '0 0 0 0 rgba(253, 224, 71, 0.2)';
+            card.style.borderColor = '#FDE047';
+            card.style.boxShadow = '0 0 0 3px rgba(253, 224, 71, 0.2)';
         }
         
         const header = document.createElement('div');
         header.style.cssText = `display:flex; align-items:center; padding:16px; cursor:pointer; gap:12px; ${item.isExpanded ? 'background:#fafaf9; border-bottom:1px solid #e2e8f0;' : 'background:#ffffff;'}`;
         header.onclick = () => { 
-            // 현재 상태 저장 후 토글
             saveTempValues(card, idx);
             item.isExpanded = !item.isExpanded; 
             renderDayManagerList(); 
@@ -978,14 +992,14 @@ window.renderDayManagerList = function() {
         
         if (item.isExpanded) {
             const body = document.createElement('div');
+            body.className = 'mgr-body';
             body.style.cssText = 'padding:24px; display:flex; gap:20px; flex-wrap:wrap; background:#ffffff;';
             
             const types = ['개인방송', '합방', '휴방', '미확정', 'LCK', '시네티'];
             let typeOpts = types.map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('');
             
-            // 👇 개별 공지 링크 입력창을 삭제했습니다.
             body.innerHTML = `
-                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
+                <div class="mgr-col" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><input type="text" class="event-custom-input mgr-title" value="${item.title || ''}"></div>
                     <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시간</label>
@@ -1002,8 +1016,8 @@ window.renderDayManagerList = function() {
                     </div>
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">유형</label><select class="event-custom-input mgr-type" style="cursor:pointer; font-weight:bold; width:100%;">${typeOpts}</select></div>
                 </div>
-                <div style="border-left: 1px solid #e2e8f0; margin: 0 10px;"></div>
-                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
+                <div class="mgr-divider" style="border-left: 1px solid #e2e8f0; margin: 0 10px;"></div>
+                <div class="mgr-col" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">참여 멤버</label><input type="text" class="event-custom-input mgr-members" value="${item.members || ''}"></div>
                     <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">이미지 URL</label>
