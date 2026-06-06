@@ -511,6 +511,20 @@ function closeModal(id) {
     if(el) el.style.display = 'none'; 
 }
 
+function parseTimeStr(timeStr) {
+    if (!timeStr) return { ampm: '오전', hour: '', min: '' };
+    const [h24, m] = timeStr.split(':').map(n => parseInt(n) || 0);
+    const ampm = h24 >= 12 ? '오후' : '오전';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return { ampm, hour: h12, min: m };
+}
+
+window.setMgrAmPm = function(btn, type) {
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.mgr-ampm-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+};
+
 function formatTime12h(timeStr) {
     if (!timeStr) return '';
     const [h, m] = timeStr.split(':').map(Number);
@@ -690,12 +704,18 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
         return targetDate >= start && targetDate <= end;
     });
     
-    dayManagerItems = dayEvents.map((ev, idx) => ({
-        ...ev,
-        isExpanded: targetEventId === ev.id || (targetEventId === null && idx === 0),
-        isDeleted: false,
-        originalId: ev.id
-    }));
+    dayManagerItems = dayEvents.map((ev, idx) => {
+        const timeData = parseTimeStr(ev.time);
+        return {
+            ...ev,
+            ampm: timeData.ampm,
+            hour: timeData.hour,
+            min: timeData.min,
+            isExpanded: targetEventId === ev.id || (targetEventId === null && idx === 0),
+            isDeleted: false,
+            originalId: ev.id
+        };
+    });
     
     dayManagerItems.sort((a, b) => {
         const startA = new Date(a.startDate || a.dateId).getTime();
@@ -710,89 +730,22 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
     document.getElementById('dayManagerModal').style.display = 'flex';
 }
 
-// 🌟🌟 Day Manager: 리스트 그리기 🌟🌟
-// 🌟🌟 Day Manager: 시간 커스텀 입력 처리 함수 🌟🌟
-window.updateDayMgrTime = function(idx, field, value) {
-    let item = dayManagerItems[idx];
-    
-    if (field === 'ampm') item._ampm = value;
-    if (field === 'hour') item._hour = value;
-    if (field === 'min') item._min = value;
-
-    // 입력된 값이 하나라도 있으면 시간 문자열(HH:MM) 조합
-    if (item._hour || item._min) {
-        let h24 = item._hour ? parseInt(item._hour, 10) : 0;
-        let m = item._min ? parseInt(item._min, 10) : 0;
-        if (isNaN(h24)) h24 = 0;
-        if (isNaN(m)) m = 0;
-
-        if (item._ampm === 'AM' && h24 === 12) h24 = 0;
-        if (item._ampm === 'PM' && h24 < 12) h24 += 12;
-        
-        item.time = `${h24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    } else {
-        item.time = ''; // 비워두면 시간 미정으로 처리
-    }
-
-    // 오전/오후 버튼을 누른 경우에만 색상 변경을 위해 화면 다시 그리기
-    if (field === 'ampm') {
-        renderDayManagerList();
-    }
-};
-
-// 🌟🌟 Day Manager: 리스트 그리기 🌟🌟
-// 🌟🌟 Day Manager: 리스트 그리기 (2단 분리 레이아웃 및 삐져나감 방지) 🌟🌟
 window.renderDayManagerList = function() {
-    // 🌟 좌/우 2단 분할 및 삐져나감 방지를 위한 CSS 동적 주입
-    if (!document.getElementById('dayMgrCustomStyles')) {
-        const style = document.createElement('style');
-        style.id = 'dayMgrCustomStyles';
-        style.innerHTML = `
-            .day-mgr-layout { display: flex; gap: 24px; }
-            /* min-width: 0을 줘서 자식 요소가 flex 영역을 강제로 밀어내는 것을 방지 */
-            .day-mgr-col { flex: 1; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-            .day-mgr-divider { width: 1px; background: #e2e8f0; flex-shrink: 0; }
-            
-            /* 모든 입력창이 부모 크기를 절대 넘지 않도록 강제 (구분선 침범 방지) */
-            .day-mgr-input-full { 
-                width: 100%; 
-                max-width: 100%; 
-                box-sizing: border-box !important; 
-            }
-            
-            @media (max-width: 768px) {
-                .day-mgr-layout { flex-direction: column; gap: 20px; }
-                .day-mgr-divider { width: 100%; height: 1px; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
     const list = document.getElementById('dayManagerList');
     list.innerHTML = '';
     
-    let visibleCount = 0;
+    // CSS 추가 (스타일 충돌 방지 및 레이아웃 수정)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .event-custom-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
+        .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; }
+    `;
+    if (!document.getElementById('mgr-style')) { style.id = 'mgr-style'; document.head.appendChild(style); }
+
     dayManagerItems.forEach((item, idx) => {
         if (item.isDeleted) return;
-        visibleCount++;
         
-        // 🌟 시간 커스텀 입력 초기값 설정 로직
-        if (!item._tempTimeInit) {
-            if (item.time) {
-                let [h24, m] = item.time.split(':').map(Number);
-                item._ampm = h24 < 12 ? 'AM' : 'PM';
-                item._hour = h24 % 12 || 12;
-                item._min = m.toString().padStart(2, '0');
-            } else {
-                item._ampm = 'AM'; // 기본값
-                item._hour = '';
-                item._min = '';
-            }
-            item._tempTimeInit = true;
-        }
-
-        let isAM = item._ampm === 'AM';
-
         const card = document.createElement('div');
         card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s;';
         
@@ -803,120 +756,88 @@ window.renderDayManagerList = function() {
         
         const header = document.createElement('div');
         header.style.cssText = `display:flex; align-items:center; padding:16px; cursor:pointer; gap:12px; ${item.isExpanded ? 'background:#fafaf9; border-bottom:1px solid #e2e8f0;' : 'background:#ffffff;'}`;
-        header.onclick = () => { item.isExpanded = !item.isExpanded; renderDayManagerList(); };
+        header.onclick = () => { 
+            // 현재 상태 저장 후 토글
+            saveTempValues(card, idx);
+            item.isExpanded = !item.isExpanded; 
+            renderDayManagerList(); 
+        };
         
+        // ... (상단 헤더 구성은 기존과 동일) ...
         const orderDiv = document.createElement('div');
         orderDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; align-items:center;';
-        orderDiv.innerHTML = `
-            <button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button>
-            <button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>
-        `;
-        
+        orderDiv.innerHTML = `<button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button><button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>`;
         const titleSpan = document.createElement('div');
-        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#4E4942; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
+        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#4E4942; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
         titleSpan.innerText = item.title || '(새 일정)';
-        
         const deleteBtn = document.createElement('button');
         deleteBtn.innerText = '삭제';
-        deleteBtn.style.cssText = 'background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:13px; cursor:pointer; font-family:"Cafe24SurroundAir", sans-serif; transition:background 0.2s;';
-        deleteBtn.onmouseover = function() { this.style.background = '#fca5a5'; };
-        deleteBtn.onmouseout = function() { this.style.background = '#fee2e2'; };
+        deleteBtn.style.cssText = 'background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:13px; cursor:pointer; font-family:"Cafe24SurroundAir", sans-serif;';
         deleteBtn.onclick = (e) => { e.stopPropagation(); if(confirm('이 일정을 지우시겠습니까?')) removeDayManagerItem(idx); };
         
-        const expandIcon = document.createElement('div');
-        expandIcon.innerHTML = item.isExpanded ? '▲' : '▼';
-        expandIcon.style.cssText = 'color:#cbd5e1; font-size:12px; margin-left:4px;';
-        
-        header.appendChild(orderDiv);
-        header.appendChild(titleSpan);
-        header.appendChild(deleteBtn);
-        header.appendChild(expandIcon);
+        header.appendChild(orderDiv); header.appendChild(titleSpan); header.appendChild(deleteBtn);
         card.appendChild(header);
         
         if (item.isExpanded) {
             const body = document.createElement('div');
-            body.style.cssText = 'padding:24px; background:#ffffff;';
+            body.style.cssText = 'padding:24px; display:flex; gap:20px; flex-wrap:wrap; background:#ffffff;';
             
             const types = ['개인방송', '합방', '휴방', '미확정', 'LCK', '시네티'];
             let typeOpts = types.map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('');
             
             body.innerHTML = `
-                <div class="day-mgr-layout">
-                    
-                    <div class="day-mgr-col">
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">일정 제목 *</label>
-                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.title || ''}" onchange="dayManagerItems[${idx}].title = this.value" placeholder="예: 오후 방송">
-                        </div>
-                        
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">시간 설정</label>
-                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <div style="display:flex; background:#f1f5f9; border-radius:10px; overflow:hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
-                                    <button type="button" onclick="updateDayMgrTime(${idx}, 'ampm', 'AM')" style="padding:10px 14px; border:none; cursor:pointer; font-family:'Cafe24SurroundAir', sans-serif; font-weight:900; font-size:14px; transition:all 0.2s; ${isAM ? 'background:#FDE047; color:#7A5A2F;' : 'background:transparent; color:#94a3b8;'}">오전</button>
-                                    <button type="button" onclick="updateDayMgrTime(${idx}, 'ampm', 'PM')" style="padding:10px 14px; border:none; cursor:pointer; font-family:'Cafe24SurroundAir', sans-serif; font-weight:900; font-size:14px; transition:all 0.2s; ${!isAM ? 'background:#FDE047; color:#7A5A2F;' : 'background:transparent; color:#94a3b8;'}">오후</button>
-                                </div>
-                                <input type="number" class="event-custom-input" min="1" max="12" placeholder="시" value="${item._hour}" oninput="updateDayMgrTime(${idx}, 'hour', this.value)" style="width:60px; box-sizing:border-box; text-align:center; padding:10px; font-weight:800; flex-shrink: 0;">
-                                <span style="font-weight:900; color:#7A5A2F;">:</span>
-                                <input type="number" class="event-custom-input" min="0" max="59" placeholder="분" value="${item._min}" oninput="updateDayMgrTime(${idx}, 'min', this.value)" style="width:60px; box-sizing:border-box; text-align:center; padding:10px; font-weight:800; flex-shrink: 0;">
-                            </div>
-                        </div>
-
-                        <div style="display:flex; gap:14px; flex-wrap:wrap;">
-                            <div style="flex:1; min-width:130px; max-width:100%;">
-                                <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">시작 날짜 *</label>
-                                <input type="date" class="event-custom-input day-mgr-input-full" value="${item.startDate || dayManagerFormattedDateId}" onchange="dayManagerItems[${idx}].startDate = this.value">
-                            </div>
-                            <div style="flex:1; min-width:130px; max-width:100%;">
-                                <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">종료 날짜 *</label>
-                                <input type="date" class="event-custom-input day-mgr-input-full" value="${item.endDate || dayManagerFormattedDateId}" onchange="dayManagerItems[${idx}].endDate = this.value">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">유형</label>
-                            <select class="event-custom-input day-mgr-input-full" onchange="dayManagerItems[${idx}].type = this.value" style="cursor:pointer; font-weight:bold;">
-                                ${typeOpts}
-                            </select>
+                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><input type="text" class="event-custom-input mgr-title" value="${item.title || ''}"></div>
+                    <div>
+                        <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시간</label>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button class="mgr-ampm-btn ${item.ampm === '오전' ? 'active' : ''}" onclick="setMgrAmPm(this, '오전')">오전</button>
+                            <button class="mgr-ampm-btn ${item.ampm === '오후' ? 'active' : ''}" onclick="setMgrAmPm(this, '오후')">오후</button>
+                            <input type="number" class="event-custom-input mgr-hour" value="${item.hour || ''}" placeholder="시" style="width:70px;">
+                            <input type="number" class="event-custom-input mgr-min" value="${item.min || ''}" placeholder="분" style="width:70px;">
                         </div>
                     </div>
-
-                    <div class="day-mgr-divider"></div>
-
-                    <div class="day-mgr-col">
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">참여 멤버 (쉼표로 구분)</label>
-                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.members || ''}" onchange="dayManagerItems[${idx}].members = this.value" placeholder="예: 햇비, 멤버2">
-                        </div>
-
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">공지 링크</label>
-                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.noticeLink || ''}" onchange="dayManagerItems[${idx}].noticeLink = this.value" placeholder="https://...">
-                        </div>
-
-                        <div>
-                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">포스터 / 썸네일 URL</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="text" id="dayMgrImg_${idx}" class="event-custom-input day-mgr-input-full" style="flex:1; min-width:0;" value="${item.imageUrl || ''}" onchange="dayManagerItems[${idx}].imageUrl = this.value" placeholder="https://...">
-                                <label style="background:#e2e8f0; color:#475569; padding:0 14px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; flex-shrink:0;">
-                                    파일 첨부
-                                    <input type="file" accept="image/*" style="display:none;" onchange="uploadDayManagerImg(this, ${idx})">
-                                </label>
-                            </div>
-                            ${item.imageUrl ? `<img src="${item.imageUrl}" style="max-height:130px; border-radius:8px; margin-top:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); display:block; object-fit:contain; max-width:100%;">` : ''}
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1;"><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시작</label><input type="date" class="event-custom-input mgr-start" value="${item.startDate || dayManagerFormattedDateId}"></div>
+                        <div style="flex:1;"><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">종료</label><input type="date" class="event-custom-input mgr-end" value="${item.endDate || dayManagerFormattedDateId}"></div>
+                    </div>
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">유형</label><select class="event-custom-input mgr-type" style="cursor:pointer; font-weight:bold; width:100%;">${typeOpts}</select></div>
+                </div>
+                <div style="border-left: 1px solid #e2e8f0; margin: 0 10px;"></div>
+                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">참여 멤버</label><input type="text" class="event-custom-input mgr-members" value="${item.members || ''}"></div>
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">공지 링크</label><input type="text" class="event-custom-input mgr-notice" value="${item.noticeLink || ''}"></div>
+                    <div>
+                        <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">이미지 URL</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="dayMgrImg_${idx}" class="event-custom-input mgr-image" value="${item.imageUrl || ''}">
+                            <label style="background:#e2e8f0; color:#475569; padding:0 14px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; white-space:nowrap;">
+                                첨부<input type="file" accept="image/*" style="display:none;" onchange="uploadDayManagerImg(this, ${idx})">
+                            </label>
                         </div>
                     </div>
-                    
                 </div>
             `;
             card.appendChild(body);
         }
         list.appendChild(card);
     });
-    
-    if (visibleCount === 0) {
-        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px 10px; font-weight:800; font-family:\'Cafe24SurroundAir\', sans-serif;">이 날짜에 등록된 일정이 없습니다.</div>';
-    }
+}
+
+// 렌더링 중 상태 유지를 위한 보조 함수
+function saveTempValues(card, idx) {
+    const item = dayManagerItems[idx];
+    if (!card.querySelector('.mgr-title')) return;
+    item.title = card.querySelector('.mgr-title').value;
+    item.ampm = card.querySelector('.mgr-ampm-btn.active').innerText;
+    item.hour = card.querySelector('.mgr-hour').value;
+    item.min = card.querySelector('.mgr-min').value;
+    item.startDate = card.querySelector('.mgr-start').value;
+    item.endDate = card.querySelector('.mgr-end').value;
+    item.type = card.querySelector('.mgr-type').value;
+    item.members = card.querySelector('.mgr-members').value;
+    item.noticeLink = card.querySelector('.mgr-notice').value;
+    item.imageUrl = card.querySelector('.mgr-image').value;
 }
 
 // 🌟🌟 Day Manager: 기능 🌟🌟
@@ -969,6 +890,13 @@ window.uploadDayManagerImg = async function(input, idx) {
 
 window.saveDayManager = async function() {
     if (!isAdmin) return;
+
+    // 현재 모든 카드의 입력값 갱신
+    const cards = document.querySelectorAll('#dayManagerList > div');
+    cards.forEach((card, idx) => {
+        saveTempValues(card, idx);
+    });
+
     const btn = document.querySelector('#dayManagerModal button[onclick="saveDayManager()"]');
     if (btn) { btn.innerText = '저장 중...'; btn.disabled = true; }
     
@@ -981,10 +909,15 @@ window.saveDayManager = async function() {
             if (item.isDeleted) {
                 if (item.originalId) promises.push(deleteDoc(doc(db, 'events', item.originalId)));
             } else {
-                if (!item.title || item.title.trim() === '') item.title = '제목 없음';
+                // 시간 데이터 재조립
+                let h = parseInt(item.hour) || 0;
+                if (item.ampm === '오후' && h < 12) h += 12;
+                if (item.ampm === '오전' && h === 12) h = 0;
+                const timeStr = `${String(h).padStart(2, '0')}:${String(item.min || 0).padStart(2, '0')}`;
+
                 const data = {
-                    title: item.title,
-                    time: item.time || '',
+                    title: item.title || '제목 없음',
+                    time: timeStr,
                     type: item.type || '개인방송',
                     members: item.members || '',
                     noticeLink: item.noticeLink || '',
@@ -1018,7 +951,7 @@ window.saveDayManager = async function() {
         console.error(error);
         showToast('저장 중 오류가 발생했습니다.');
     } finally {
-        if (btn) { btn.innerText = '저장하기'; btn.disabled = false; }
+        if (btn) { btn.innerText = '저장'; btn.disabled = false; }
     }
 }
 
@@ -1062,6 +995,13 @@ function renderCalendar() {
             
             // 🚨 모바일: 우클릭(길게 누르기) 시 통합 관리 팝업 오픈
             if (isAdmin) row.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
+
+            // ✅ 모바일: 빈 공간 터치 시 해당 날짜 일정 전체 보기
+            row.onclick = (e) => {
+                if (!e.target.closest('.event-tag')) { // 일정 태그를 누른 게 아닐 때만 실행
+                    showDayInfo(dateId, todaysEvents);
+                }
+            };
             
             const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
             const dayName = document.createElement('div'); dayName.className = `week-day-name ${yoilColors[i] || ''}`; dayName.innerText = yoils[i];
@@ -1110,7 +1050,7 @@ function renderCalendar() {
             row.appendChild(eventsDiv);
             grid.appendChild(row);
         }
-    } else {
+        } else {
         grid.className = 'calendar-grid';
         grid.innerHTML = `<div class="day-label">월</div><div class="day-label">화</div><div class="day-label">수</div><div class="day-label">목</div><div class="day-label">금</div><div class="day-label text-blue-400">토</div><div class="day-label text-red-400">일</div>`;
         
@@ -1198,6 +1138,15 @@ function createDay(num, isCurr, dayEvents = []) {
     
     // 🚨 PC 빈공간: 우클릭 시 통합 관리 팝업 오픈 (기존 좌클릭 제거)
     if (isCurr && isAdmin) div.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
+
+    // ✅ PC: 빈 공간 클릭 시 해당 날짜 일정 전체 보기
+    if (isCurr) {
+        div.onclick = (e) => {
+            if (!e.target.closest('.event-tag')) { // 일정 태그를 누른 게 아닐 때만 실행
+                showDayInfo(dateId, dayEvents);
+            }
+        };
+    }
     
     document.getElementById('calendarGrid').appendChild(div);
 }
@@ -1223,15 +1172,21 @@ function showInfoByEvent(ev) {
     } else {
         dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
     }
+    
+    const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
     const timeEl = document.getElementById('infoTime'); 
+    
     if (timeEl) {
-        timeEl.innerText = dateText + (ev.type ? ` | ${ev.type}` : '');
-        timeEl.className = timeEl.className.replace(/\btype-\S+/g, '').trim();
-        if (ev.type) {
-            timeEl.classList.add(`type-${ev.type.replace(/\s+/g, '')}`);
-        }
+        // 1. 기존 태그의 쓸데없는 클래스를 다 비우고 위치만 가운데로 잡아줍니다.
+        timeEl.className = '';
+        timeEl.style.cssText = 'text-align:center; margin-bottom: 24px;';
+        
+        // 2. 통합 일정 모달과 100% 똑같은 HTML 태그(배지 모양)를 만들어서 쏙 집어넣습니다.
+        const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
+        timeEl.innerHTML = `<span class="${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">${timeTypeStr}</span>`;
     }
     
+    // ... 이하 나머지 이미지, 프로필, 공지사항 로직은 방금 드린 코드와 동일합니다 ...
     const infoImageContainer = document.getElementById('infoImageContainer');
     if(infoImageContainer) {
         infoImageContainer.innerHTML = '';
@@ -2085,6 +2040,125 @@ window.toggleMobileUpBoard = function() {
     updateBoardButtonsState();
 };
 
+function ensureDayInfoModal() {
+    if (document.getElementById('dayInfoModal')) return;
+    const html = `
+    <div id="dayInfoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
+        <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:95%; max-width:1200px; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:34px; font-weight:bold; text-align:center; flex-shrink:0;"></h2>
+            
+            <div id="dayInfoList" style="flex:1; display:flex; flex-direction:row; gap:20px; align-items:stretch; overflow-x:auto; overflow-y:auto; padding:10px 0;"></div>
+            
+            <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
+                <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius:12px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+window.showDayInfo = function(dateId, dayEvents) {
+    ensureDayInfoModal();
+    const parts = dateId.split('-');
+    document.getElementById('dayInfoTitle').innerText = `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`;
+
+    const list = document.getElementById('dayInfoList');
+    list.innerHTML = '';
+
+    // 🔥 추가된 핵심 부분: 일정이 딱 1개일 때만 가로 가운데 정렬 적용!
+    if (dayEvents && dayEvents.length === 1) {
+        list.style.justifyContent = 'center';
+    } else {
+        list.style.justifyContent = 'flex-start';
+    }
+
+    if (!dayEvents || dayEvents.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'GMarketSans', sans-serif; width:100%;">이날은 등록된 일정이 없습니다.</div>`;
+    } else {
+        dayEvents.forEach((ev, index) => {
+            // 1. 시간 및 날짜 포맷팅
+            let dateText = '';
+            if (ev.startDate && ev.endDate) {
+                const s = new Date(ev.startDate); const e = new Date(ev.endDate);
+                dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+                if (ev.startDate !== ev.endDate) dateText = `${s.getFullYear().toString().slice(-2)}.${s.getMonth()+1}.${s.getDate()} - ${e.getFullYear().toString().slice(-2)}.${e.getMonth()+1}.${e.getDate()}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+            } else if (ev.dateId) {
+                const dParts = ev.dateId.split('-'); dateText = `${dParts[0].slice(-2)}.${dParts[1]}.${dParts[2]}${(ev.time ? ` | ${formatTime12h(ev.time)}` : '')}`;
+            } else {
+                dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
+            }
+            const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
+            
+            // 기존 상세 모달과 동일한 유형 색상 클래스
+            const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
+
+            // 2. 프로필 카드 렌더링
+            let profsHtml = '';
+            if (ev.members) {
+                ev.members.split(',').forEach(nameRaw => {
+                    const name = nameRaw.trim(); if (!name) return;
+                    const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
+                    profsHtml += `
+                        <div class="profile-card">
+                            <img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'">
+                            <div class="profile-name">${m.name}</div>
+                        </div>`;
+                });
+            }
+
+            const safeId = ev.id || `temp_${Math.random().toString(36).substr(2, 9)}`;
+
+            // 3. 개별 일정 카드 생성
+            const cardWrapper = document.createElement('div');
+            cardWrapper.style.cssText = 'flex: 1; min-width: 320px; max-width: 450px; display: flex; flex-direction: column;';
+            
+            cardWrapper.innerHTML = `
+                <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0;">
+                    
+                    <h2 style="text-align:center; margin-top:0; margin-bottom:15px; font-size:24px; font-weight:900; word-break:keep-all;">${ev.title || ''}</h2>
+                    
+                    <div style="text-align:center; margin-bottom: 24px;">
+                        <div class="info-time ${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">
+                            ${timeTypeStr}
+                        </div>
+                    </div>
+                    
+                    <div class="info-image-container" style="text-align:center; margin-bottom: 20px;">
+                        ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
+                    </div>
+                    
+                    <div class="info-profiles" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom: 20px;">
+                        ${profsHtml}
+                    </div>
+                    
+                    <div id="day_notice_${safeId}" class="notice-preview" style="display:none; margin-top:auto;"></div>
+                </div>
+            `;
+            
+            list.appendChild(cardWrapper);
+
+            // 4. 공지사항 불러오기
+            if (ev.noticeLink) {
+                setTimeout(() => {
+                    const noticeContainer = document.getElementById(`day_notice_${safeId}`);
+                    if (noticeContainer && window.loadNoticePreview) {
+                        window.loadNoticePreview(ev.noticeLink, noticeContainer, ev.noticeTitle, ev.noticeDesc);
+                    }
+                }, 0);
+            }
+
+            // 5. 카드 사이에 세로 구분선(Divider) 넣기 (마지막 카드 제외)
+            if (index < dayEvents.length - 1) {
+                const divider = document.createElement('div');
+                divider.style.cssText = 'width: 2px; background-color: #f1f5f9; margin: 15px 10px; flex-shrink: 0; border-radius: 2px;';
+                list.appendChild(divider);
+            }
+        });
+    }
+
+    document.getElementById('dayInfoModal').style.display = 'flex';
+};
+
 Object.assign(window, {
     handleEventImgUpload, addMember, deleteMember,deletePopupImage,
     handlePopupImgUpload: window.handlePopupImgUpload,
@@ -2174,6 +2248,19 @@ const loadingGifs = [
 
 const randomLoadingImg = document.getElementById('randomLoadingImg');
 if (randomLoadingImg) {
+    // 1. 다운로드 전에는 이미지를 투명하게 만들어서 깨진 아이콘을 숨깁니다.
+    randomLoadingImg.style.opacity = '0';
+    
+    // (선택사항) 팍! 나타나지 않고 0.3초 동안 스르륵 부드럽게 나타나는 효과
+    randomLoadingImg.style.transition = 'opacity 0.3s ease'; 
+
     const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
+    
+    // 2. 이미지가 완전히 다운로드(load)되면 투명도를 원상복구(1) 시킵니다.
+    randomLoadingImg.onload = () => {
+        randomLoadingImg.style.opacity = '1';
+    };
+
+    // 3. 주소를 넣는 순간 다운로드가 시작됩니다.
     randomLoadingImg.src = randomGif;
 }
