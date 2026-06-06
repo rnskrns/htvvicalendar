@@ -205,20 +205,29 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
+    // 1. 수동 입력값이 있으면 즉시 렌더링 (서버 호출 안 함)
     if (manualTitle) {
-        container.innerHTML = `
-            <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
-                <div class="premium-notice-header">
-                    <span class="premium-notice-badge">공지사항</span>
-                    <span class="premium-notice-date">바로가기 ↗</span>
-                </div>
-                <h3 class="premium-notice-title">${manualTitle}</h3>
-                ${manualDesc ? `<p class="premium-notice-desc">${manualDesc}</p>` : ''}
-            </a>
-        `;
+        renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
+    // 2. Firebase 캐시 조회 (URL을 base64로 인코딩하여 문서 ID로 사용)
+    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
+    const noticeRef = doc(db, 'notice_cache', cacheDocId);
+    
+    try {
+        const cacheSnap = await getDoc(noticeRef);
+        
+        if (cacheSnap.exists()) {
+            const data = cacheSnap.data();
+            renderNoticeHTML(container, url, data.title, data.description);
+            return; // 캐시 성공 시 함수 종료
+        }
+    } catch (e) {
+        console.warn("캐시 조회 실패, 서버 호출 진행");
+    }
+
+    // 3. 캐시가 없을 경우 서버 호출
     container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
 
     try {
@@ -226,20 +235,18 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         const data = await response.json();
         
         if (response.ok && data.title) {
-            container.innerHTML = `
-                <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
-                    <div class="premium-notice-header">
-                        <span class="premium-notice-badge">공지사항</span>
-                        <span class="premium-notice-date">바로가기 ↗</span>
-                    </div>
-                    <h3 class="premium-notice-title">${data.title}</h3>
-                    ${data.description ? `<p class="premium-notice-desc">${data.description}</p>` : ''}
-                </a>
-            `;
+            // 4. 성공 시 Firebase에 저장
+            await setDoc(noticeRef, { 
+                title: data.title, 
+                description: data.description || '', 
+                createdAt: new Date() 
+            });
+            renderNoticeHTML(container, url, data.title, data.description);
         } else {
             throw new Error(data.error || 'API 응답 실패');
         }
     } catch (error) {
+        // 5. 실패 시 버튼 모드로 전환
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
                 <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">보안으로 인해 내용을 자동으로 불러올 수 없는 링크입니다.</p>
@@ -248,6 +255,20 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         `;
     }
 };
+
+// 공지 HTML 렌더링 공통 함수
+function renderNoticeHTML(container, url, title, desc) {
+    container.innerHTML = `
+        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
+            <div class="premium-notice-header">
+                <span class="premium-notice-badge">공지사항</span>
+                <span class="premium-notice-date">바로가기 ↗</span>
+            </div>
+            <h3 class="premium-notice-title">${title}</h3>
+            ${desc ? `<p class="premium-notice-desc">${desc}</p>` : ''}
+        </a>
+    `;
+}
 
 function updateFavPlayerPlaylist() {
     const favorites = getFavorites();
