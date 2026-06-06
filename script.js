@@ -940,19 +940,23 @@ window.renderDayManagerList = function() {
         .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
         .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; }
         
+        /* 👇 모바일 반응형 강화: 화면 잘림 원천 차단 */
         @media (max-width: 768px) {
-            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; }
-            .mgr-body { padding: 15px !important; flex-direction: column !important; gap: 15px !important; }
-            .mgr-col { min-width: 100% !important; }
+            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: 95vh !important; box-sizing: border-box; }
+            
+            /* 가로 정렬을 완전히 해제하고 세로로 차곡차곡 쌓기 */
+            .mgr-body { padding: 15px !important; display: block !important; }
+            .mgr-col { display: block !important; width: 100% !important; min-width: 0 !important; margin-bottom: 20px; box-sizing: border-box; }
+            .mgr-col:last-child { margin-bottom: 0; }
             .mgr-divider { display: none !important; }
             
             .mgr-footer { flex-direction: column; gap: 12px; align-items: stretch !important; height: auto !important; }
-            .mgr-footer-left { justify-content: space-between; width: 100%; }
-            .mgr-footer-right { flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 6px; }
+            .mgr-footer-left { justify-content: space-between; width: 100%; box-sizing: border-box; }
+            .mgr-footer-right { flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 6px; box-sizing: border-box; }
             
             .mgr-footer-left button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; margin: 0 4px; }
-            .mgr-footer-right input { width: 100% !important; margin-bottom: 8px; order: -1; }
-            .mgr-footer-right button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; white-space: nowrap; }
+            .mgr-footer-right input { width: 100% !important; margin-bottom: 8px; order: -1; box-sizing: border-box; }
+            .mgr-footer-right button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; white-space: nowrap; margin: 0; }
         }
     `;
     if (!document.getElementById('mgr-style')) { style.id = 'mgr-style'; document.head.appendChild(style); }
