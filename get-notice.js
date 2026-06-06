@@ -6,34 +6,25 @@ export default async function handler(req, res) {
     }
 
     try {
-        // ✨ 핵심 변경: Vercel 서버 IP 차단을 피하기 위해 무료 프록시(allorigins)를 경유합니다.
-        // 이렇게 하면 SOOP 서버는 Vercel이 아니라 프록시 서버가 접속한 것으로 인식합니다.
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html',
+            }
+        });
         
-        const response = await fetch(proxyUrl);
-        const proxyData = await response.json();
-        
-        if (!proxyData.contents) {
-            return res.status(500).json({ error: '데이터를 가져오지 못했습니다.' });
-        }
+        if (!response.ok) throw new Error('페이지 접근 실패');
+        const html = await response.text();
 
-        const html = proxyData.contents;
-
-        // 메타 태그 추출 함수
+        // 1. 메타 데이터 추출 시도
         const getMeta = (prop) => {
-            const regex1 = new RegExp(`<meta[^>]*property=["']${prop}["'][^>]*content=["']([^"']*)["']`, 'i');
-            const regex2 = new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${prop}["']`, 'i');
-            const match = html.match(regex1) || html.match(regex2);
-            return match ? match[1] : '';
+            const regex = new RegExp(`<meta[^>]*property=["']${prop}["'][^>]*content=["']([^"']*)["']`, 'i');
+            const match = html.match(regex);
+            return match ? match[1] : null;
         };
 
-        let title = getMeta('og:title');
-        let description = getMeta('og:description');
-
-        if (!title) {
-            const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-            if (titleMatch) title = titleMatch[1];
-        }
+        let title = getMeta('og:title') || html.match(/<title>(.*?)<\/title>/i)?.[1];
+        let description = getMeta('og:description') || "";
 
         const decodeHTML = (str) => {
             if (!str) return '';
@@ -44,14 +35,15 @@ export default async function handler(req, res) {
         title = decodeHTML(title);
         description = decodeHTML(description);
 
-        // 여전히 빈 껍데기라면 에러 반환
-        if (title.includes("SOOP is a space") || title === "SOOP" || title === "아프리카TV" || !title) {
-            return res.status(404).json({ error: '보안 정책에 의해 내용이 가려졌습니다.' });
+        // 2. 비상 예외 처리: 데이터가 없으면 강제로 404를 내보내어 프론트엔드가 '직접 입력' 모드로 전환되게 함
+        if (!title || title.includes("SOOP") || title.length < 5) {
+            return res.status(404).json({ error: '정보 없음' });
         }
 
         res.status(200).json({ title, description });
     } catch (error) {
-        console.error('서버 크롤링 에러:', error);
-        res.status(500).json({ error: '서버에서 데이터를 가져오지 못했습니다.' });
+        console.error('크롤링 에러:', error);
+        // 서버가 죽지 않고, 프론트엔드가 알 수 있게 404 에러를 보냄
+        res.status(404).json({ error: '정보를 불러올 수 없음' });
     }
 }
