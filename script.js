@@ -686,18 +686,22 @@ function ensureDayManagerModal() {
     const html = `
     <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
         <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:95%; max-width:850px;">
-            
             <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
             
-            <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;">
-            </div>
+            <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px; padding-top:24px; border-top:1px solid #f1f5f9; flex-shrink:0; flex-wrap:wrap; gap:12px;">
-                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">+ 새 일정</button>
-                <div style="display:flex; flex:1; justify-content:flex-end; gap:12px; align-items:center;">
-                    <input type="text" id="dayManagerNoticeInput" placeholder="오늘의 공지 링크 (전체 적용)" style="width: 250px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px; outline: none; transition: border-color 0.2s;">
-                    <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
-                    <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4); transition:transform 0.1s;">저장</button>
+            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 2px solid #FDE047; border-radius: 12px; background: #fffdf0;">
+                <input type="text" id="dayManagerNoticeTitle" placeholder="공지 제목을 입력하세요" class="event-custom-input" style="margin-bottom: 8px;">
+                <textarea id="dayManagerNoticeDesc" placeholder="공지 내용을 입력하세요" class="event-custom-input" style="height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9; flex-shrink:0;">
+                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="padding:10px 15px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#7A5A2F;">공지 상세 ▼</button>
+                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (필수)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                    <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800;">닫기</button>
+                    <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
                 </div>
             </div>
         </div>
@@ -705,11 +709,30 @@ function ensureDayManagerModal() {
     document.body.insertAdjacentHTML('beforeend', html);
 }
 
+window.toggleNoticeDetail = function() {
+    const area = document.getElementById('noticeDetailArea');
+    const btn = document.getElementById('toggleNoticeBtn');
+    if (area.style.display === 'none') {
+        area.style.display = 'block';
+        btn.innerText = '공지 상세 ▲';
+    } else {
+        area.style.display = 'none';
+        btn.innerText = '공지 상세 ▼';
+    }
+};
+
 // 🌟🌟 Day Manager: 팝업 열기 🌟🌟
 window.openDayManager = function(dateIdStr, targetEventId = null) {
     if (!isAdmin) return;
     ensureDayManagerModal();
-    dayManagerActiveDateId = dateIdStr; 
+    dayManagerActiveDateId = dateIdStr;
+    
+    const targetEv = dayManagerItems.find(item => item.noticeLink || item.noticeTitle || item.noticeDesc);
+    document.getElementById('dayManagerNoticeInput').value = targetEv?.noticeLink || '';
+    document.getElementById('dayManagerNoticeTitle').value = targetEv?.noticeTitle || '';
+    document.getElementById('dayManagerNoticeDesc').value = targetEv?.noticeDesc || '';
+
+    document.getElementById('dayManagerModal').style.display = 'flex';
     
     const parts = dateIdStr.split('-');
     const titleStr = `${parts[0]}년 ${parts[1]}월 ${parts[2]}일 관리`;
@@ -930,8 +953,10 @@ window.saveDayManager = async function() {
     const btn = document.querySelector('#dayManagerModal button[onclick="saveDayManager()"]');
     if (btn) { btn.innerText = '저장 중...'; btn.disabled = true; }
     
-    // 👇 새롭게 추가된 하단 통합 공지 링크 값을 가져옵니다.
+    // 변수 중복 선언 해결
     const globalNotice = document.getElementById('dayManagerNoticeInput')?.value.trim() || '';
+    const noticeTitle = document.getElementById('dayManagerNoticeTitle')?.value.trim() || '';
+    const noticeDesc = document.getElementById('dayManagerNoticeDesc')?.value.trim() || '';
 
     try {
         const promises = [];
@@ -942,7 +967,6 @@ window.saveDayManager = async function() {
             if (item.isDeleted) {
                 if (item.originalId) promises.push(deleteDoc(doc(db, 'events', item.originalId)));
             } else {
-                // 시간 데이터 재조립
                 let h = parseInt(item.hour) || 0;
                 if (item.ampm === '오후' && h < 12) h += 12;
                 if (item.ampm === '오전' && h === 12) h = 0;
@@ -953,7 +977,9 @@ window.saveDayManager = async function() {
                     time: timeStr,
                     type: item.type || '개인방송',
                     members: item.members || '',
-                    noticeLink: globalNotice, // 👈 개별값이 아닌 일괄값 적용
+                    noticeLink: globalNotice,
+                    noticeTitle: noticeTitle,
+                    noticeDesc: noticeDesc,
                     imageUrl: item.imageUrl || '',
                     startDate: item.startDate || dayManagerFormattedDateId,
                     endDate: item.endDate || dayManagerFormattedDateId,
@@ -981,7 +1007,7 @@ window.saveDayManager = async function() {
         closeModal('dayManagerModal');
         showToast('일정이 저장되었습니다.');
     } catch (error) {
-        console.error(error);
+        console.error("저장 오류:", error);
         showToast('저장 중 오류가 발생했습니다.');
     } finally {
         if (btn) { btn.innerText = '저장'; btn.disabled = false; }
