@@ -205,14 +205,14 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 수동 입력값(모달에서 바로 입력한 경우) 우선 처리
+    // 1. 수동 입력값이 있으면 즉시 렌더링 (서버 호출 안 함)
     if (manualTitle) {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. Firebase 캐시 조회 (URL을 변환한 ID로 조회)
-    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50));
+    // 2. Firebase 캐시 조회 (URL을 base64로 인코딩하여 문서 ID로 사용)
+    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
     const noticeRef = doc(db, 'notice_cache', cacheDocId);
     
     try {
@@ -220,38 +220,37 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         
         if (cacheSnap.exists()) {
             const data = cacheSnap.data();
-            // DB에 있는 데이터를 가져와서 즉시 화면에 띄움!
             renderNoticeHTML(container, url, data.title, data.description);
-            return; 
+            return; // 캐시 성공 시 함수 종료
         }
     } catch (e) {
-        console.warn("캐시 조회 중 오류 발생");
+        console.warn("캐시 조회 실패, 서버 호출 진행");
     }
 
-    // 3. DB에 없으면 -> 크롤링 시도!
-    container.innerHTML = '<div class="preview-loading">공지 정보를 불러오는 중...</div>';
+    // 3. 캐시가 없을 경우 서버 호출
+    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
 
     try {
         const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
         const data = await response.json();
         
         if (response.ok && data.title) {
-            // 크롤링 성공 -> Firebase에 데이터 저장(자동 캐싱)
+            // 4. 성공 시 Firebase에 저장
             await setDoc(noticeRef, { 
                 title: data.title, 
                 description: data.description || '', 
-                createdAt: new Date().toISOString() // 문자열로 저장 시 통일성 유지
+                createdAt: new Date() 
             });
             renderNoticeHTML(container, url, data.title, data.description);
         } else {
-            throw new Error();
+            throw new Error(data.error || 'API 응답 실패');
         }
     } catch (error) {
-        // 크롤링 실패 -> 원문 보기 버튼 띄우기
+        // 5. 실패 시 버튼 모드로 전환
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #ef4444; font-size: 13px; font-weight: 800;">내용을 자동으로 불러올 수 없습니다.</p>
-                <a href="${url}" target="_blank" class="btn btn-save" style="...">공지 원문 보러가기</a>
+                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">.</p>
+                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
             </div>
         `;
     }
