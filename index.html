@@ -20,134 +20,38 @@
     <meta name="twitter:title" content="HTVVI">
     <meta name="twitter:description" content="방송일정 & 노래책">
     <meta name="twitter:image" content="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png">
-
-    <link rel="shortcut icon" href="https://i.postimg.cc/Xqx5y0Hn/Honeycam-export-2026-05-22-19-04-04.png" />
-    <link rel="icon" href="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png" type="image/png">
-    <link rel="icon" type="image/png" sizes="192x192" href="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FFFDF0">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    
     <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
-    
     <link rel="stylesheet" href="style.css?v=20260607">
 
     <style>
-        /* 일정 추가 모달 전용 반응형 & 꾸미기 스타일 */
-        .event-modal-box {
-            background: #ffffff; 
-            padding: 32px 40px; 
-            border-radius: 20px; 
-            max-width: 850px; 
-            width: 95%; 
-            max-height: 90vh; 
-            overflow-y: auto; 
-            box-shadow: 0 10px 30px rgba(122, 90, 47, 0.15);
-            border: none;
-        }
-        .event-modal-grid {
-            display: flex; 
-            flex-direction: column; 
-            gap: 24px;
-        }
-        .event-modal-left, .event-modal-right {
-            display: flex; 
-            flex-direction: column; 
-            gap: 18px;
-        }
-        /* 입력창 디자인 통일 */
-        .event-custom-input {
-            width: 100%; 
-            padding: 12px 14px; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 10px; 
-            font-size: 14px;
-            background-color: #fafaf9;
-            transition: all 0.2s;
-        }
-        .event-custom-input:focus {
-            outline: none;
-            border-color: #cbd5e1;
-            background-color: #ffffff;
-            box-shadow: none;
-        }
-        /* PC 화면(768px 이상)일 때 2단 배치 및 구분선 추가 */
+        .event-modal-box { position: relative; background: #ffffff; padding: 32px 40px; border-radius: 20px; max-width: 850px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(122, 90, 47, 0.15); border: none; }
+        .event-modal-delete-btn { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #7A5A2F; font-size: 24px; font-weight: 900; cursor: pointer; line-height: 1; padding: 0; }
+        .event-modal-delete-btn:hover { color: #5E3E1A; }
+        .event-modal-grid { display: flex; flex-direction: column; gap: 24px; }
+        .event-modal-left, .event-modal-right { display: flex; flex-direction: column; gap: 18px; }
+        .event-custom-input { width: 100%; padding: 12px 14px; border: 1px solid #D1D5DB; border-radius: 10px; font-size: 14px; background-color: #fafaf9; color: #4E4942; transition: all 0.2s; }
+        .event-custom-input:focus { outline: none; border-color: #cbd5e1; background-color: #ffffff; box-shadow: none; }
         @media(min-width: 768px) {
-            .event-modal-grid {
-                flex-direction: row; 
-                gap: 40px;
-            }
-            .event-modal-left {
-                flex: 1; 
-                border-right: 2px dashed #f1f5f9; 
-                padding-right: 40px; 
-                min-width: 0;
-            }
-            .event-modal-right {
-                flex: 1; 
-                min-width: 0;
-            }
+            .event-modal-grid { flex-direction: row; gap: 40px; }
+            .event-modal-left { flex: 1; border-right: 2px dashed #f1f5f9; padding-right: 40px; min-width: 0; }
+            .event-modal-right { flex: 1; min-width: 0; }
         }
-
-        /* 오늘 일정 영역 PC 화면 우측 고정 강제 설정 */
         @media(min-width: 1025px) {
-            .header-right {
-                justify-self: end !important;
-                width: 100%;
-            }
-            .today-summary {
-                margin-left: auto !important;
-                margin-right: 0 !important;
-            }
+            .header-right { justify-self: end !important; width: 100%; }
+            .today-summary { margin-left: auto !important; margin-right: 0 !important; }
         }
-
-        /* 🌟 관리자 프사 스타일 추가 🌟 */
-        .admin-profile-img {
-            display: none; /* 기본은 숨김 */
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        /* 로그인 상태 클래스 적용 시 (logged-in, admin-active 등) */
-        #adminBtn.logged-in, 
-        #adminBtn.admin-active,
-        body.admin-mode #adminBtn {
-            min-width: 0 !important;
-            width: 36px !important;
-            height: 36px !important;
-            padding: 0 !important;
-            border-radius: 50% !important;
-            background: transparent !important;
-        }
-
-        #adminBtn.logged-in .login-text, 
-        #adminBtn.admin-active .login-text,
-        body.admin-mode #adminBtn .login-text {
-            display: none; /* 텍스트 숨김 */
-        }
-
-        #adminBtn.logged-in .admin-profile-img, 
-        #adminBtn.admin-active .admin-profile-img,
-        body.admin-mode #adminBtn .admin-profile-img {
-            display: block; /* 프사 표시 */
-        }
-
-        #adminBtn:hover .admin-profile-img {
-            border-color: #FDE047;
-            transform: scale(1.05);
-        }
-
-        @keyframes force-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .admin-profile-img { display: none; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; transition: all 0.2s; }
+        #adminBtn.logged-in, #adminBtn.admin-active, body.admin-mode #adminBtn { min-width: 0 !important; width: 36px !important; height: 36px !important; padding: 0 !important; border-radius: 50% !important; background: transparent !important; }
+        #adminBtn.logged-in .login-text, #adminBtn.admin-active .login-text, body.admin-mode #adminBtn .login-text { display: none; }
+        #adminBtn.logged-in .admin-profile-img, #adminBtn.admin-active .admin-profile-img, body.admin-mode #adminBtn .admin-profile-img { display: block; }
+        #adminBtn:hover .admin-profile-img { border-color: #FDE047; transform: scale(1.05); }
+        @keyframes force-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body id="mainBody">
@@ -156,13 +60,13 @@
 
     <div class="fixed-top-bar">
         <div class="top-bar-inner">
-            
             <a href="https://www.sooplive.com/station/htvv2i" target="_blank" rel="noopener noreferrer" class="mobile-top-logo">
                 <img src="https://i.postimg.cc/2yGbBGtT/logo.png" alt="HTVVI Logo">
             </a>
 
-            <div class="top-bar-left"></div>
-                <button type="button" class="nav-tab active" data-tab="schedule" onclick="showTab('schedule')">                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <div class="top-bar-left">
+                <button type="button" class="nav-tab active" data-tab="schedule" onclick="showTab('schedule')">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     일정
                 </button>
                 <button type="button" class="nav-tab" data-tab="songbook" onclick="showTab('songbook')">
@@ -174,7 +78,7 @@
             <div class="top-bar-right">
                 <a href="https://cafe.naver.com/onlyhtvvi" target="_blank" rel="noopener noreferrer" class="sidebar-item" title="팬카페 바로가기">
                     <img src="https://i.postimg.cc/hvpLmrYy/1.png" alt="Cafe Logo" class="cafe-icon" style="width:20px; height:20px; border-radius:50%;">
-                    <span>
+                    <span>팬카페</span>
                 </a>
                 <a href="https://www.youtube.com/@htbbi" target="_blank" rel="noopener noreferrer" class="top-bar-link yt-link" title="유튜브 바로가기">
                     <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -193,7 +97,6 @@
         </div>
     </div>
 
-    <!-- PC 전용 우측 고정 사이드바 -->
     <div class="right-sidebar">
         <button type="button" class="sidebar-item active" data-tab="schedule" onclick="showTab('schedule')">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -235,25 +138,15 @@
 
     <div id="loadingOverlay" class="loading-overlay">
         <div class="custom-loading-container">
-            
-            <!-- 🌟 로딩 이미지와 회전 띠를 감싸는 영역 (인라인 스타일로 강제 고정) -->
             <div style="position: relative; width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; margin: 0 auto;">
-                
-                <!-- 🌟 빙글빙글 돌아가는 노란색 띠 -->
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 5px solid transparent; border-top-color: #FDE047; box-sizing: border-box; animation: force-spin 1s linear infinite;"></div>
-                
-                <!-- 🌟 가운데 동그란 프로필 사진 -->
                 <img id="randomLoadingImg" src="" alt="" style="position: relative; width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-sizing: border-box; z-index: 2;">
-                
             </div>
-
         </div>
-        
         <div class="cute-loading-text">
             <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
         </div>
     </div>
-</div>
 
     <header class="main-header">
         <div class="header-left"></div>
@@ -265,9 +158,7 @@
         </div>
         <div class="header-right">
             <div id="todaySchedulePanel" class="today-summary">
-                <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">
-                    오늘 일정
-                </h4>
+                <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">오늘 일정</h4>
                 <div id="summaryContent"></div>
             </div>
         </div>
@@ -284,12 +175,10 @@
                     </div>
                     <div style="position: absolute; right: 0; display: flex; gap: 10px;">
                         <button class="memo-btn" onclick="toggleUpBoard()">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
-                            UP!
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>UP!
                         </button>
                         <button class="memo-btn" onclick="toggleMemo()">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                            메모
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>메모
                         </button>
                     </div>
                 </div>
@@ -301,19 +190,11 @@
                 <div class="calendar-grid" id="calendarGrid"></div>
             </div>
 
-            <button class="mobile-nav-arrow left-arrow" onclick="moveMonth(-1)" aria-label="이전 달">
-                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <button class="mobile-nav-arrow right-arrow" onclick="moveMonth(1)" aria-label="다음 달">
-                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
+            <button class="mobile-nav-arrow left-arrow" onclick="moveMonth(-1)" aria-label="이전 달"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <button class="mobile-nav-arrow right-arrow" onclick="moveMonth(1)" aria-label="다음 달"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
             
             <div id="memoPanel" class="memo-panel-container">
-                <button class="mobile-player-close" onclick="toggleMobileMemo()" title="닫기" id="mobileMemoCloseBtn" style="display: none;">
-                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
+                <button class="mobile-player-close" onclick="toggleMobileMemo()" title="닫기" id="mobileMemoCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                 <div class="memo-panel-header">
                     <div class="memo-tabs">
                         <button class="memo-tab memo-tab-active" data-tab="컨텐츠" onclick="selectMemoTab('컨텐츠')">컨텐츠</button>
@@ -337,11 +218,7 @@
             </div>
 
             <div id="upPanel" class="memo-panel-container">
-                <button class="mobile-player-close" onclick="toggleMobileUpBoard()" title="닫기" id="mobileUpCloseBtn" style="display: none;">
-                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
+                <button class="mobile-player-close" onclick="toggleMobileUpBoard()" title="닫기" id="mobileUpCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                 <div class="memo-panel-header" style="justify-content: center;">
                     <h3 style="margin: 0; font-family: 'Cafe24SurroundAir'; font-weight: 900; color: #0284c7;">💦UP구걸</h3>
                 </div>
@@ -352,65 +229,37 @@
         <div id="songbookSection" class="songbook-section">
             <div id="songbookLoading" class="songbook-loading hidden">
                 <div class="equalizer-loader">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                 </div>
                 <div style="font-weight: 900; color: var(--text-dark); font-size: 20px; font-family: 'Cafe24SurroundAir', sans-serif;">노래책을 펼치는 중...</div>
             </div>
 
             <div class="songbook-sidebar">
                 <div id="favoritePlayerPanel" class="fav-player-panel is-minimized">
-                    <button id="mobilePlayerCloseBtn" class="mobile-player-close" onclick="toggleMobilePlayer()" title="닫기">
-                        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="music-note-btn" onclick="toggleMinimize()" style="cursor: pointer; text-align: center; font-size: 24px; display: none;">🎵</div>
+                    <button id="mobilePlayerCloseBtn" class="mobile-player-close" onclick="toggleMobilePlayer()" title="닫기"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                     <div id="panelContent">
-                        <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">
-                            플레이어
-                        </h4>
+                        <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">플레이어</h4>
                         <div id="playerWrapper" style="width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden; display: none;"></div>
-
                         <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
                         <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
-
-                        <div id="visualizer" class="wave-container" style="display: none;">
-                            <div class="wave"></div>
-                        </div>
-
+                        <div id="visualizer" class="wave-container" style="display: none;"><div class="wave"></div></div>
                         <div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
-                            <button class="ctrl-btn" id="btnMin" onclick="toggleScreen()" title="화면 켜기/끄기">
-                                <svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
+                            <button class="ctrl-btn" id="btnMin" onclick="toggleScreen()" title="화면 켜기/끄기"><svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                             <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
                             <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
                             <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
                         </div>
                     </div>
                 </div>
-
-                <div class="artist-list-wrapper">
-                    <div class="artist-grid" id="artistList"></div>
-                </div>
+                <div class="artist-list-wrapper"><div class="artist-grid" id="artistList"></div></div>
             </div>
 
             <div class="songbook-main-content">
                 <div class="songbook-header">
                     <div class="search-input-wrapper">
-                        <button id="favFilterBtn" onclick="setSongbookFilter('Favorites')" type="button" title="즐겨찾기">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
-                                <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />
-                            </svg>
-                        </button>
+                        <button id="favFilterBtn" onclick="setSongbookFilter('Favorites')" type="button" title="즐겨찾기"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" /></svg></button>
                         <input id="songbookSearch" class="songbook-search" type="text" placeholder="노래 제목 또는 가수를 검색하세요" oninput="renderSongbook()">
                     </div>
-                    
                     <button id="songbookAddBtn" class="add-song-btn admin-only-btn" type="button" onclick="document.getElementById('adminSongForm').classList.add('visible'); document.getElementById('newSongTitle').focus();">+</button>
                 </div>
                 <div id="adminSongForm" class="admin-song-form">
@@ -419,8 +268,7 @@
                         <input id="newSongArtist" class="admin-input" type="text" placeholder="가수명">
                         <input id="newSongUrl" class="admin-input" type="text" placeholder="유튜브 또는 링크 주소 (선택)">
                         <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-dark); padding: 4px 8px; cursor: pointer; font-family: 'Cafe24SurroundAir', sans-serif;">
-                            <input type="checkbox" id="isConditionSong" style="width: 18px; height: 18px; accent-color: #F48FB1; cursor: pointer;">
-                            컨디션곡 (목 상태에 따라 부르는 곡)
+                            <input type="checkbox" id="isConditionSong" style="width: 18px; height: 18px; accent-color: #F48FB1; cursor: pointer;">컨디션곡 (목 상태에 따라 부르는 곡)
                         </label>
                     </div>
                     <div style="display: flex; gap: 12px; margin-bottom: 16px;">
@@ -450,203 +298,64 @@
 
     <div id="eventModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
         <div class="event-modal-box">
+            <button id="delBtn" class="event-modal-delete-btn" onclick="deleteEvent()" style="display: none;" aria-label="삭제">✕</button>
             <h2 id="modalTitle" style="margin-top: 0; margin-bottom: 30px; font-family: 'OngleipParkDahyeon', sans-serif; color: #7A5A2F; font-size: 38px; font-weight: bold; text-align: center; letter-spacing: 1px;">일정 추가</h2>
-            
             <input type="hidden" id="editIndex" value="-1">
             <input type="hidden" id="editingEventDocId" value="">
-            
             <div class="event-modal-grid">
-                
                 <div class="event-modal-left">
-                    <div>
-                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">제목 *</label>
-                        <!-- input 대신 textarea를 사용하고, 높이와 크기조절 옵션을 추가했습니다 -->
-                        <textarea id="eventTitle" placeholder="일정 제목을 입력하세요 (엔터키로 줄바꿈 가능)" class="event-custom-input" style="resize: vertical; min-height: 70px; font-family: inherit; line-height: 1.4;"></textarea>
-                    </div>
-                    
+                    <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">제목 *</label><textarea id="eventTitle" placeholder="일정 제목을 입력하세요" class="event-custom-input" style="resize: vertical; min-height: 70px;"></textarea></div>
                     <div>
                         <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">시간</label>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <button type="button" id="ampmAM" onclick="setAMPM('오전')" class="ampm-btn active">오전</button>
                             <button type="button" id="ampmPM" onclick="setAMPM('오후')" class="ampm-btn">오후</button>
-                            <input type="number" id="timeHour" placeholder="시" min="1" max="12" class="event-custom-input" style="width: 70px; text-align: center;">
-                            <span style="font-weight: 900; color: #7A5A2F;">:</span>
+                            <input type="number" id="timeHour" placeholder="시" min="1" max="12" class="event-custom-input" style="width: 70px; text-align: center;"><span style="font-weight: 900;">:</span>
                             <input type="number" id="timeMin" placeholder="분" min="0" max="59" class="event-custom-input" style="width: 70px; text-align: center;">
                         </div>
                     </div>
-
                     <div style="display: flex; gap: 14px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">시작 날짜 *</label>
-                            <input type="date" id="eventStartDate" class="event-custom-input">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">종료 날짜 *</label>
-                            <input type="date" id="eventEndDate" class="event-custom-input">
-                        </div>
+                        <div style="flex: 1;"><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">시작 날짜 *</label><input type="date" id="eventStartDate" class="event-custom-input"></div>
+                        <div style="flex: 1;"><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">종료 날짜 *</label><input type="date" id="eventEndDate" class="event-custom-input"></div>
                     </div>
-
                     <div>
                         <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">유형</label>
                         <select id="eventType" class="event-custom-input" style="cursor: pointer; font-weight: bold;">
-                            <option value="개인방송">개인방송</option>
-                            <option value="합방">합방</option>
-                            <option value="휴방">휴방</option>
-                            <option value="시네티">시네티</option>
-                            <option value="LCK">LCK</option>
-                            <option value="미확정">미확정</option>
+                            <option value="개인방송">개인방송</option><option value="합방">합방</option><option value="휴방">휴방</option><option value="시네티">시네티</option><option value="LCK">LCK</option><option value="미확정">미확정</option>
                         </select>
                     </div>
                 </div>
-
                 <div class="event-modal-right">
-                    <div>
-                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분)</label>
-                        <input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" class="event-custom-input">
-                    </div>
-
-                    <div>
-                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label>
-                        <input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input">
-                    </div>
-
+                    <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분)</label><input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" class="event-custom-input"></div>
+                    <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label><input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input"></div>
                     <div>
                         <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">포스터 / 썸네일 이미지</label>
                         <input type="file" id="eventImgFile" accept="image/*" onchange="handleEventImgUpload(this)" style="display: block; margin-bottom: 12px; font-size: 13px; color: #64748b; cursor: pointer;">
                         <input type="hidden" id="eventImageUrl">
-                        
-                        <div id="imagePreviewContainer" style="text-align: center; background: #fafaf9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1; transition: all 0.2s;">
-                            <img id="eventImagePreview" src="" alt="미리보기" style="display: none; max-width: 100%; max-height: 160px; border-radius: 8px; margin: 0 auto 12px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <p id="eventImagePlaceholder" style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: bold;">이미지를 업로드하면 여기에 표시됩니다</p>
-                            <button type="button" id="removeImageBtn" onclick="removeEventImage()" style="display: none; background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">이미지 지우기 ✕</button>
-                        </div>
+                        <div id="imagePreviewContainer" style="text-align: center; background: #fafaf9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1;"><img id="eventImagePreview" src="" alt="미리보기" style="display: none; max-width: 100%; max-height: 160px; border-radius: 8px; margin: 0 auto 12px auto;"><p id="eventImagePlaceholder" style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: bold;">이미지를 업로드하면 여기에 표시됩니다</p><button type="button" id="removeImageBtn" onclick="removeEventImage()" style="display: none; background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold;">이미지 지우기 ✕</button></div>
                     </div>
                 </div>
-                
             </div>
-
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 36px; padding-top: 24px; border-top: 1px solid #f1f5f9;">
-                <button id="delBtn" onclick="deleteEvent()" style="display: none; padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">삭제</button>
-                <button onclick="closeModal('eventModal')" style="padding: 12px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">취소</button>
-                <button onclick="saveEvent()" style="padding: 12px 24px; background: #FDE047; color: #7A5A2F; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif; box-shadow: 0 2px 8px rgba(253, 224, 71, 0.4); transition: transform 0.1s;">저장</button>
+                <button onclick="closeModal('eventModal')" style="padding: 12px 24px; background: #f1f5f9; color: #64748b; border: none; border-radius: 10px; cursor: pointer; font-weight: 800;">취소</button>
+                <button onclick="saveEvent()" style="padding: 12px 24px; background: #FDE047; color: #7A5A2F; border: none; border-radius: 10px; cursor: pointer; font-weight: 800;">저장</button>
             </div>
         </div>
     </div>
 
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <div id="infoTitle" class="info-title" style="font-family: 'Cafe24SurroundAir', sans-serif;"></div>
-            <div class="info-block">
-                <div id="infoTime" class="time-badge"></div>
-                <div id="infoImageContainer" class="info-image-container"></div>
-                <div id="infoProfiles" class="profile-list"></div>
-                <div id="infoNoticePreview" class="notice-preview"></div>
-            </div>
-            <button class="btn btn-cancel" style="margin-top: 15px;" onclick="closeModal('infoModal')">닫기</button>
-        </div>
-    </div>
-
-    <div id="pwModal" class="modal">
-        <div class="modal-content pw-modal">
-            <h3 class="text-center font-black mb-5" style="font-family: 'Cafe24SurroundAir', sans-serif; font-size:24px;">관리자 인증</h3>
-            <input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()">
-            <div class="remember-checkbox" style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; color:#4B4737;">
-                <input type="checkbox" id="rememberAdmin" style="width:16px; height:16px; cursor:pointer;">
-                <label for="rememberAdmin" style="cursor:pointer;">로그인 상태 유지</label>
-            </div>
-            
-            <button id="naverLoginBtn" class="naver-login-btn" title="네이버 로그인" style="margin-top:16px; width:100%;">
-                <img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img">
-            </button>
-
-            <p id="pwError" class="pw-error hidden">틀렸습니다.</p>
-            <div class="btn-group">
-                <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>
-                <button class="btn btn-save" onclick="loginAdmin()">확인</button>
-            </div>
-        </div>
-    </div>
+    <div id="infoModal" class="modal"><div class="modal-content"><div id="infoTitle" class="info-title"></div><div class="info-block"><div id="infoTime" class="time-badge"></div><div id="infoImageContainer" class="info-image-container"></div><div id="infoProfiles" class="profile-list"></div><div id="infoNoticePreview" class="notice-preview"></div></div><button class="btn btn-cancel" style="margin-top: 15px;" onclick="closeModal('infoModal')">닫기</button></div></div>
     
-    <div id="memberModal" class="modal">
-        <div class="modal-content">
-            <h3 class="modal-title">멤버 관리</h3>
-            <div id="memberList" class="member-list"></div>
-            <div class="member-add-box">
-                <h4 style="font-weight:900; margin-bottom:12px; font-family: 'Cafe24SurroundAir', sans-serif;">새 멤버 추가</h4>
-                <input type="text" id="newMemberName" class="admin-input" placeholder="멤버 이름 (닉네임)" style="margin-bottom: 8px;">
-                <input type="text" id="newMemberId" class="admin-input" placeholder="SOOP 아이디" style="margin-bottom: 12px;">
-                <input type="hidden" id="newMemberImg">
-                <button class="btn btn-save" style="width:100%; padding:14px;" onclick="addMember()">추가하기</button>
-            </div>
-            <button class="btn btn-cancel" style="margin-top:15px;" onclick="closeModal('memberModal')">닫기</button>
-        </div>
-    </div>
+    <div id="pwModal" class="modal"><div class="modal-content pw-modal"><h3 class="text-center font-black mb-5" style="font-size:24px;">관리자 인증</h3><input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()"><div class="remember-checkbox" style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; color:#4B4737;"><input type="checkbox" id="rememberAdmin" style="width:16px; height:16px; cursor:pointer;"><label for="rememberAdmin" style="cursor:pointer;">로그인 상태 유지</label></div><button id="naverLoginBtn" class="naver-login-btn" title="네이버 로그인" style="margin-top:16px; width:100%;"><img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img"></button><p id="pwError" class="pw-error hidden">틀렸습니다.</p><div class="btn-group"><button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button><button class="btn btn-save" onclick="loginAdmin()">확인</button></div></div></div>
+    
+    <div id="memberModal" class="modal"><div class="modal-content"><h3 class="modal-title">멤버 관리</h3><div id="memberList" class="member-list"></div><div class="member-add-box"><h4 style="font-weight:900; margin-bottom:12px;">새 멤버 추가</h4><input type="text" id="newMemberName" class="admin-input" placeholder="멤버 이름 (닉네임)" style="margin-bottom: 8px;"><input type="text" id="newMemberId" class="admin-input" placeholder="SOOP 아이디" style="margin-bottom: 12px;"><input type="hidden" id="newMemberImg"><button class="btn btn-save" style="width:100%; padding:14px;" onclick="addMember()">추가하기</button></div><button class="btn btn-cancel" style="margin-top:15px;" onclick="closeModal('memberModal')">닫기</button></div></div>
+    
+    <div id="confirmModal" class="modal"><div class="modal-content" style="max-width: 320px; align-items: center; text-align: center;"><h3 id="confirmMessage" class="font-black text-lg mb-6"></h3><div class="btn-group" style="width: 100%;"><button class="btn btn-cancel" onclick="closeModal('confirmModal')">취소</button><button id="confirmBtn" class="btn btn-danger">삭제</button></div></div></div>
+    
+    <div id="monthPickerModal" class="modal"><div class="modal-content" style="max-width: 380px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><button class="nav-btn" onclick="changePickerYear(-1)">◀</button><h3 id="pickerYearDisplay" class="font-black text-2xl m-0"></h3><button class="nav-btn" onclick="changePickerYear(1)">▶</button></div><div class="month-picker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div><button class="btn btn-cancel mt-6" onclick="closeModal('monthPickerModal')">닫기</button></div></div>
 
-    <div id="confirmModal" class="modal">
-        <div class="modal-content" style="max-width: 320px; align-items: center; text-align: center;">
-            <h3 id="confirmMessage" class="font-black text-lg mb-6" style="font-family: 'Cafe24SurroundAir', sans-serif;"></h3>
-            <div class="btn-group" style="width: 100%;">
-                <button class="btn btn-cancel" onclick="closeModal('confirmModal')">취소</button>
-                <button id="confirmBtn" class="btn btn-danger">삭제</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="monthPickerModal" class="modal">
-        <div class="modal-content" style="max-width: 380px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <button class="nav-btn" onclick="changePickerYear(-1)">◀</button>
-                <h3 id="pickerYearDisplay" class="font-black text-2xl m-0" style="font-family: 'Cafe24SurroundAir', sans-serif;"></h3>
-                <button class="nav-btn" onclick="changePickerYear(1)">▶</button>
-            </div>
-            <div class="month-picker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
-            <button class="btn btn-cancel mt-6" onclick="closeModal('monthPickerModal')">닫기</button>
-        </div>
-    </div>
-
-<div id="popupAdminModal" class="modal">
-    <div class="modal-content" style="max-width: 420px; padding: 25px;">
-        <h3 class="modal-title" style="text-align: center; margin-bottom: 20px;">관리자 설정</h3>
-        
-        <div class="form-group" style="margin-bottom: 24px;">
-            <label style="font-weight: bold; margin-bottom: 8px; display: block;">입장 팝업 상단 이미지 (업로드 또는 URL)</label>
-            
-            <input type="file" id="popupImgFileInput" accept="image/*" onchange="handlePopupImgUpload(this)" style="display: block; margin-bottom: 10px; font-size: 13px; color: #64748b; cursor: pointer; width: 100%;">
-            
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="popupImageUrlInput" placeholder="https://..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
-                <button class="btn btn-save" style="padding: 10px 16px; margin: 0; flex-shrink: 0;" onclick="savePopupImage()">적용</button>
-                
-                <button type="button" onclick="deletePopupImage()" style="background: #ef4444; color: white; padding: 10px 16px; margin: 0; flex-shrink: 0; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">삭제</button>
-                </div>
-        </div>
-        
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        
-        <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-weight: bold; margin-bottom: 8px; display: block;">새 UP! 링크 추가</label>
-            <input type="text" id="upTitleInput" class="admin-input" placeholder="컨텐츠 이름" style="margin-bottom: 8px;">
-            <input type="url" id="upLinkInput" class="admin-input" placeholder="링크 주소 (https://...)" style="margin-bottom: 8px;">
-            <input type="date" id="upDeadlineInput" class="admin-input" title="마감 날짜" style="margin-bottom: 12px;">
-            <button class="btn btn-save" style="width: 100%; padding: 12px; margin: 0;" onclick="saveUpItem()">UP! 추가하기</button>
-        </div>
-        
-        <button class="btn btn-cancel" style="margin-top: 20px; width: 100%;" onclick="closeModal('popupAdminModal')">닫기</button>
-    </div>
-</div>
-    <div id="upPopupModal" class="modal">
-        <div class="modal-content" style="max-width: 550px; min-height: 300px; padding: 30px; overflow-y: auto;">
-            <div id="popupUpList" style="margin-bottom: 20px;"></div>
-            
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-top: auto;">
-                <label style="font-size: 13px; color: #7a7a7a; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'Cafe24SurroundAir', sans-serif;">
-                    <input type="checkbox" id="hidePopupToday" style="accent-color: #EAB308; width: 16px; height: 16px;">
-                    오늘 하루 안 보기
-                </label>
-                <button class="btn btn-save" style="padding: 10px 20px; font-size: 14px; flex: none;" onclick="closeUpPopup()">닫기</button>
-            </div>
-        </div>
-    </div>
+    <div id="popupAdminModal" class="modal"><div class="modal-content" style="max-width: 420px; padding: 25px;"><h3 class="modal-title" style="text-align: center; margin-bottom: 20px;">관리자 설정</h3><div class="form-group" style="margin-bottom: 24px;"><label style="font-weight: bold; margin-bottom: 8px; display: block;">입장 팝업 상단 이미지</label><input type="file" id="popupImgFileInput" accept="image/*" onchange="handlePopupImgUpload(this)" style="display: block; margin-bottom: 10px; font-size: 13px; color: #64748b; cursor: pointer; width: 100%;"><div style="display: flex; gap: 8px;"><input type="text" id="popupImageUrlInput" placeholder="https://..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd;"><button class="btn btn-save" style="padding: 10px 16px; margin: 0; flex-shrink: 0;" onclick="savePopupImage()">적용</button><button type="button" onclick="deletePopupImage()" style="background: #ef4444; color: white; padding: 10px 16px; margin: 0; flex-shrink: 0; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">삭제</button></div></div><hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;"><div class="form-group" style="margin-bottom: 0;"><label style="font-weight: bold; margin-bottom: 8px; display: block;">새 UP! 링크 추가</label><input type="text" id="upTitleInput" class="admin-input" placeholder="컨텐츠 이름" style="margin-bottom: 8px;"><input type="url" id="upLinkInput" class="admin-input" placeholder="링크 주소 (https://...)" style="margin-bottom: 8px;"><input type="date" id="upDeadlineInput" class="admin-input" title="마감 날짜" style="margin-bottom: 12px;"><button class="btn btn-save" style="width: 100%; padding: 12px; margin: 0;" onclick="saveUpItem()">UP! 추가하기</button></div><button class="btn btn-cancel" style="margin-top: 20px; width: 100%;" onclick="closeModal('popupAdminModal')">닫기</button></div></div>
+    
+    <div id="upPopupModal" class="modal"><div class="modal-content" style="max-width: 550px; min-height: 300px; padding: 30px; overflow-y: auto;"><div id="popupUpList" style="margin-bottom: 20px;"></div><div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-top: auto;"><label style="font-size: 13px; color: #7a7a7a; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="hidePopupToday" style="accent-color: #EAB308; width: 16px; height: 16px;">오늘 하루 안 보기</label><button class="btn btn-save" style="padding: 10px 20px; font-size: 14px; flex: none;" onclick="closeUpPopup()">닫기</button></div></div></div>
 
     <div id="mobileMenuContainer" class="mobile-menu-container">
         <button class="mobile-menu-main-btn" onclick="toggleMobileMenu()">
@@ -654,31 +363,16 @@
             <svg id="menuIconClose" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div id="mobileMenuItems" class="mobile-menu-items">
-            <button class="mobile-menu-item" data-tab="schedule" onclick="handleMobileTab('schedule')">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                일정
-            </button>
-            <button class="mobile-menu-item" onclick="toggleMobileUpBoard()">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
-                UP!
-            </button>
-            <button class="mobile-menu-item" onclick="toggleMobileMemo()">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                메모
-            </button>
-            <button class="mobile-menu-item" data-tab="songbook" onclick="handleMobileTab('songbook')">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                노래책
-            </button>
-            <button class="mobile-menu-item" onclick="toggleMobilePlayer()">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                플레이어
-            </button>
+            <button class="mobile-menu-item" data-tab="schedule" onclick="handleMobileTab('schedule')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>일정</button>
+            <button class="mobile-menu-item" onclick="toggleMobileUpBoard()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>UP!</button>
+            <button class="mobile-menu-item" onclick="toggleMobileMemo()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>메모</button>
+            <button class="mobile-menu-item" data-tab="songbook" onclick="handleMobileTab('songbook')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>노래책</button>
+            <button class="mobile-menu-item" onclick="toggleMobilePlayer()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>플레이어</button>
         </div>
     </div>
 
     <div id="toastMessage"></div>
 
-    <script type="module" src="script.js?v=20260601"></script>
+    <script type="module" src="script.js?v=20260607"></script>
 </body>
 </html>

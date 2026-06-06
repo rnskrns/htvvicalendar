@@ -24,12 +24,10 @@ const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
 let naverUser = null;
 const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
 
-// 🌟 통합 일정 관리 (Day Manager) 시스템 변수 🌟
 let dayManagerItems = [];
 let dayManagerActiveDateId = '';
 let dayManagerFormattedDateId = '';
 
-// 🌟 네이버 SDK 초기화 및 로그인 상태 처리 🌟
 function initNaverLogin() {
     if (typeof naver === 'undefined') {
         console.warn('네이버 SDK가 로드되지 않았습니다.');
@@ -109,13 +107,11 @@ function getStoredNaverUser() {
 function logoutNaver() {
     localStorage.removeItem(NAVER_USER_STORAGE_KEY);
     naverUser = null;
-    
     isAdmin = false;
     sessionStorage.removeItem('htvvi_admin');
     localStorage.removeItem('htvvi_admin_remember');
     updateAdminUI();
     renderCalendar();
-    
     updateNaverLoginUI();
     showToast('로그아웃 되었습니다.');
 }
@@ -205,24 +201,18 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 수동 입력값이 있으면 즉시 렌더링
     if (manualTitle) {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
     
-    // [로컬 캐시 코드 모두 삭제됨]
-
-    // 2. Firebase 캐시 조회
     const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
     const noticeRef = doc(db, 'notice_cache', cacheDocId);
     
     try {
         const cacheSnap = await getDoc(noticeRef);
-        
         if (cacheSnap.exists()) {
             const data = cacheSnap.data();
-            // 로컬 캐시 저장 없이 바로 렌더링
             renderNoticeHTML(container, url, data.title, data.description);
             return;
         }
@@ -230,7 +220,6 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         console.warn("DB 조회 실패");
     }
 
-    // 3. 크롤링 및 저장
     container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
 
     try {
@@ -239,18 +228,12 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         
         if (response.ok && data.title) {
             const finalData = { title: data.title, description: data.description || '' };
-            
-            // 파이어베이스에 저장
             await setDoc(noticeRef, { ...finalData, createdAt: new Date() });
-            
-            // [로컬 캐시 저장 로직 삭제됨]
-            
             renderNoticeHTML(container, url, finalData.title, finalData.description);
         } else {
             throw new Error();
         }
     } catch (error) {
-        // 5. 실패 시 버튼 모드로 전환
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
                 <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;"></p>
@@ -260,7 +243,6 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 };
 
-// 공지 HTML 렌더링 공통 함수
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
         <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
@@ -584,12 +566,10 @@ async function loadEventsForMonth(year, month) {
 
     if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
         docs = localCache.data;
-        console.log("일정을 캐시에서 무료로 불러왔습니다! 💸");
     } else {
         const snapshot = await getDocs(collection(db, 'events'));
         snapshot.forEach(docSnap => docs.push({ ...docSnap.data(), id: docSnap.id }));
         localStorage.setItem('htvvi_events_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: docs }));
-        console.log("일정 업데이트 완료 (서버 조회)");
     }
 
     events = {};
@@ -650,7 +630,6 @@ function resetImagePreviewUI(imgUrl) {
     }
 }
 
-// 🌟 일정 등록/수정 모달(단일용) 호환 유지 (혹시 모를 외부 사용을 위해 남겨둠) 🌟
 function openAddModal(id) {
     activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
     document.getElementById('editIndex').value = '-1';
@@ -674,9 +653,6 @@ function openAddModal(id) {
     setAMPM('오전'); document.getElementById('delBtn').style.display = 'none';
     document.getElementById('eventModal').style.display = 'flex';
 }
-
-function openEditModal(id, idx) { /* 구버전 유지 */ }
-function openEditModalByEvent(ev) { /* 구버전 유지 */ }
 
 async function saveEvent() {
     if (!isAdmin) return;
@@ -808,7 +784,6 @@ async function deleteEvent() {
     }
 }
 
-// 🌟🌟 Day Manager: 모달 HTML 동적 생성 함수 🌟🌟
 function ensureDayManagerModal() {
     if (document.getElementById('dayManagerModal')) return;
     const html = `
@@ -818,7 +793,8 @@ function ensureDayManagerModal() {
             
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
-            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 2px solid #FDE047; border-radius: 12px; background: #fffdf0;">
+            <!-- 노란색 테두리(border)와 배경색(background)을 깔끔하게 수정 -->
+            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
                 <input type="text" id="dayManagerNoticeTitle" placeholder="공지 제목을 입력하세요" class="event-custom-input" style="margin-bottom: 8px;">
                 <textarea id="dayManagerNoticeDesc" placeholder="공지 내용을 입력하세요" class="event-custom-input" style="height: 80px; resize: vertical;"></textarea>
             </div>
@@ -830,7 +806,7 @@ function ensureDayManagerModal() {
                 </div>
                 <div class="mgr-footer-right" style="display:flex; gap:8px; align-items:center;">
                     <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="padding:10px 15px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#7A5A2F;">공지 상세 ▼</button>
-                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px; color:#7A5A2F;">
                     <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800;">닫기</button>
                     <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
                 </div>
@@ -852,7 +828,6 @@ window.toggleNoticeDetail = function() {
     }
 };
 
-// 🌟🌟 Day Manager: 팝업 열기 🌟🌟
 window.openDayManager = function(dateIdStr, targetEventId = null) {
     if (!isAdmin) return;
     ensureDayManagerModal();
@@ -907,13 +882,10 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
     
     dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
     
-    // 👇 저장된 공지 링크를 찾아 메인 입력창에 할당합니다
     const firstNotice = dayManagerItems.find(item => item.noticeLink)?.noticeLink || '';
     const noticeInput = document.getElementById('dayManagerNoticeInput');
     if (noticeInput) noticeInput.value = firstNotice;
 
-    // 🌟 여기서부터 새로 추가하는 코드입니다 🌟
-    // 만약 불러온 일정이 하나도 없다면(배열이 비어있다면) 빈 폼을 하나 자동으로 생성합니다.
     if (dayManagerItems.length === 0) {
         dayManagerItems.push({
             id: null, title: '', time: '', type: '개인방송',
@@ -923,7 +895,6 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
             isExpanded: true, isDeleted: false
         });
     }
-    // 🌟 여기까지 🌟
 
     renderDayManagerList();
     document.getElementById('dayManagerModal').style.display = 'flex';
@@ -933,27 +904,34 @@ window.renderDayManagerList = function() {
     const list = document.getElementById('dayManagerList');
     list.innerHTML = '';
     
-    // 모바일 반응형 UI를 위한 추가 CSS (@media 부분이 추가되었습니다)
     const style = document.createElement('style');
     style.innerHTML = `
-        .event-custom-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
-        .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; }
-        .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; }
-        
-        /* 👇 모바일 반응형 강화: 화면 잘림 원천 차단 */
+        .event-custom-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 8px; color: #7A5A2F; font-weight: bold; }
+        .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; color: #7A5A2F; flex-shrink: 0; }
+        .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; color: #7A5A2F; }
+        .mgr-time-row { display: flex; gap: 6px; align-items: center; }
+        .mgr-date-row { display: flex; gap: 10px; }
+
+        /* 강제 스크롤 및 레이아웃 짤림 방지 핵심 처리 */
+        .mgr-modal-box { overflow: hidden !important; display: flex !important; flex-direction: column !important; }
+        #dayManagerList { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-right: 5px; }
+
         @media (max-width: 768px) {
-            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: 95vh !important; box-sizing: border-box; }
+            /* 팝업이 화면 밖으로 밀리지 않도록 고정 */
+            #dayManagerModal { padding: 15px 10px !important; align-items: flex-start !important; }
+            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }
             
-            /* 가로 정렬을 완전히 해제하고 세로로 차곡차곡 쌓기 */
-            .mgr-body { padding: 15px !important; display: block !important; }
-            .mgr-col { display: block !important; width: 100% !important; min-width: 0 !important; margin-bottom: 20px; box-sizing: border-box; }
-            .mgr-col:last-child { margin-bottom: 0; }
+            .mgr-body { padding: 15px !important; display: flex !important; flex-direction: column !important; gap: 15px !important; }
+            .mgr-col { width: 100% !important; min-width: 0 !important; margin-bottom: 0 !important; box-sizing: border-box; display: flex !important; flex-direction: column !important; gap: 12px !important; }
             .mgr-divider { display: none !important; }
             
-            .mgr-footer { flex-direction: column; gap: 12px; align-items: stretch !important; height: auto !important; }
+            .mgr-time-row { flex-wrap: wrap; gap: 8px; }
+            .mgr-date-row { flex-direction: column; gap: 12px; }
+
+            /* 하단 저장 버튼 영역이 짤리지 않도록 공간 확보 */
+            .mgr-footer { flex-shrink: 0 !important; flex-direction: column; gap: 12px; align-items: stretch !important; height: auto !important; margin-top: 10px !important; padding-top: 15px !important; }
             .mgr-footer-left { justify-content: space-between; width: 100%; box-sizing: border-box; }
             .mgr-footer-right { flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 6px; box-sizing: border-box; }
-            
             .mgr-footer-left button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; margin: 0 4px; }
             .mgr-footer-right input { width: 100% !important; margin-bottom: 8px; order: -1; box-sizing: border-box; }
             .mgr-footer-right button { flex: 1; padding: 12px 5px !important; font-size: 13px !important; white-space: nowrap; margin: 0; }
@@ -965,11 +943,11 @@ window.renderDayManagerList = function() {
         if (item.isDeleted) return;
         
         const card = document.createElement('div');
-        card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s;';
+        card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s; flex-shrink: 0;';
         
         if (item.isExpanded) {
-            card.style.borderColor = '#FDE047';
-            card.style.boxShadow = '0 0 0 3px rgba(253, 224, 71, 0.2)';
+            card.style.borderColor = '#e2e8f0'; 
+            card.style.boxShadow = 'none'; 
         }
         
         const header = document.createElement('div');
@@ -983,12 +961,14 @@ window.renderDayManagerList = function() {
         const orderDiv = document.createElement('div');
         orderDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; align-items:center;';
         orderDiv.innerHTML = `<button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button><button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>`;
+        
         const titleSpan = document.createElement('div');
-        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#4E4942; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
+        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#7A5A2F; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
         titleSpan.innerText = item.title || '(새 일정)';
+        
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerText = '삭제';
-        deleteBtn.style.cssText = 'background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:13px; cursor:pointer; font-family:"Cafe24SurroundAir", sans-serif;';
+        deleteBtn.innerText = '✕';
+        deleteBtn.style.cssText = 'background:none; color:#7A5A2F; border:none; padding:4px 8px; font-weight:900; font-size:18px; cursor:pointer;';
         deleteBtn.onclick = (e) => { e.stopPropagation(); if(confirm('이 일정을 지우시겠습니까?')) removeDayManagerItem(idx); };
         
         header.appendChild(orderDiv); header.appendChild(titleSpan); header.appendChild(deleteBtn);
@@ -1007,14 +987,14 @@ window.renderDayManagerList = function() {
                     <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><input type="text" class="event-custom-input mgr-title" value="${item.title || ''}"></div>
                     <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시간</label>
-                        <div style="display:flex; gap:6px; align-items:center;">
+                        <div class="mgr-time-row">
                             <button class="mgr-ampm-btn ${item.ampm === '오전' ? 'active' : ''}" onclick="setMgrAmPm(this, '오전')">오전</button>
                             <button class="mgr-ampm-btn ${item.ampm === '오후' ? 'active' : ''}" onclick="setMgrAmPm(this, '오후')">오후</button>
-                            <input type="number" class="event-custom-input mgr-hour" value="${item.hour || ''}" placeholder="시" style="width:70px;">
-                            <input type="number" class="event-custom-input mgr-min" value="${item.min || ''}" placeholder="분" style="width:70px;">
+                            <input type="number" class="event-custom-input mgr-hour" value="${item.hour || ''}" placeholder="시" style="width:70px; min-width:60px; flex:1;">
+                            <input type="number" class="event-custom-input mgr-min" value="${item.min || ''}" placeholder="분" style="width:70px; min-width:60px; flex:1;">
                         </div>
                     </div>
-                    <div style="display:flex; gap:10px;">
+                    <div class="mgr-date-row">
                         <div style="flex:1;"><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시작</label><input type="date" class="event-custom-input mgr-start" value="${item.startDate || dayManagerFormattedDateId}"></div>
                         <div style="flex:1;"><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">종료</label><input type="date" class="event-custom-input mgr-end" value="${item.endDate || dayManagerFormattedDateId}"></div>
                     </div>
@@ -1027,7 +1007,7 @@ window.renderDayManagerList = function() {
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">이미지 URL</label>
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="dayMgrImg_${idx}" class="event-custom-input mgr-image" value="${item.imageUrl || ''}">
-                            <label style="background:#e2e8f0; color:#475569; padding:0 14px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; white-space:nowrap;">
+                            <label style="background:#e2e8f0; color:#475569; padding:0 14px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; white-space:nowrap; flex-shrink:0;">
                                 첨부<input type="file" accept="image/*" style="display:none;" onchange="uploadDayManagerImg(this, ${idx})">
                             </label>
                         </div>
@@ -1040,13 +1020,11 @@ window.renderDayManagerList = function() {
     });
 }
 
-// 렌더링 중 상태 유지를 위한 보조 함수
 function saveTempValues(card, idx) {
     const item = dayManagerItems[idx];
     if (!card.querySelector('.mgr-title')) return;
     item.title = card.querySelector('.mgr-title').value;
     
-    // 👈 아래 두 줄을 변경하여 안전하게 요소를 찾도록 수정합니다.
     const activeBtn = card.querySelector('.mgr-ampm-btn.active');
     item.ampm = activeBtn ? activeBtn.innerText : '오전';
     
@@ -1059,7 +1037,6 @@ function saveTempValues(card, idx) {
     item.imageUrl = card.querySelector('.mgr-image').value;
 }
 
-// 🌟🌟 Day Manager: 기능 🌟🌟
 window.moveDayManagerItem = function(idx, dir) {
     const targetIdx = idx + dir;
     if (targetIdx < 0 || targetIdx >= dayManagerItems.length) return;
@@ -1081,7 +1058,7 @@ window.addDayManagerItem = function() {
     dayManagerItems.forEach(i => i.isExpanded = false);
     dayManagerItems.push({
         id: null, title: '', time: '', type: '개인방송',
-        ampm: '오전', hour: '', min: '', // 👈 이 줄을 새로 추가합니다!
+        ampm: '오전', hour: '', min: '',
         startDate: dayManagerFormattedDateId, endDate: dayManagerFormattedDateId,
         members: '', noticeLink: '', imageUrl: '',
         isExpanded: true, isDeleted: false
@@ -1114,16 +1091,12 @@ window.uploadDayManagerImg = async function(input, idx) {
 window.saveDayManager = async function() {
     if (!isAdmin) return;
 
-    // 현재 모든 카드의 입력값 갱신
     const cards = document.querySelectorAll('#dayManagerList > div');
-    cards.forEach((card, idx) => {
-        saveTempValues(card, idx);
-    });
+    cards.forEach((card, idx) => { saveTempValues(card, idx); });
 
     const btn = document.querySelector('#dayManagerModal button[onclick="saveDayManager()"]');
     if (btn) { btn.innerText = '저장 중...'; btn.disabled = true; }
     
-    // 변수 중복 선언 해결
     const globalNotice = document.getElementById('dayManagerNoticeInput')?.value.trim() || '';
     const noticeTitle = document.getElementById('dayManagerNoticeTitle')?.value.trim() || '';
     const noticeDesc = document.getElementById('dayManagerNoticeDesc')?.value.trim() || '';
@@ -1138,7 +1111,6 @@ window.saveDayManager = async function() {
             if (item.isDeleted || isTitleEmpty) {
                 if (item.originalId) promises.push(deleteDoc(doc(db, 'events', item.originalId)));
             } else {
-                // 시간 로직 (아까 빈칸일 때 '시간 미정'으로 처리하도록 수정한 부분)
                 let timeStr = '';
                 if (item.hour || item.min) {
                     let h = parseInt(item.hour) || 0;
@@ -1148,23 +1120,15 @@ window.saveDayManager = async function() {
                 }
 
                 const data = {
-                    title: item.title.trim(),
-                    time: timeStr,
-                    type: item.type || '개인방송',
-                    members: item.members || '',
-                    noticeLink: globalNotice,
-                    noticeTitle: noticeTitle,
-                    noticeDesc: noticeDesc,
-                    imageUrl: item.imageUrl || '',
-                    startDate: item.startDate || dayManagerFormattedDateId,
-                    endDate: item.endDate || dayManagerFormattedDateId,
-                    dateId: item.startDate || dayManagerFormattedDateId,
-                    order: orderCounter++
+                    title: item.title.trim(), time: timeStr, type: item.type || '개인방송',
+                    members: item.members || '', noticeLink: globalNotice, noticeTitle: noticeTitle,
+                    noticeDesc: noticeDesc, imageUrl: item.imageUrl || '',
+                    startDate: item.startDate || dayManagerFormattedDateId, endDate: item.endDate || dayManagerFormattedDateId,
+                    dateId: item.startDate || dayManagerFormattedDateId, order: orderCounter++
                 };
                 
-                if (item.originalId) {
-                    promises.push(setDoc(doc(db, 'events', item.originalId), data));
-                } else {
+                if (item.originalId) { promises.push(setDoc(doc(db, 'events', item.originalId), data)); }
+                else {
                     const customDocId = `${data.startDate}_${data.title.replace(/\//g, '-')}_${new Date().getTime()}`;
                     promises.push(setDoc(doc(db, 'events', customDocId), data));
                 }
@@ -1173,40 +1137,22 @@ window.saveDayManager = async function() {
         
         await Promise.all(promises);
         await updateDbStatus();
-        
-        loadedMonths.clear();
-        events = {};
+        loadedMonths.clear(); events = {};
         await ensureMonthsLoadedForDate(currentDate);
         renderCalendar();
-        
         closeModal('dayManagerModal');
         showToast('일정이 저장되었습니다.');
-    } catch (error) {
-        console.error("저장 오류:", error);
-        showToast('저장 중 오류가 발생했습니다.');
-    } finally {
-        if (btn) { btn.innerText = '저장'; btn.disabled = false; }
-    }
+    } catch (error) { showToast('저장 중 오류가 발생했습니다.'); } finally { if (btn) { btn.innerText = '저장'; btn.disabled = false; } }
 }
 
 window.deleteAllDayManagerItems = async function() {
     if (!isAdmin) return;
-
-    // 현재 화면에 남아있는 일정이 있는지 확인
     const hasVisibleItems = dayManagerItems.some(item => !item.isDeleted);
-    if (!hasVisibleItems) {
-        showToast('삭제할 일정이 없습니다.');
-        return;
-    }
-
+    if (!hasVisibleItems) { showToast('삭제할 일정이 없습니다.'); return; }
     if (!confirm('이 날짜의 모든 일정과 공지사항을 일괄 삭제하시겠습니까?')) return;
 
-    // 1. 모든 일정을 '삭제됨' 상태로 변경
-    dayManagerItems.forEach(item => {
-        item.isDeleted = true;
-    });
+    dayManagerItems.forEach(item => { item.isDeleted = true; });
 
-    // 2. 공지사항 입력칸 완전히 비우기
     const noticeInput = document.getElementById('dayManagerNoticeInput');
     const noticeTitle = document.getElementById('dayManagerNoticeTitle');
     const noticeDesc = document.getElementById('dayManagerNoticeDesc');
@@ -1214,7 +1160,6 @@ window.deleteAllDayManagerItems = async function() {
     if (noticeTitle) noticeTitle.value = '';
     if (noticeDesc) noticeDesc.value = '';
 
-    // 3. 화면 갱신 후 즉시 서버 데이터 삭제(자동 저장)
     renderDayManagerList();
     await window.saveDayManager();
 }
@@ -1257,14 +1202,10 @@ function renderCalendar() {
             const isToday = dayDate.getDate() === new Date().getDate() && dayDate.getMonth() === new Date().getMonth() && dayDate.getFullYear() === new Date().getFullYear();
             if (isToday) row.classList.add('today-row');
             
-            // 🚨 모바일: 우클릭(길게 누르기) 시 통합 관리 팝업 오픈
             if (isAdmin) row.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
 
-            // ✅ 모바일: 빈 공간 터치 시 해당 날짜 일정 전체 보기
             row.onclick = (e) => {
-                if (!e.target.closest('.event-tag')) { // 일정 태그를 누른 게 아닐 때만 실행
-                    showDayInfo(dateId, todaysEvents);
-                }
+                if (!e.target.closest('.event-tag')) { showDayInfo(dateId, todaysEvents); }
             };
             
             const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
@@ -1296,23 +1237,15 @@ function renderCalendar() {
                     item.className = `event-tag type-${typeClass}${isLong ? ' long-term' : ''}`;
                     
                     item.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-                    // 🚨 모바일 일정태그: 우클릭 시 해당 일정 포커싱해서 통합 팝업 오픈
                     if (isAdmin) item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
                     
-                    if (ev.time) {
-                        item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`;
-                    } else {
-                        item.innerHTML = `<div>${ev.title}</div>`;
-                    }
+                    if (ev.time) { item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`; } 
+                    else { item.innerHTML = `<div>${ev.title}</div>`; }
                     eventsDiv.appendChild(item);
                 });
-            } else {
-                eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>";
-            }
+            } else { eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>"; }
 
-            row.appendChild(dayLabel);
-            row.appendChild(eventsDiv);
-            grid.appendChild(row);
+            row.appendChild(dayLabel); row.appendChild(eventsDiv); grid.appendChild(row);
         }
         } else {
         grid.className = 'calendar-grid';
@@ -1325,11 +1258,7 @@ function renderCalendar() {
         const firstDay = new Date(y, m, 1); const lastDay = new Date(y, m + 1, 0);
         const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
         
-        for (let i = startIdx; i > 0; i--) {
-            const tempD = new Date(y, m, 1 - i);
-            createDay(tempD.getDate(), false, [], tempD); 
-        }
-        
+        for (let i = startIdx; i > 0; i--) { const tempD = new Date(y, m, 1 - i); createDay(tempD.getDate(), false, [], tempD); }
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const d = new Date(y, m, i);
             const todaysEvents = allEventsRaw.filter(ev => {
@@ -1353,12 +1282,7 @@ function applyDraggable() {
         if (isAdmin) {
             if (!el.sortableInstance && window.Sortable) {
                 el.sortableInstance = new Sortable(el, {
-                    animation: 150, 
-                    ghostClass: 'dragging-ghost', 
-                    fallbackOnBody: true, 
-                    delay: 200, 
-                    delayOnTouchOnly: true, 
-                    fallbackTolerance: 5,
+                    animation: 150, ghostClass: 'dragging-ghost', fallbackOnBody: true, delay: 200, delayOnTouchOnly: true, fallbackTolerance: 5,
                     onStart: function(evt) { evt.item.style.height = evt.item.offsetHeight + 'px'; },
                     onEnd: function (evt) {
                         evt.item.style.height = '';
@@ -1368,10 +1292,7 @@ function applyDraggable() {
                 });
             }
         } else {
-            if (el.sortableInstance) { 
-                el.sortableInstance.destroy(); 
-                el.sortableInstance = null; 
-            }
+            if (el.sortableInstance) { el.sortableInstance.destroy(); el.sortableInstance = null; }
         }
     });
 }
@@ -1393,25 +1314,19 @@ function createDay(num, isCurr, dayEvents = []) {
             tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             
-            // 🚨 PC 일정태그: 우클릭 시 해당 일정 포커싱해서 통합 관리 팝업 오픈
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
             evCont.appendChild(tag);
         });
     }
     div.appendChild(evCont);
     
-    // 🚨 PC 빈공간: 우클릭 시 통합 관리 팝업 오픈 (기존 좌클릭 제거)
     if (isCurr && isAdmin) div.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
 
-    // ✅ PC: 빈 공간 클릭 시 해당 날짜 일정 전체 보기
     if (isCurr) {
         div.onclick = (e) => {
-            if (!e.target.closest('.event-tag')) { // 일정 태그를 누른 게 아닐 때만 실행
-                showDayInfo(dateId, dayEvents);
-            }
+            if (!e.target.closest('.event-tag')) { showDayInfo(dateId, dayEvents); }
         };
     }
-    
     document.getElementById('calendarGrid').appendChild(div);
 }
 
@@ -1441,16 +1356,12 @@ function showInfoByEvent(ev) {
     const timeEl = document.getElementById('infoTime'); 
     
     if (timeEl) {
-        // 1. 기존 태그의 쓸데없는 클래스를 다 비우고 위치만 가운데로 잡아줍니다.
         timeEl.className = '';
         timeEl.style.cssText = 'text-align:center; margin-bottom: 24px;';
-        
-        // 2. 통합 일정 모달과 100% 똑같은 HTML 태그(배지 모양)를 만들어서 쏙 집어넣습니다.
         const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
         timeEl.innerHTML = `<span class="${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">${timeTypeStr}</span>`;
     }
     
-    // ... 이하 나머지 이미지, 프로필, 공지사항 로직은 방금 드린 코드와 동일합니다 ...
     const infoImageContainer = document.getElementById('infoImageContainer');
     if(infoImageContainer) {
         infoImageContainer.innerHTML = '';
@@ -1501,17 +1412,13 @@ function updateSummary() {
     const allEventsRaw = [];
     const seenIds = new Set();
     Object.values(events).flat().forEach(ev => {
-        if (!seenIds.has(ev.id)) { 
-            seenIds.add(ev.id); 
-            allEventsRaw.push(ev); 
-        }
+        if (!seenIds.has(ev.id)) { seenIds.add(ev.id); allEventsRaw.push(ev); }
     });
 
     const todaysEvents = allEventsRaw.filter(ev => {
         const start = new Date(ev.startDate || ev.dateId); 
         const end = new Date(ev.endDate || ev.dateId);
-        start.setHours(0, 0, 0, 0); 
-        end.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0); end.setHours(0, 0, 0, 0);
         return todayLocal >= start && todayLocal <= end;
     });
 
@@ -1524,18 +1431,12 @@ function updateSummary() {
 
     if (todaysEvents.length > 0) {
         todaysEvents.forEach((ev, idx) => {
-            const item = document.createElement('div'); 
-            item.className = 'summary-item'; 
-            item.onclick = () => showInfoByEvent(ev);
-            
+            const item = document.createElement('div'); item.className = 'summary-item'; item.onclick = () => showInfoByEvent(ev);
             const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
             item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
-            
             cont.appendChild(item);
         });
-    } else {
-        cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>";
-    }
+    } else { cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>"; }
 }
 
 window.toggleMemo = function() {
@@ -1637,11 +1538,8 @@ window.saveUpItem = async function() {
 
     try {
         await addDoc(collection(db, 'up'), { title, link, deadline, createdAt: new Date() });
-        document.getElementById('upTitleInput').value = '';
-        document.getElementById('upLinkInput').value = '';
-        document.getElementById('upDeadlineInput').value = '';
-        loadUpItems();
-        showToast('UP 항목이 추가되었습니다.');
+        document.getElementById('upTitleInput').value = ''; document.getElementById('upLinkInput').value = ''; document.getElementById('upDeadlineInput').value = '';
+        loadUpItems(); showToast('UP 항목이 추가되었습니다.');
     } catch (error) { showToast('저장 실패: ' + error.message); }
 };
 
@@ -1673,11 +1571,9 @@ window.loadUpItems = async function() {
             if (data.deadline && data.deadline < todayStr) return;
             
             renderCount++;
-            const entry = document.createElement('div');
-            entry.className = 'up-item-card';
+            const entry = document.createElement('div'); entry.className = 'up-item-card';
             entry.style.cssText = "background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;";
-            entry.onmouseover = () => entry.style.background = "#e0f2fe";
-            entry.onmouseout = () => entry.style.background = "#ffffff";
+            entry.onmouseover = () => entry.style.background = "#e0f2fe"; entry.onmouseout = () => entry.style.background = "#ffffff";
 
             let deadlineText = '';
             if (data.deadline) {
@@ -1699,9 +1595,7 @@ window.loadUpItems = async function() {
             list.appendChild(entry);
         });
 
-        if (renderCount === 0) {
-            list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px; font-family:\'GMarketSans\';">현재 진행중인 컨텐츠가 없습니다.</p>';
-        }
+        if (renderCount === 0) { list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px; font-family:\'GMarketSans\';">현재 진행중인 컨텐츠가 없습니다.</p>'; }
     } catch (error) { console.error("데이터 로드 중 에러 발생:", error); }
 };
 
@@ -1759,9 +1653,7 @@ window.checkAndShowPopup = async function() {
         
         popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
         
-        if (popupImageUrl) {
-            popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`;
-        }
+        if (popupImageUrl) { popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`; }
 
         validItems.forEach(data => {
             let deadlineText = '';
@@ -1786,7 +1678,6 @@ window.checkAndShowPopup = async function() {
         });
 
         document.getElementById('upPopupModal').style.display = 'flex';
-        
     } catch (error) { console.error("Popup UP Load Error:", error); }
 };
 
@@ -1804,27 +1695,22 @@ window.showAdminMenu = function(e) {
         const btnManage = document.createElement('button');
         btnManage.innerText = '관리자 설정';
         btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
-        btnManage.onmouseover = () => btnManage.style.background = '#f1f5f9';
-        btnManage.onmouseout = () => btnManage.style.background = 'none';
+        btnManage.onmouseover = () => btnManage.style.background = '#f1f5f9'; btnManage.onmouseout = () => btnManage.style.background = 'none';
         btnManage.onclick = () => { menu.style.display = 'none'; window.openAdminSettings(); };
         
         const btnLogout = document.createElement('button');
         btnLogout.innerText = '로그아웃';
         btnLogout.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; color:#ef4444; font-size:14px; font-family: "GMarketSans";';
-        btnLogout.onmouseover = () => btnLogout.style.background = '#fef2f2';
-        btnLogout.onmouseout = () => btnLogout.style.background = 'none';
+        btnLogout.onmouseover = () => btnLogout.style.background = '#fef2f2'; btnLogout.onmouseout = () => btnLogout.style.background = 'none';
         btnLogout.onclick = async () => { 
             menu.style.display = 'none'; 
-            if (modifiedDates.size > 0) {
-                if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders();
-            }
+            if (modifiedDates.size > 0) { if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders(); }
             
             isAdmin = false; 
             sessionStorage.removeItem('htvvi_admin'); 
             localStorage.removeItem('htvvi_admin_remember'); 
             
-            modifiedDates.clear();
-            updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제');
+            modifiedDates.clear(); updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제');
         };
         menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
     }
@@ -1836,16 +1722,11 @@ window.showAdminMenu = function(e) {
         menu.style.display = 'flex';
         setTimeout(() => {
             const closeMenu = (evt) => {
-                if (!menu.contains(evt.target)) {
-                    menu.style.display = 'none';
-                    document.removeEventListener('click', closeMenu);
-                }
+                if (!menu.contains(evt.target)) { menu.style.display = 'none'; document.removeEventListener('click', closeMenu); }
             };
             document.addEventListener('click', closeMenu);
         }, 0);
-    } else {
-        menu.style.display = 'none';
-    }
+    } else { menu.style.display = 'none'; }
 };
 
 window.openAdminSettings = async function() {
@@ -1862,9 +1743,7 @@ window.savePopupImage = async function() {
     try {
         await setDoc(doc(db, 'settings', 'popup'), { imageUrl: imgUrl });
         showToast('팝업 이미지가 설정되었습니다. 새로고침 후 확인하세요.');
-    } catch(e) {
-        showToast('설정 저장 실패: ' + e.message);
-    }
+    } catch(e) { showToast('설정 저장 실패: ' + e.message); }
 };
 
 window.deletePopupImage = async function() {
@@ -1873,18 +1752,14 @@ window.deletePopupImage = async function() {
         await deleteDoc(doc(db, 'settings', 'popup'));
         document.getElementById('popupImageUrlInput').value = '';
         showToast('팝업 이미지가 삭제되었습니다.');
-    } catch(e) {
-        showToast('삭제 실패: ' + e.message);
-    }
+    } catch(e) { showToast('삭제 실패: ' + e.message); }
 };
 
 window.handlePopupImgUpload = async function(input) {
     if (input.files && input.files[0]) {
         try {
             showToast('팝업 이미지를 서버에 업로드 중입니다...');
-            const formData = new FormData();
-            formData.append("file", input.files[0]);
-            formData.append("upload_preset", "IMG_1234");
+            const formData = new FormData(); formData.append("file", input.files[0]); formData.append("upload_preset", "IMG_1234");
             const response = await fetch(`https://api.cloudinary.com/v1_1/dtlqzklk5/image/upload`, { method: "POST", body: formData });
             const data = await response.json();
 
@@ -1892,10 +1767,7 @@ window.handlePopupImgUpload = async function(input) {
                 document.getElementById('popupImageUrlInput').value = data.secure_url;
                 showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
             }
-        } catch (error) {
-            console.error(error);
-            showToast('이미지 업로드에 실패했습니다.');
-        }
+        } catch (error) { showToast('이미지 업로드에 실패했습니다.'); }
     }
 };
 
@@ -1922,7 +1794,6 @@ async function saveAllModifiedOrders() {
     }
     await Promise.all(updatePromises); 
     await updateDbStatus(); 
-
     modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
 }
 
@@ -1930,11 +1801,8 @@ function loginAdmin() {
     if (document.getElementById('adminPw').value === '0112') {
         isAdmin = true; sessionStorage.setItem('htvvi_admin', 'true');
         const rememberAdmin = document.getElementById('rememberAdmin');
-        if (rememberAdmin && rememberAdmin.checked) {
-            localStorage.setItem('htvvi_admin_remember', 'true');
-        } else {
-            localStorage.removeItem('htvvi_admin_remember');
-        }
+        if (rememberAdmin && rememberAdmin.checked) { localStorage.setItem('htvvi_admin_remember', 'true'); } 
+        else { localStorage.removeItem('htvvi_admin_remember'); }
         closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
     } else { const err = document.getElementById('pwError'); if (err) err.classList.remove('hidden'); }
 }
@@ -2004,7 +1872,6 @@ async function loadSongbookSongs() {
 
     if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
         songbookSongs = localCache.data;
-        console.log("노래책을 캐시에서 무료로 불러왔습니다! 💸");
     } else {
         songbookSongs = [];
         try {
@@ -2016,7 +1883,6 @@ async function loadSongbookSongs() {
                 }
             });
             localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
-            console.log("노래책 업데이트 완료 (서버 조회)");
         } catch (error) { console.error('노래 데이터 로드 실패:', error); }
     }
 
@@ -2030,6 +1896,25 @@ async function loadSongbookSongs() {
 function renderSongbook() {
     const songListDiv = document.getElementById('songList'); const artistListDiv = document.getElementById('artistList');
     if(!songListDiv || !artistListDiv) return;
+    if (!document.getElementById('songbook-style')) {
+        const style = document.createElement('style');
+        style.id = 'songbook-style';
+        style.innerHTML = `
+            #songList {
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+            /* 스크롤바 투명/얇게 설정 */
+            #songList::-webkit-scrollbar { width: 6px; }
+            #songList::-webkit-scrollbar-thumb { 
+                background: rgba(122, 90, 47, 0.2); /* 고동색 계열 투명도 조절 */
+                border-radius: 10px; 
+            }
+            #songList::-webkit-scrollbar-track { background: transparent; }
+        `;
+        document.head.appendChild(style);
+    }
     songListDiv.innerHTML = '';
     const searchInput = document.getElementById('songbookSearch');
     songbookSearchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
@@ -2161,7 +2046,6 @@ async function addSong() {
         document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
         document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
         document.getElementById('addSongBtn').textContent = '노래 추가';
-        
         document.getElementById('adminSongForm').classList.remove('visible');
 
         await loadSongbookSongs(); renderSongbook(); showToast('노래가 저장되었습니다.');
@@ -2172,7 +2056,6 @@ function cancelEdit() {
     document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
     document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
     songbookIsEditing = null; document.getElementById('addSongBtn').textContent = '노래 추가';
-    
     document.getElementById('adminSongForm').classList.remove('visible');
 }
 
@@ -2308,14 +2191,10 @@ function ensureDayInfoModal() {
     if (document.getElementById('dayInfoModal')) return;
     const html = `
     <div id="dayInfoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-        <!-- 👇 이 줄의 width: 95%; max-width: 1200px; 부분을 width: fit-content; max-width: 95%; 로 변경했습니다. -->
         <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:fit-content; min-width:350px; max-width:95%; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
             <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:34px; font-weight:bold; text-align:center; flex-shrink:0;"></h2>
-            
             <div id="dayInfoList" style="flex:1; display:flex; flex-direction:row; gap:20px; align-items:stretch; overflow-x:auto; overflow-y:auto; padding:10px 0;"></div>
-            
             <div id="dayInfoNoticeArea" style="width: 100%; max-width: 600px; margin: 15px auto 0; display: none;"></div>
-            
             <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
                 <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius:12px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
             </div>
@@ -2339,10 +2218,9 @@ window.showDayInfo = function(dateId, dayEvents) {
     }
 
     if (!dayEvents || dayEvents.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'GMarketSans', sans-serif; width:100%;">이날은 등록된 일정이 없습니다.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'GMarketSans', sans-serif; width:100%;">등록된 일정이 없습니다.</div>`;
     } else {
         dayEvents.forEach((ev, index) => {
-            // 1. 시간 및 날짜 포맷팅
             let dateText = '';
             if (ev.startDate && ev.endDate) {
                 const s = new Date(ev.startDate); const e = new Date(ev.endDate);
@@ -2354,10 +2232,8 @@ window.showDayInfo = function(dateId, dayEvents) {
                 dateText = ev.time ? formatTime12h(ev.time) : '시간 미정';
             }
             const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
-            
             const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
 
-            // 2. 프로필 카드 렌더링
             let profsHtml = '';
             if (ev.members) {
                 ev.members.split(',').forEach(nameRaw => {
@@ -2371,25 +2247,20 @@ window.showDayInfo = function(dateId, dayEvents) {
                 });
             }
 
-            // 3. 개별 일정 카드 생성 (공지사항 영역 삭제됨)
             const cardWrapper = document.createElement('div');
             cardWrapper.style.cssText = 'flex: 1; min-width: 320px; max-width: 450px; display: flex; flex-direction: column;';
             
             cardWrapper.innerHTML = `
                 <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0;">
-                    
                     <h2 style="text-align:center; margin-top:0; margin-bottom:15px; font-size:24px; font-weight:900; word-break:keep-all;">${ev.title || ''}</h2>
-                    
                     <div style="text-align:center; margin-bottom: 24px;">
                         <div class="info-time ${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">
                             ${timeTypeStr}
                         </div>
                     </div>
-                    
                     <div class="info-image-container" style="text-align:center; margin-bottom: 20px;">
                         ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
                     </div>
-                    
                     <div class="info-profiles" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom: 20px;">
                         ${profsHtml}
                     </div>
@@ -2398,7 +2269,6 @@ window.showDayInfo = function(dateId, dayEvents) {
             
             list.appendChild(cardWrapper);
 
-            // 4. 카드 사이에 세로 구분선(Divider) 넣기
             if (index < dayEvents.length - 1) {
                 const divider = document.createElement('div');
                 divider.style.cssText = 'width: 2px; background-color: #f1f5f9; margin: 15px 10px; flex-shrink: 0; border-radius: 2px;';
@@ -2407,13 +2277,11 @@ window.showDayInfo = function(dateId, dayEvents) {
         });
     }
 
-    // 👇 5. 통합 공지사항 로드 로직 (루프 밖 하단에서 단 1번만 실행)
     const noticeArea = document.getElementById('dayInfoNoticeArea');
     if (noticeArea) {
         noticeArea.innerHTML = '';
         noticeArea.style.display = 'none';
         
-        // 해당 날짜 일정 중 공지 링크가 있는 첫 번째 데이터를 찾습니다.
         const evWithNotice = dayEvents?.find(e => e.noticeLink);
         if (evWithNotice) {
             noticeArea.style.display = 'block';
@@ -2432,7 +2300,7 @@ Object.assign(window, {
     handleEventImgUpload, addMember, deleteMember,deletePopupImage,
     handlePopupImgUpload: window.handlePopupImgUpload,
     openMemberManager, renderMemberList, showToast, closeModal, formatTime12h,
-    setAMPM, openAddModal, openEditModal, saveEvent, deleteEvent, showInfo,
+    setAMPM, openAddModal, saveEvent, deleteEvent, showInfo,
     toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
     toggleUpBoard, toggleMobileUpBoard, loadUpItems, deleteUpItem,
     promptAdmin, loginAdmin, showAdminMenu, openAdminSettings, savePopupImage, saveUpItem,
@@ -2441,7 +2309,6 @@ Object.assign(window, {
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
     closeUpPopup, checkAndShowPopup, removeEventImage,
-    // 🌟 Day Manager 🌟
     openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager, deleteAllDayManagerItems
 });
 
@@ -2466,9 +2333,7 @@ document.addEventListener('dragstart', function(e) {
 window.onload = async () => {
     try {
         await loadData();
-        
         initNaverLogin();
-        
         updateAdminUI(); 
         handlePlayerPosition();
         
@@ -2517,19 +2382,14 @@ const loadingGifs = [
 
 const randomLoadingImg = document.getElementById('randomLoadingImg');
 if (randomLoadingImg) {
-    // 1. 다운로드 전에는 이미지를 투명하게 만들어서 깨진 아이콘을 숨깁니다.
     randomLoadingImg.style.opacity = '0';
-    
-    // (선택사항) 팍! 나타나지 않고 0.3초 동안 스르륵 부드럽게 나타나는 효과
     randomLoadingImg.style.transition = 'opacity 0.3s ease'; 
 
     const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
     
-    // 2. 이미지가 완전히 다운로드(load)되면 투명도를 원상복구(1) 시킵니다.
     randomLoadingImg.onload = () => {
         randomLoadingImg.style.opacity = '1';
     };
 
-    // 3. 주소를 넣는 순간 다운로드가 시작됩니다.
     randomLoadingImg.src = randomGif;
 }
