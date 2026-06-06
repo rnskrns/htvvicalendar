@@ -205,13 +205,24 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 수동 입력값이 있으면 즉시 렌더링 (서버 호출 안 함)
+    // 1. 수동 입력값 우선 처리
     if (manualTitle) {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. Firebase 캐시 조회 (URL을 base64로 인코딩하여 문서 ID로 사용)
+    // --- [로컬 캐시(SessionStorage) 추가] ---
+    const localKey = 'notice_' + btoa(url).substring(0, 32);
+    const localData = sessionStorage.getItem(localKey);
+    
+    if (localData) {
+        const data = JSON.parse(localData);
+        renderNoticeHTML(container, url, data.title, data.description);
+        return; // 파이어베이스까지 안 가고 여기서 즉시 종료!
+    }
+    // --------------------------------------
+
+    // 2. Firebase 캐시 조회
     const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
     const noticeRef = doc(db, 'notice_cache', cacheDocId);
     
@@ -220,30 +231,34 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         
         if (cacheSnap.exists()) {
             const data = cacheSnap.data();
+            // 로컬 캐시에 저장 후 화면 출력
+            sessionStorage.setItem(localKey, JSON.stringify(data));
             renderNoticeHTML(container, url, data.title, data.description);
-            return; // 캐시 성공 시 함수 종료
+            return;
         }
     } catch (e) {
-        console.warn("캐시 조회 실패, 서버 호출 진행");
+        console.warn("DB 조회 실패");
     }
 
-    // 3. 캐시가 없을 경우 서버 호출
-    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
+    // 3. 크롤링 및 저장
+    container.innerHTML = '<div class="preview-loading" ...>공지 정보를 불러오는 중...</div>';
 
     try {
         const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
         const data = await response.json();
         
         if (response.ok && data.title) {
-            // 4. 성공 시 Firebase에 저장
-            await setDoc(noticeRef, { 
-                title: data.title, 
-                description: data.description || '', 
-                createdAt: new Date() 
-            });
-            renderNoticeHTML(container, url, data.title, data.description);
+            const finalData = { title: data.title, description: data.description || '' };
+            
+            // 파이어베이스 저장
+            await setDoc(noticeRef, { ...finalData, createdAt: new Date() });
+            
+            // 로컬 캐시 저장
+            sessionStorage.setItem(localKey, JSON.stringify(finalData));
+            
+            renderNoticeHTML(container, url, finalData.title, finalData.description);
         } else {
-            throw new Error(data.error || 'API 응답 실패');
+            throw new Error();
         }
     } catch (error) {
         // 5. 실패 시 버튼 모드로 전환
