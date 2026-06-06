@@ -24,7 +24,12 @@ const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
 let naverUser = null;
 const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
 
-// 🌟 네이버 SDK 초기화 및 로그인 상태 처리 (기존 fetch 모두 대체) 🌟
+// 🌟 통합 일정 관리 (Day Manager) 시스템 변수 🌟
+let dayManagerItems = [];
+let dayManagerActiveDateId = '';
+let dayManagerFormattedDateId = '';
+
+// 🌟 네이버 SDK 초기화 및 로그인 상태 처리 🌟
 function initNaverLogin() {
     if (typeof naver === 'undefined') {
         console.warn('네이버 SDK가 로드되지 않았습니다.');
@@ -33,20 +38,18 @@ function initNaverLogin() {
 
     const naverLogin = new naver.LoginWithNaverId({
         clientId: NAVER_CLIENT_ID,
-        callbackUrl: window.location.origin + window.location.pathname, // 리다이렉트 URL
+        callbackUrl: window.location.origin + window.location.pathname, 
         isPopup: false,
-        loginButton: { color: "green", type: 3, height: 48 } // SDK가 자동 생성할 숨김 버튼
+        loginButton: { color: "green", type: 3, height: 48 } 
     });
     
     naverLogin.init();
     
-    // UI에 만들어둔 버튼과 SDK를 연결
     const btn = document.getElementById('naverLoginBtn');
     if (btn) {
         btn.onclick = function(e) {
             if (!naverUser) {
                 e.preventDefault();
-                // 네이버 SDK가 생성한 진짜 로그인 버튼을 강제로 클릭 트리거
                 const naverSdkBtn = document.querySelector('#naverIdLogin > a');
                 if (naverSdkBtn) naverSdkBtn.click();
             } else {
@@ -55,7 +58,6 @@ function initNaverLogin() {
         };
     }
 
-    // 콜백 및 로그인 상태를 자동으로 확인
     naverLogin.getLoginStatus(function (status) {
         if (status) {
             const profile = {
@@ -87,7 +89,6 @@ function initNaverLogin() {
                 showToast('관리자 권한이 없는 계정입니다.');
             }
         } else {
-            // 비로그인 상태일 때 로컬에 정보가 있는지 체크
             const storedUser = getStoredNaverUser();
             if (storedUser) {
                 naverUser = storedUser;
@@ -109,7 +110,6 @@ function logoutNaver() {
     localStorage.removeItem(NAVER_USER_STORAGE_KEY);
     naverUser = null;
     
-    // 네이버 로그아웃 시 관리자 권한도 함께 해제
     isAdmin = false;
     sessionStorage.removeItem('htvvi_admin');
     localStorage.removeItem('htvvi_admin_remember');
@@ -173,7 +173,6 @@ async function getServerLastUpdated() {
     return globalServerLastUpdated;
 }
 
-// 관리자가 데이터를 추가/수정/삭제하면 서버의 '버전(시간)'을 최신으로 갱신하는 함수
 async function updateDbStatus() {
     try {
         const now = new Date().getTime();
@@ -397,7 +396,6 @@ async function handleEventImgUpload(input) {
         try {
             const file = input.files[0];
             showToast('일정 이미지를 업로드 중입니다...');
-
             const cloudName = "dtlqzklk5";
             const uploadPreset = "IMG_1234";
 
@@ -414,7 +412,6 @@ async function handleEventImgUpload(input) {
 
             if (data.secure_url) {
                 document.getElementById('eventImageUrl').value = data.secure_url;
-                
                 const preview = document.getElementById('eventImagePreview');
                 const removeBtn = document.getElementById('removeImageBtn');
                 const placeholder = document.getElementById('eventImagePlaceholder');
@@ -425,7 +422,6 @@ async function handleEventImgUpload(input) {
                     removeBtn.style.display = 'inline-block';
                     if (placeholder) placeholder.style.display = 'none';
                 }
-
                 showToast('이미지가 성공적으로 업로드되었습니다.');
             } else {
                 throw new Error(data.error?.message || 'Cloudinary 응답 오류');
@@ -449,12 +445,8 @@ window.removeEventImage = function() {
         preview.src = '';
         preview.style.display = 'none';
     }
-    if (removeBtn) {
-        removeBtn.style.display = 'none';
-    }
-    if (placeholder) {
-        placeholder.style.display = 'block';
-    }
+    if (removeBtn) removeBtn.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'block';
 };
 
 async function addMember() {
@@ -527,10 +519,8 @@ function formatTime12h(timeStr) {
 
 function setAMPM(val) {
     currentAMPM = val;
-    
     const amBtn = document.getElementById('ampmAM');
     const pmBtn = document.getElementById('ampmPM');
-    
     if (amBtn) amBtn.classList.toggle('active', val === '오전');
     if (pmBtn) pmBtn.classList.toggle('active', val === '오후');
 }
@@ -549,17 +539,14 @@ async function loadEventsForMonth(year, month) {
     const monthKey = `${year}-${month}`;
     if (loadedMonths.has(monthKey)) return;
 
-    // 서버 업데이트 시간 확인 (비용: 단 1회)
     const serverTime = await getServerLastUpdated();
     const localCache = JSON.parse(localStorage.getItem('htvvi_events_cache') || '{"time": 0, "data": []}');
     let docs = [];
 
-    // 로컬 저장소가 최신 버전이면 서버 조회 생략 (비용: 0회)
     if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
         docs = localCache.data;
         console.log("일정을 캐시에서 무료로 불러왔습니다! 💸");
     } else {
-        // 관리자가 새로 추가한 게 있으면 서버에서 불러오고 내 폰에 저장
         const snapshot = await getDocs(collection(db, 'events'));
         snapshot.forEach(docSnap => docs.push({ ...docSnap.data(), id: docSnap.id }));
         localStorage.setItem('htvvi_events_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: docs }));
@@ -624,6 +611,7 @@ function resetImagePreviewUI(imgUrl) {
     }
 }
 
+// 🌟 일정 등록/수정 모달(단일용) 호환 유지 (혹시 모를 외부 사용을 위해 남겨둠) 🌟
 function openAddModal(id) {
     activeDateId = id; document.getElementById('modalTitle').innerText = '일정 추가';
     document.getElementById('editIndex').value = '-1';
@@ -648,200 +636,389 @@ function openAddModal(id) {
     document.getElementById('eventModal').style.display = 'flex';
 }
 
-function openEditModal(id, idx) {
-    activeDateId = id;
-    const ev = events[id][idx];
-    document.getElementById('modalTitle').innerText = '일정 수정';
-    document.getElementById('editIndex').value = idx;
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
-    document.getElementById('eventTitle').value = ev.title;
-    document.getElementById('eventType').value = ev.type;
-    document.getElementById('eventMembers').value = ev.members || '';
-    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
-    
-    const imgUrl = ev.imageUrl || '';
-    document.getElementById('eventImageUrl').value = imgUrl;
-    document.getElementById('eventImgFile').value = '';
-    resetImagePreviewUI(imgUrl);
-    
-    if (document.getElementById('eventStartDate')) {
-        if (ev.startDate) {
-            const s = new Date(ev.startDate);
-            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-        if (ev.endDate) {
-            const e = new Date(ev.endDate);
-            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-    }
-    if (ev.time) {
-        const [h, m] = ev.time.split(':').map(Number);
-        setAMPM(h >= 12 ? '오후' : '오전');
-        document.getElementById('timeHour').value = h % 12 || 12;
-        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
-    }
-    document.getElementById('delBtn').style.display = 'block';
-    document.getElementById('eventModal').style.display = 'flex';
+function openEditModal(id, idx) { /* 구버전 유지 */ }
+function openEditModalByEvent(ev) { /* 구버전 유지 */ }
+async function saveEvent() { /* 구버전 유지 */ }
+async function deleteEvent() { /* 구버전 유지 */ }
+
+// 🌟🌟 Day Manager: 모달 HTML 동적 생성 함수 🌟🌟
+function ensureDayManagerModal() {
+    if (document.getElementById('dayManagerModal')) return;
+    const html = `
+    <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
+        <!-- 기존 일정 모달 클래스(event-modal-box) 적용 -->
+        <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:95%; max-width:850px;">
+            
+            <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
+            
+            <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;">
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:30px; padding-top:24px; border-top:1px solid #f1f5f9; flex-shrink:0;">
+                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; margin-right:auto;">+ 새 일정</button>
+                <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
+                <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4); transition:transform 0.1s;">저장</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
 }
 
-function openEditModalByEvent(ev) {
-    if (!ev) return;
-    activeDateId = ev.dateId || (ev.startDate ? ev.startDate : activeDateId);
-    document.getElementById('modalTitle').innerText = '일정 수정';
-    document.getElementById('editIndex').value = '0';
-    if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = ev.id || '';
-    document.getElementById('eventTitle').value = ev.title || '';
-    document.getElementById('eventType').value = ev.type || '개인방송';
-    document.getElementById('eventMembers').value = ev.members || '';
-    document.getElementById('eventNoticeLink').value = ev.noticeLink || '';
+// 🌟🌟 Day Manager: 팝업 열기 🌟🌟
+window.openDayManager = function(dateIdStr, targetEventId = null) {
+    if (!isAdmin) return;
+    ensureDayManagerModal();
+    dayManagerActiveDateId = dateIdStr; 
     
-    const imgUrl = ev.imageUrl || '';
-    document.getElementById('eventImageUrl').value = imgUrl;
-    document.getElementById('eventImgFile').value = '';
-    resetImagePreviewUI(imgUrl);
+    const parts = dateIdStr.split('-');
+    const titleStr = `${parts[0]}년 ${parts[1]}월 ${parts[2]}일 관리`;
+    document.getElementById('dayManagerTitle').innerText = titleStr;
+    
+    const targetDate = new Date(parts[0], parseInt(parts[1])-1, parts[2]);
+    targetDate.setHours(0,0,0,0);
+    
+    const allEventsRaw = [];
+    const seenIds = new Set();
+    Object.values(events).flat().forEach(ev => {
+        if (!seenIds.has(ev.id)) { seenIds.add(ev.id); allEventsRaw.push(ev); }
+    });
+    
+    const dayEvents = allEventsRaw.filter(ev => {
+        const start = new Date(ev.startDate || ev.dateId);
+        const end = new Date(ev.endDate || ev.dateId);
+        start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+        return targetDate >= start && targetDate <= end;
+    });
+    
+    dayManagerItems = dayEvents.map((ev, idx) => ({
+        ...ev,
+        isExpanded: targetEventId === ev.id || (targetEventId === null && idx === 0),
+        isDeleted: false,
+        originalId: ev.id
+    }));
+    
+    dayManagerItems.sort((a, b) => {
+        const startA = new Date(a.startDate || a.dateId).getTime();
+        const startB = new Date(b.startDate || b.dateId).getTime();
+        if (startA !== startB) return startA - startB;
+        return (a.order ?? 9999) - (b.order ?? 9999);
+    });
+    
+    dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    
+    renderDayManagerList();
+    document.getElementById('dayManagerModal').style.display = 'flex';
+}
 
-    if (ev.time) {
-        const [h, m] = ev.time.split(':').map(Number);
-        setAMPM(h >= 12 ? '오후' : '오전');
-        document.getElementById('timeHour').value = h % 12 || 12;
-        document.getElementById('timeMin').value = m.toString().padStart(2, '0');
+// 🌟🌟 Day Manager: 리스트 그리기 🌟🌟
+// 🌟🌟 Day Manager: 시간 커스텀 입력 처리 함수 🌟🌟
+window.updateDayMgrTime = function(idx, field, value) {
+    let item = dayManagerItems[idx];
+    
+    if (field === 'ampm') item._ampm = value;
+    if (field === 'hour') item._hour = value;
+    if (field === 'min') item._min = value;
+
+    // 입력된 값이 하나라도 있으면 시간 문자열(HH:MM) 조합
+    if (item._hour || item._min) {
+        let h24 = item._hour ? parseInt(item._hour, 10) : 0;
+        let m = item._min ? parseInt(item._min, 10) : 0;
+        if (isNaN(h24)) h24 = 0;
+        if (isNaN(m)) m = 0;
+
+        if (item._ampm === 'AM' && h24 === 12) h24 = 0;
+        if (item._ampm === 'PM' && h24 < 12) h24 += 12;
+        
+        item.time = `${h24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     } else {
-        setAMPM('오전'); document.getElementById('timeHour').value = ''; document.getElementById('timeMin').value = '';
+        item.time = ''; // 비워두면 시간 미정으로 처리
     }
-    if (document.getElementById('eventStartDate')) {
-        if (ev.startDate) {
-            const s = new Date(ev.startDate);
-            document.getElementById('eventStartDate').value = `${s.getFullYear()}-${(s.getMonth()+1).toString().padStart(2,'0')}-${s.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventStartDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
-        if (ev.endDate) {
-            const e = new Date(ev.endDate);
-            document.getElementById('eventEndDate').value = `${e.getFullYear()}-${(e.getMonth()+1).toString().padStart(2,'0')}-${e.getDate().toString().padStart(2,'0')}`;
-        } else if (ev.dateId) {
-            const parts = ev.dateId.split('-');
-            document.getElementById('eventEndDate').value = `${parts[0]}-${parts[1].toString().padStart(2,'0')}-${parts[2].toString().padStart(2,'0')}`;
-        }
+
+    // 오전/오후 버튼을 누른 경우에만 색상 변경을 위해 화면 다시 그리기
+    if (field === 'ampm') {
+        renderDayManagerList();
     }
-    document.getElementById('delBtn').style.display = 'block';
-    document.getElementById('eventModal').style.display = 'flex';
+};
+
+// 🌟🌟 Day Manager: 리스트 그리기 🌟🌟
+// 🌟🌟 Day Manager: 리스트 그리기 (2단 분리 레이아웃 및 삐져나감 방지) 🌟🌟
+window.renderDayManagerList = function() {
+    // 🌟 좌/우 2단 분할 및 삐져나감 방지를 위한 CSS 동적 주입
+    if (!document.getElementById('dayMgrCustomStyles')) {
+        const style = document.createElement('style');
+        style.id = 'dayMgrCustomStyles';
+        style.innerHTML = `
+            .day-mgr-layout { display: flex; gap: 24px; }
+            /* min-width: 0을 줘서 자식 요소가 flex 영역을 강제로 밀어내는 것을 방지 */
+            .day-mgr-col { flex: 1; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+            .day-mgr-divider { width: 1px; background: #e2e8f0; flex-shrink: 0; }
+            
+            /* 모든 입력창이 부모 크기를 절대 넘지 않도록 강제 (구분선 침범 방지) */
+            .day-mgr-input-full { 
+                width: 100%; 
+                max-width: 100%; 
+                box-sizing: border-box !important; 
+            }
+            
+            @media (max-width: 768px) {
+                .day-mgr-layout { flex-direction: column; gap: 20px; }
+                .day-mgr-divider { width: 100%; height: 1px; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const list = document.getElementById('dayManagerList');
+    list.innerHTML = '';
+    
+    let visibleCount = 0;
+    dayManagerItems.forEach((item, idx) => {
+        if (item.isDeleted) return;
+        visibleCount++;
+        
+        // 🌟 시간 커스텀 입력 초기값 설정 로직
+        if (!item._tempTimeInit) {
+            if (item.time) {
+                let [h24, m] = item.time.split(':').map(Number);
+                item._ampm = h24 < 12 ? 'AM' : 'PM';
+                item._hour = h24 % 12 || 12;
+                item._min = m.toString().padStart(2, '0');
+            } else {
+                item._ampm = 'AM'; // 기본값
+                item._hour = '';
+                item._min = '';
+            }
+            item._tempTimeInit = true;
+        }
+
+        let isAM = item._ampm === 'AM';
+
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s;';
+        
+        if (item.isExpanded) {
+            card.style.borderColor = '#FDE047';
+            card.style.boxShadow = '0 0 0 3px rgba(253, 224, 71, 0.2)';
+        }
+        
+        const header = document.createElement('div');
+        header.style.cssText = `display:flex; align-items:center; padding:16px; cursor:pointer; gap:12px; ${item.isExpanded ? 'background:#fafaf9; border-bottom:1px solid #e2e8f0;' : 'background:#ffffff;'}`;
+        header.onclick = () => { item.isExpanded = !item.isExpanded; renderDayManagerList(); };
+        
+        const orderDiv = document.createElement('div');
+        orderDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; align-items:center;';
+        orderDiv.innerHTML = `
+            <button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button>
+            <button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>
+        `;
+        
+        const titleSpan = document.createElement('div');
+        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#4E4942; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
+        titleSpan.innerText = item.title || '(새 일정)';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerText = '삭제';
+        deleteBtn.style.cssText = 'background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:13px; cursor:pointer; font-family:"Cafe24SurroundAir", sans-serif; transition:background 0.2s;';
+        deleteBtn.onmouseover = function() { this.style.background = '#fca5a5'; };
+        deleteBtn.onmouseout = function() { this.style.background = '#fee2e2'; };
+        deleteBtn.onclick = (e) => { e.stopPropagation(); if(confirm('이 일정을 지우시겠습니까?')) removeDayManagerItem(idx); };
+        
+        const expandIcon = document.createElement('div');
+        expandIcon.innerHTML = item.isExpanded ? '▲' : '▼';
+        expandIcon.style.cssText = 'color:#cbd5e1; font-size:12px; margin-left:4px;';
+        
+        header.appendChild(orderDiv);
+        header.appendChild(titleSpan);
+        header.appendChild(deleteBtn);
+        header.appendChild(expandIcon);
+        card.appendChild(header);
+        
+        if (item.isExpanded) {
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:24px; background:#ffffff;';
+            
+            const types = ['개인방송', '합방', '휴방', '미확정', 'LCK', '시네티'];
+            let typeOpts = types.map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('');
+            
+            body.innerHTML = `
+                <div class="day-mgr-layout">
+                    
+                    <div class="day-mgr-col">
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">일정 제목 *</label>
+                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.title || ''}" onchange="dayManagerItems[${idx}].title = this.value" placeholder="예: 오후 방송">
+                        </div>
+                        
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">시간 설정</label>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <div style="display:flex; background:#f1f5f9; border-radius:10px; overflow:hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
+                                    <button type="button" onclick="updateDayMgrTime(${idx}, 'ampm', 'AM')" style="padding:10px 14px; border:none; cursor:pointer; font-family:'Cafe24SurroundAir', sans-serif; font-weight:900; font-size:14px; transition:all 0.2s; ${isAM ? 'background:#FDE047; color:#7A5A2F;' : 'background:transparent; color:#94a3b8;'}">오전</button>
+                                    <button type="button" onclick="updateDayMgrTime(${idx}, 'ampm', 'PM')" style="padding:10px 14px; border:none; cursor:pointer; font-family:'Cafe24SurroundAir', sans-serif; font-weight:900; font-size:14px; transition:all 0.2s; ${!isAM ? 'background:#FDE047; color:#7A5A2F;' : 'background:transparent; color:#94a3b8;'}">오후</button>
+                                </div>
+                                <input type="number" class="event-custom-input" min="1" max="12" placeholder="시" value="${item._hour}" oninput="updateDayMgrTime(${idx}, 'hour', this.value)" style="width:60px; box-sizing:border-box; text-align:center; padding:10px; font-weight:800; flex-shrink: 0;">
+                                <span style="font-weight:900; color:#7A5A2F;">:</span>
+                                <input type="number" class="event-custom-input" min="0" max="59" placeholder="분" value="${item._min}" oninput="updateDayMgrTime(${idx}, 'min', this.value)" style="width:60px; box-sizing:border-box; text-align:center; padding:10px; font-weight:800; flex-shrink: 0;">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:130px; max-width:100%;">
+                                <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">시작 날짜 *</label>
+                                <input type="date" class="event-custom-input day-mgr-input-full" value="${item.startDate || dayManagerFormattedDateId}" onchange="dayManagerItems[${idx}].startDate = this.value">
+                            </div>
+                            <div style="flex:1; min-width:130px; max-width:100%;">
+                                <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">종료 날짜 *</label>
+                                <input type="date" class="event-custom-input day-mgr-input-full" value="${item.endDate || dayManagerFormattedDateId}" onchange="dayManagerItems[${idx}].endDate = this.value">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">유형</label>
+                            <select class="event-custom-input day-mgr-input-full" onchange="dayManagerItems[${idx}].type = this.value" style="cursor:pointer; font-weight:bold;">
+                                ${typeOpts}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="day-mgr-divider"></div>
+
+                    <div class="day-mgr-col">
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">참여 멤버 (쉼표로 구분)</label>
+                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.members || ''}" onchange="dayManagerItems[${idx}].members = this.value" placeholder="예: 햇비, 멤버2">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">공지 링크</label>
+                            <input type="text" class="event-custom-input day-mgr-input-full" value="${item.noticeLink || ''}" onchange="dayManagerItems[${idx}].noticeLink = this.value" placeholder="https://...">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F; font-size:14px;">포스터 / 썸네일 URL</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="dayMgrImg_${idx}" class="event-custom-input day-mgr-input-full" style="flex:1; min-width:0;" value="${item.imageUrl || ''}" onchange="dayManagerItems[${idx}].imageUrl = this.value" placeholder="https://...">
+                                <label style="background:#e2e8f0; color:#475569; padding:0 14px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; flex-shrink:0;">
+                                    파일 첨부
+                                    <input type="file" accept="image/*" style="display:none;" onchange="uploadDayManagerImg(this, ${idx})">
+                                </label>
+                            </div>
+                            ${item.imageUrl ? `<img src="${item.imageUrl}" style="max-height:130px; border-radius:8px; margin-top:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); display:block; object-fit:contain; max-width:100%;">` : ''}
+                        </div>
+                    </div>
+                    
+                </div>
+            `;
+            card.appendChild(body);
+        }
+        list.appendChild(card);
+    });
+    
+    if (visibleCount === 0) {
+        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px 10px; font-weight:800; font-family:\'Cafe24SurroundAir\', sans-serif;">이 날짜에 등록된 일정이 없습니다.</div>';
+    }
 }
 
-async function saveEvent() {
-    const title = document.getElementById('eventTitle').value.trim();
-    if (!title) return showToast('제목을 입력하세요.');
-    const hRaw = document.getElementById('timeHour').value;
-    const mRaw = document.getElementById('timeMin').value;
-    let timeStr = '';
-    if (hRaw !== '') {
-        let h = parseInt(hRaw, 10);
-        const m = parseInt(mRaw || '0', 10);
-        if (currentAMPM === '오후' && h < 12) h += 12;
-        if (currentAMPM === '오전' && h === 12) h = 0;
-        timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+// 🌟🌟 Day Manager: 기능 🌟🌟
+window.moveDayManagerItem = function(idx, dir) {
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= dayManagerItems.length) return;
+    const temp = dayManagerItems[idx];
+    dayManagerItems[idx] = dayManagerItems[targetIdx];
+    dayManagerItems[targetIdx] = temp;
+    renderDayManagerList();
+}
+
+window.removeDayManagerItem = function(idx) {
+    dayManagerItems[idx].isDeleted = true;
+    renderDayManagerList();
+}
+
+window.addDayManagerItem = function() {
+    dayManagerItems.forEach(i => i.isExpanded = false);
+    dayManagerItems.push({
+        id: null, title: '', time: '', type: '개인방송',
+        startDate: dayManagerFormattedDateId, endDate: dayManagerFormattedDateId,
+        members: '', noticeLink: '', imageUrl: '',
+        isExpanded: true, isDeleted: false
+    });
+    renderDayManagerList();
+    setTimeout(() => {
+        const list = document.getElementById('dayManagerList');
+        if (list) list.scrollTop = list.scrollHeight;
+    }, 50);
+}
+
+window.uploadDayManagerImg = async function(input, idx) {
+    if (input.files && input.files[0]) {
+        try {
+            showToast('이미지 업로드 중...');
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+            formData.append("upload_preset", "IMG_1234");
+            const res = await fetch(`https://api.cloudinary.com/v1_1/dtlqzklk5/image/upload`, { method: "POST", body: formData });
+            const data = await res.json();
+            if (data.secure_url) {
+                dayManagerItems[idx].imageUrl = data.secure_url;
+                document.getElementById(`dayMgrImg_${idx}`).value = data.secure_url;
+                showToast('업로드 완료');
+            }
+        } catch(e) { showToast('업로드 실패'); }
     }
+}
 
-    const startStr = document.getElementById('eventStartDate').value;
-    const endStr = document.getElementById('eventEndDate').value;
-    const type = document.getElementById('eventType').value;
-    const members = document.getElementById('eventMembers').value;
-    const noticeLink = document.getElementById('eventNoticeLink').value.trim();
-    const imageUrl = document.getElementById('eventImageUrl').value;
-    const editingDocId = document.getElementById('editingEventDocId').value;
-    const isEditing = editingDocId !== '';
-
+window.saveDayManager = async function() {
+    if (!isAdmin) return;
+    const btn = document.querySelector('#dayManagerModal button[onclick="saveDayManager()"]');
+    if (btn) { btn.innerText = '저장 중...'; btn.disabled = true; }
+    
     try {
-        const data = {
-            title, time: timeStr, type, members, noticeLink, imageUrl,
-            dateId: startStr, startDate: startStr, endDate: endStr,
-        };
-
-        if (isEditing) {
-            await setDoc(doc(db, 'events', editingDocId), data);
-            showToast('일정이 수정되었습니다.');
-        } else {
-            const customDocId = `${startStr}_${title.replace(/\//g, '-')}`; 
-            await setDoc(doc(db, 'events', customDocId), data); 
-            showToast('일정이 추가되었습니다.');
+        const promises = [];
+        let orderCounter = 0;
+        
+        for (let i = 0; i < dayManagerItems.length; i++) {
+            const item = dayManagerItems[i];
+            if (item.isDeleted) {
+                if (item.originalId) promises.push(deleteDoc(doc(db, 'events', item.originalId)));
+            } else {
+                if (!item.title || item.title.trim() === '') item.title = '제목 없음';
+                const data = {
+                    title: item.title,
+                    time: item.time || '',
+                    type: item.type || '개인방송',
+                    members: item.members || '',
+                    noticeLink: item.noticeLink || '',
+                    imageUrl: item.imageUrl || '',
+                    startDate: item.startDate || dayManagerFormattedDateId,
+                    endDate: item.endDate || dayManagerFormattedDateId,
+                    dateId: item.startDate || dayManagerFormattedDateId,
+                    order: orderCounter++
+                };
+                
+                if (item.originalId) {
+                    promises.push(setDoc(doc(db, 'events', item.originalId), data));
+                } else {
+                    const customDocId = `${data.startDate}_${data.title.replace(/\//g, '-')}_${new Date().getTime()}`;
+                    promises.push(setDoc(doc(db, 'events', customDocId), data));
+                }
+            }
         }
-
-        await updateDbStatus(); // ✨ 데이터 변동 알림!
-
+        
+        await Promise.all(promises);
+        await updateDbStatus();
+        
         loadedMonths.clear();
         events = {};
         await ensureMonthsLoadedForDate(currentDate);
-
-        document.getElementById('editingEventDocId').value = '';
-        document.getElementById('editIndex').value = '-1';
-        closeModal('eventModal'); renderCalendar();
-    } catch (error) { showToast(`저장 실패: ${error.message}`); }
-}
-
-async function deleteEvent() {
-    const idx = parseInt(document.getElementById('editIndex').value, 10);
-    if (!confirm('이 일정을 삭제할까요? (연속된 일정은 함께 삭제됩니다)')) return;
-    
-    try {
-        const editingDocId = document.getElementById('editingEventDocId') ? document.getElementById('editingEventDocId').value : '';
+        renderCalendar();
         
-        // 1. 현재 삭제하려는 대상의 정보를 찾습니다.
-        let targetEvent = null;
-        if (editingDocId) {
-            for (const date in events) {
-                const found = events[date].find(e => e.id === editingDocId);
-                if (found) { targetEvent = found; break; }
-            }
-        } else {
-            targetEvent = events[activeDateId] && events[activeDateId][idx];
-        }
-
-        if (targetEvent) {
-            // 2. 시작일과 종료일이 존재하는 장기 일정인지 확인합니다.
-            if (targetEvent.startDate && targetEvent.endDate && targetEvent.startDate !== targetEvent.endDate) {
-                // DB에서 제목과 기간이 완전히 똑같은 일정들을 한 번에 조회합니다.
-                const q = query(
-                    collection(db, 'events'),
-                    where('title', '==', targetEvent.title),
-                    where('startDate', '==', targetEvent.startDate),
-                    where('endDate', '==', targetEvent.endDate)
-                );
-                const snapshot = await getDocs(q);
-                const deletePromises = [];
-                
-                // 찾은 문서들을 모두 삭제 리스트에 넣습니다.
-                snapshot.forEach(docSnap => {
-                    deletePromises.push(deleteDoc(doc(db, 'events', docSnap.id)));
-                });
-                
-                // 일괄 삭제 실행!
-                await Promise.all(deletePromises);
-            } else {
-                // 일반(단일) 일정은 기존처럼 하나만 삭제합니다.
-                await deleteDoc(doc(db, 'events', targetEvent.id));
-            }
-        }
-
-        // ✨ 삭제가 완료된 직후, 서버 상태를 업데이트하여 시청자들의 캐시를 갱신시킵니다!
-        await updateDbStatus();
-
-        // 3. 화면 초기화 및 다시 그리기
-        loadedMonths.clear(); 
-        events = {};
-        await ensureMonthsLoadedForDate(currentDate);
-        if (document.getElementById('editingEventDocId')) document.getElementById('editingEventDocId').value = '';
-        closeModal('eventModal'); 
-        renderCalendar(); 
-        showToast('일정이 삭제되었습니다.');
-    } catch (error) { 
-        console.error(error); 
-        showToast('일정 삭제에 실패했습니다.'); 
+        closeModal('dayManagerModal');
+        showToast('일정이 저장되었습니다.');
+    } catch (error) {
+        console.error(error);
+        showToast('저장 중 오류가 발생했습니다.');
+    } finally {
+        if (btn) { btn.innerText = '저장하기'; btn.disabled = false; }
     }
 }
 
@@ -851,7 +1028,6 @@ function renderCalendar() {
     grid.innerHTML = '';
     const isMobile = window.innerWidth < 1050;
     
-    // 🌟 DB의 모든 고유 일정을 평탄화 (모바일, PC 공통 사용)
     const allEventsRaw = [];
     const seenIds = new Set();
     Object.values(events).flat().forEach(ev => {
@@ -875,7 +1051,7 @@ function renderCalendar() {
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(monday);
             dayDate.setDate(monday.getDate() + i);
-            dayDate.setHours(0,0,0,0); // ✨ 모바일 날짜 시간 초기화 (중요)
+            dayDate.setHours(0,0,0,0); 
 
             const num = dayDate.getDate(); const m = dayDate.getMonth() + 1; const y = dayDate.getFullYear();
             const dateId = `${y}-${m}-${num}`;
@@ -883,7 +1059,9 @@ function renderCalendar() {
             const row = document.createElement('div'); row.className = 'week-row'; row.dataset.dateId = dateId;
             const isToday = dayDate.getDate() === new Date().getDate() && dayDate.getMonth() === new Date().getMonth() && dayDate.getFullYear() === new Date().getFullYear();
             if (isToday) row.classList.add('today-row');
-            if (isAdmin) row.onclick = () => openAddModal(dateId);
+            
+            // 🚨 모바일: 우클릭(길게 누르기) 시 통합 관리 팝업 오픈
+            if (isAdmin) row.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
             
             const dayLabel = document.createElement('div'); dayLabel.className = 'week-day-label';
             const dayName = document.createElement('div'); dayName.className = `week-day-name ${yoilColors[i] || ''}`; dayName.innerText = yoils[i];
@@ -912,7 +1090,11 @@ function renderCalendar() {
                     const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
                     const item = document.createElement('div');
                     item.className = `event-tag type-${typeClass}${isLong ? ' long-term' : ''}`;
-                    item.onclick = () => showInfoByEvent(ev);
+                    
+                    item.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+                    // 🚨 모바일 일정태그: 우클릭 시 해당 일정 포커싱해서 통합 팝업 오픈
+                    if (isAdmin) item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
+                    
                     if (ev.time) {
                         item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`;
                     } else {
@@ -921,7 +1103,6 @@ function renderCalendar() {
                     eventsDiv.appendChild(item);
                 });
             } else {
-                /* 🚨 p 태그를 지우고, 점선 카드를 그리는 empty-event-card 클래스의 div로 교체합니다 */
                 eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>";
             }
 
@@ -939,15 +1120,12 @@ function renderCalendar() {
         
         const firstDay = new Date(y, m, 1); const lastDay = new Date(y, m + 1, 0);
         const startIdx = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-        const prevLastDay = new Date(y, m, 0).getDate();
         
-        // ✨ 에러의 주범이었던 빈 날짜 렌더링 수정 (tempD 전달)
         for (let i = startIdx; i > 0; i--) {
             const tempD = new Date(y, m, 1 - i);
             createDay(tempD.getDate(), false, [], tempD); 
         }
         
-        // ✨ 에러의 주범이었던 현재 달 렌더링 수정 (d 전달)
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const d = new Date(y, m, i);
             const todaysEvents = allEventsRaw.filter(ev => {
@@ -1010,12 +1188,17 @@ function createDay(num, isCurr, dayEvents = []) {
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
             tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
-            if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openEditModalByEvent(ev); };
+            
+            // 🚨 PC 일정태그: 우클릭 시 해당 일정 포커싱해서 통합 관리 팝업 오픈
+            if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
             evCont.appendChild(tag);
         });
     }
     div.appendChild(evCont);
-    if (isCurr && isAdmin) div.onclick = () => openAddModal(dateId);
+    
+    // 🚨 PC 빈공간: 우클릭 시 통합 관리 팝업 오픈 (기존 좌클릭 제거)
+    if (isCurr && isAdmin) div.oncontextmenu = (e) => { e.preventDefault(); openDayManager(dateId); };
+    
     document.getElementById('calendarGrid').appendChild(div);
 }
 
@@ -1342,19 +1525,14 @@ window.checkAndShowPopup = async function() {
         const todayLocal = new Date();
         const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
 
-        // 마감 기한이 지나지 않은 유효한 UP 링크만 걸러내기
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
             if (data.deadline && data.deadline < todayStr) return;
             validItems.push({ id: docSnap.id, ...data });
         });
 
-        // 🚨 핵심 로직: 이미지도 없고 유효한 링크도 없으면 팝업창을 띄우지 않고 종료
-        if (!popupImageUrl && validItems.length === 0) {
-            return;
-        }
+        if (!popupImageUrl && validItems.length === 0) return;
 
-        // 유효한 항목이 있을 경우 정렬 및 렌더링
         validItems.sort((a, b) => {
             if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
             return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
@@ -1388,7 +1566,6 @@ window.checkAndShowPopup = async function() {
             `;
         });
 
-        // 팝업 열기
         document.getElementById('upPopupModal').style.display = 'flex';
         
     } catch (error) { console.error("Popup UP Load Error:", error); }
@@ -1423,7 +1600,6 @@ window.showAdminMenu = function(e) {
                 if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders();
             }
             
-            // 🌟 로그아웃 시 로컬 기록을 완전히 삭제 🌟
             isAdmin = false; 
             sessionStorage.removeItem('htvvi_admin'); 
             localStorage.removeItem('htvvi_admin_remember'); 
@@ -1526,8 +1702,7 @@ async function saveAllModifiedOrders() {
         }
     }
     await Promise.all(updatePromises); 
-    
-    await updateDbStatus(); // ✨ 데이터 변동 알림!
+    await updateDbStatus(); 
 
     modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
 }
@@ -1744,7 +1919,6 @@ function editSong(event, id) {
 
 function updateSongbookAdminUI() {
     const form = document.getElementById('adminSongForm'); 
-    /* 🚨 관리자로 로그인해도 폼이 기본으로 닫혀있게 변경! */
     if (form) form.classList.remove('visible'); 
     const addBtn = document.getElementById('addSongBtn'); if (addBtn) addBtn.textContent = '노래 추가';
     renderSongbook();
@@ -1763,13 +1937,12 @@ async function addSong() {
             songbookIsEditing = null;
         } else { await addDoc(collection(db, 'songbook_songs'), { title, artist, url, isConditionSong }); }
         
-        await updateDbStatus(); // ✨ 데이터 변동 알림!
+        await updateDbStatus(); 
 
         document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
         document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
         document.getElementById('addSongBtn').textContent = '노래 추가';
         
-        /* 🚨 저장이 완료되면 폼을 닫아줍니다! */
         document.getElementById('adminSongForm').classList.remove('visible');
 
         await loadSongbookSongs(); renderSongbook(); showToast('노래가 저장되었습니다.');
@@ -1781,7 +1954,6 @@ function cancelEdit() {
     document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
     songbookIsEditing = null; document.getElementById('addSongBtn').textContent = '노래 추가';
     
-    /* 🚨 취소 버튼을 누르면 폼을 다시 닫아줍니다! */
     document.getElementById('adminSongForm').classList.remove('visible');
 }
 
@@ -1790,7 +1962,7 @@ async function deleteSong(id) {
     if (!confirm('이 노래를 삭제하시겠습니까?')) return;
     try { 
         await deleteDoc(doc(db, 'songbook_songs', id)); 
-        await updateDbStatus(); // ✨ 데이터 변동 알림!
+        await updateDbStatus(); 
         await loadSongbookSongs(); renderSongbook(); showToast('노래가 삭제되었습니다.'); 
     }
     catch (error) { showToast('노래 삭제에 실패했습니다.'); }
@@ -1925,7 +2097,9 @@ Object.assign(window, {
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
-    closeUpPopup, checkAndShowPopup, removeEventImage
+    closeUpPopup, checkAndShowPopup, removeEventImage,
+    // 🌟 Day Manager 🌟
+    openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager
 });
 
 document.addEventListener('contextmenu', function(e) {
@@ -1950,7 +2124,6 @@ window.onload = async () => {
     try {
         await loadData();
         
-        // 🌟 SDK를 초기화하고 리다이렉트 콜백을 자동 처리하는 함수 🌟
         initNaverLogin();
         
         updateAdminUI(); 
@@ -1994,13 +2167,11 @@ window.addEventListener('error', () => {
 });
 
 const loadingGifs = [
-    // 원본 URL 중간에 /w_120,h_120,c_fill,r_max/ 를 추가했습니다.
     "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/kqd0ua6kwuvtgwurzkw0.webp",
     "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/v8yulqs8c3txxna0lijr.webp",
     "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/ponpy2tj1mr4kdugip7i.webp"
 ];
 
-// 3개 중 하나를 랜덤으로 뽑아서 적용 (페이지가 로드되기 직전에 즉시 실행)
 const randomLoadingImg = document.getElementById('randomLoadingImg');
 if (randomLoadingImg) {
     const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
