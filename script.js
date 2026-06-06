@@ -677,8 +677,136 @@ function openAddModal(id) {
 
 function openEditModal(id, idx) { /* 구버전 유지 */ }
 function openEditModalByEvent(ev) { /* 구버전 유지 */ }
-async function saveEvent() { /* 구버전 유지 */ }
-async function deleteEvent() { /* 구버전 유지 */ }
+
+async function saveEvent() {
+    if (!isAdmin) return;
+
+    const titleInput = document.getElementById('eventTitle');
+    const startDateInput = document.getElementById('eventStartDate');
+    const endDateInput = document.getElementById('eventEndDate');
+    const hourInput = document.getElementById('timeHour');
+    const minInput = document.getElementById('timeMin');
+    const typeInput = document.getElementById('eventType');
+    const membersInput = document.getElementById('eventMembers');
+    const noticeInput = document.getElementById('eventNoticeLink');
+    const imageUrlInput = document.getElementById('eventImageUrl');
+    const editingIdInput = document.getElementById('editingEventDocId');
+
+    if (!titleInput || !startDateInput || !endDateInput || !hourInput || !minInput || !typeInput || !membersInput || !noticeInput || !imageUrlInput || !editingIdInput) {
+        showToast('입력값을 확인해주세요.');
+        return;
+    }
+
+    const title = titleInput.value.trim();
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    const hourValue = hourInput.value.trim();
+    const minValue = minInput.value.trim();
+    const type = typeInput.value || '개인방송';
+    const members = membersInput.value.trim();
+    const noticeLink = noticeInput.value.trim();
+    const imageUrl = imageUrlInput.value.trim();
+    const editingEventId = editingIdInput.value.trim();
+
+    if (!title) {
+        showToast('일정 제목을 입력해주세요.');
+        titleInput.focus();
+        return;
+    }
+
+    if (!startDate || !endDate) {
+        showToast('시작/종료 날짜를 모두 입력해주세요.');
+        return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+        showToast('종료 날짜는 시작 날짜 이후여야 합니다.');
+        return;
+    }
+
+    let time = '';
+    if (hourValue || minValue) {
+        const hour = parseInt(hourValue, 10);
+        const min = minValue ? parseInt(minValue, 10) : 0;
+
+        if (!hourValue || Number.isNaN(hour) || hour < 1 || hour > 12) {
+            showToast('올바른 시간을 입력해주세요.');
+            hourInput.focus();
+            return;
+        }
+        if (minValue && (Number.isNaN(min) || min < 0 || min > 59)) {
+            showToast('올바른 분을 입력해주세요.');
+            minInput.focus();
+            return;
+        }
+
+        let mergedHour = hour % 12;
+        if (currentAMPM === '오후') mergedHour += 12;
+        time = `${String(mergedHour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    }
+
+    const eventData = {
+        title,
+        type,
+        members,
+        noticeLink,
+        imageUrl,
+        startDate,
+        endDate,
+        dateId: startDate,
+        time,
+        updatedAt: new Date().getTime()
+    };
+
+    const saveButton = document.querySelector('#eventModal button[onclick="saveEvent()"]');
+    if (saveButton) { saveButton.textContent = '저장 중...'; saveButton.disabled = true; }
+
+    try {
+        if (editingEventId) {
+            await setDoc(doc(db, 'events', editingEventId), eventData);
+        } else {
+            await addDoc(collection(db, 'events'), eventData);
+        }
+
+        await updateDbStatus();
+        loadedMonths.clear();
+        events = {};
+        await ensureMonthsLoadedForDate(new Date(startDate));
+        renderCalendar();
+        closeModal('eventModal');
+        showToast('일정이 저장되었습니다.');
+    } catch (error) {
+        console.error('일정 저장 오류:', error);
+        showToast('일정 저장 중 오류가 발생했습니다.');
+    } finally {
+        if (saveButton) { saveButton.textContent = '저장'; saveButton.disabled = false; }
+    }
+}
+
+async function deleteEvent() {
+    if (!isAdmin) return;
+    const editingIdInput = document.getElementById('editingEventDocId');
+    if (!editingIdInput) return;
+
+    const editingEventId = editingIdInput.value.trim();
+    if (!editingEventId) return;
+
+    if (!confirm('이 일정을 삭제하시겠습니까?')) return;
+
+    try {
+        await deleteDoc(doc(db, 'events', editingEventId));
+        await updateDbStatus();
+        loadedMonths.clear();
+        events = {};
+        await ensureMonthsLoadedForDate(new Date());
+        renderCalendar();
+        closeModal('eventModal');
+        showToast('일정이 삭제되었습니다.');
+    } catch (error) {
+        console.error('일정 삭제 오류:', error);
+        showToast('삭제 중 오류가 발생했습니다.');
+    }
+}
 
 // 🌟🌟 Day Manager: 모달 HTML 동적 생성 함수 🌟🌟
 function ensureDayManagerModal() {
@@ -690,16 +818,19 @@ function ensureDayManagerModal() {
             
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
-            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 2px solid #FDE047; border-radius: 12px; background: #fffdf0;">
+            <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fafaf9;">
                 <input type="text" id="dayManagerNoticeTitle" placeholder="공지 제목을 입력하세요" class="event-custom-input" style="margin-bottom: 8px;">
                 <textarea id="dayManagerNoticeDesc" placeholder="공지 내용을 입력하세요" class="event-custom-input" style="height: 80px; resize: vertical;"></textarea>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9; flex-shrink:0;">
-                <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="deleteAllDayManagerItems()" style="padding:12px 24px; background:#fee2e2; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">일괄 삭제</button>
+                    <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
+                </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="padding:10px 15px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#7A5A2F;">공지 상세 ▼</button>
-                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (필수)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px;">
                     <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800;">닫기</button>
                     <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
                 </div>
@@ -781,6 +912,19 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
     const noticeInput = document.getElementById('dayManagerNoticeInput');
     if (noticeInput) noticeInput.value = firstNotice;
 
+    // 🌟 여기서부터 새로 추가하는 코드입니다 🌟
+    // 만약 불러온 일정이 하나도 없다면(배열이 비어있다면) 빈 폼을 하나 자동으로 생성합니다.
+    if (dayManagerItems.length === 0) {
+        dayManagerItems.push({
+            id: null, title: '', time: '', type: '개인방송',
+            ampm: '오전', hour: '', min: '', 
+            startDate: dayManagerFormattedDateId, endDate: dayManagerFormattedDateId,
+            members: '', noticeLink: '', imageUrl: '',
+            isExpanded: true, isDeleted: false
+        });
+    }
+    // 🌟 여기까지 🌟
+
     renderDayManagerList();
     document.getElementById('dayManagerModal').style.display = 'flex';
 }
@@ -805,8 +949,8 @@ window.renderDayManagerList = function() {
         card.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:all 0.2s;';
         
         if (item.isExpanded) {
-            card.style.borderColor = '#FDE047';
-            card.style.boxShadow = '0 0 0 3px rgba(253, 224, 71, 0.2)';
+            card.style.borderColor = '#d1d5db';
+            card.style.boxShadow = '0 0 0 0 rgba(253, 224, 71, 0.2)';
         }
         
         const header = document.createElement('div');
@@ -883,7 +1027,11 @@ function saveTempValues(card, idx) {
     const item = dayManagerItems[idx];
     if (!card.querySelector('.mgr-title')) return;
     item.title = card.querySelector('.mgr-title').value;
-    item.ampm = card.querySelector('.mgr-ampm-btn.active').innerText;
+    
+    // 👈 아래 두 줄을 변경하여 안전하게 요소를 찾도록 수정합니다.
+    const activeBtn = card.querySelector('.mgr-ampm-btn.active');
+    item.ampm = activeBtn ? activeBtn.innerText : '오전';
+    
     item.hour = card.querySelector('.mgr-hour').value;
     item.min = card.querySelector('.mgr-min').value;
     item.startDate = card.querySelector('.mgr-start').value;
@@ -909,9 +1057,13 @@ window.removeDayManagerItem = function(idx) {
 }
 
 window.addDayManagerItem = function() {
+    const cards = document.querySelectorAll('#dayManagerList > div');
+    cards.forEach((card, idx) => saveTempValues(card, idx));
+
     dayManagerItems.forEach(i => i.isExpanded = false);
     dayManagerItems.push({
         id: null, title: '', time: '', type: '개인방송',
+        ampm: '오전', hour: '', min: '', // 👈 이 줄을 새로 추가합니다!
         startDate: dayManagerFormattedDateId, endDate: dayManagerFormattedDateId,
         members: '', noticeLink: '', imageUrl: '',
         isExpanded: true, isDeleted: false
@@ -964,16 +1116,21 @@ window.saveDayManager = async function() {
         
         for (let i = 0; i < dayManagerItems.length; i++) {
             const item = dayManagerItems[i];
-            if (item.isDeleted) {
+            const isTitleEmpty = !item.title || item.title.trim() === '';
+            if (item.isDeleted || isTitleEmpty) {
                 if (item.originalId) promises.push(deleteDoc(doc(db, 'events', item.originalId)));
             } else {
-                let h = parseInt(item.hour) || 0;
-                if (item.ampm === '오후' && h < 12) h += 12;
-                if (item.ampm === '오전' && h === 12) h = 0;
-                const timeStr = `${String(h).padStart(2, '0')}:${String(item.min || 0).padStart(2, '0')}`;
+                // 시간 로직 (아까 빈칸일 때 '시간 미정'으로 처리하도록 수정한 부분)
+                let timeStr = '';
+                if (item.hour || item.min) {
+                    let h = parseInt(item.hour) || 0;
+                    if (item.ampm === '오후' && h < 12) h += 12;
+                    if (item.ampm === '오전' && h === 12) h = 0;
+                    timeStr = `${String(h).padStart(2, '0')}:${String(item.min || 0).padStart(2, '0')}`;
+                }
 
                 const data = {
-                    title: item.title || '제목 없음',
+                    title: item.title.trim(),
                     time: timeStr,
                     type: item.type || '개인방송',
                     members: item.members || '',
@@ -1012,6 +1169,36 @@ window.saveDayManager = async function() {
     } finally {
         if (btn) { btn.innerText = '저장'; btn.disabled = false; }
     }
+}
+
+window.deleteAllDayManagerItems = async function() {
+    if (!isAdmin) return;
+
+    // 현재 화면에 남아있는 일정이 있는지 확인
+    const hasVisibleItems = dayManagerItems.some(item => !item.isDeleted);
+    if (!hasVisibleItems) {
+        showToast('삭제할 일정이 없습니다.');
+        return;
+    }
+
+    if (!confirm('이 날짜의 모든 일정과 공지사항을 일괄 삭제하시겠습니까?')) return;
+
+    // 1. 모든 일정을 '삭제됨' 상태로 변경
+    dayManagerItems.forEach(item => {
+        item.isDeleted = true;
+    });
+
+    // 2. 공지사항 입력칸 완전히 비우기
+    const noticeInput = document.getElementById('dayManagerNoticeInput');
+    const noticeTitle = document.getElementById('dayManagerNoticeTitle');
+    const noticeDesc = document.getElementById('dayManagerNoticeDesc');
+    if (noticeInput) noticeInput.value = '';
+    if (noticeTitle) noticeTitle.value = '';
+    if (noticeDesc) noticeDesc.value = '';
+
+    // 3. 화면 갱신 후 즉시 서버 데이터 삭제(자동 저장)
+    renderDayManagerList();
+    await window.saveDayManager();
 }
 
 function renderCalendar() {
@@ -2103,7 +2290,8 @@ function ensureDayInfoModal() {
     if (document.getElementById('dayInfoModal')) return;
     const html = `
     <div id="dayInfoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-        <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:95%; max-width:1200px; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <!-- 👇 이 줄의 width: 95%; max-width: 1200px; 부분을 width: fit-content; max-width: 95%; 로 변경했습니다. -->
+        <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:fit-content; min-width:350px; max-width:95%; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
             <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:34px; font-weight:bold; text-align:center; flex-shrink:0;"></h2>
             
             <div id="dayInfoList" style="flex:1; display:flex; flex-direction:row; gap:20px; align-items:stretch; overflow-x:auto; overflow-y:auto; padding:10px 0;"></div>
@@ -2236,7 +2424,7 @@ Object.assign(window, {
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
     closeUpPopup, checkAndShowPopup, removeEventImage,
     // 🌟 Day Manager 🌟
-    openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager
+    openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager, deleteAllDayManagerItems
 });
 
 document.addEventListener('contextmenu', function(e) {
