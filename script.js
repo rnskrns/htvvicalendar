@@ -2065,8 +2065,9 @@ window.showDayInfo = function(dateId, dayEvents) {
     const list = document.getElementById('dayInfoList');
     list.innerHTML = '';
 
-    // 🔥 추가된 핵심 부분: 일정이 딱 1개일 때만 가로 가운데 정렬 적용!
-    if (dayEvents && dayEvents.length === 1) {
+    // 🔥 핵심 수정: 일정이 1개일 때, 혹은 2개인데 가로폭이 넉넉할 때(PC 등)는 정중앙 정렬!
+    // (모바일처럼 좁은 화면에서 2개 이상일 때는 글씨가 잘리지 않게 왼쪽 정렬을 유지합니다)
+    if (dayEvents && (dayEvents.length === 1 || (dayEvents.length === 2 && window.innerWidth > 768))) {
         list.style.justifyContent = 'center';
     } else {
         list.style.justifyContent = 'flex-start';
