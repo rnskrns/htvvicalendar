@@ -212,7 +212,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 
     // --- [로컬 캐시(SessionStorage) 추가] ---
-    const localKey = 'notice_' + btoa(url).substring(0, 32);
+    const localKey = 'notice_' + btoa(encodeURIComponent(url));
     const localData = sessionStorage.getItem(localKey);
     
     if (localData) {
