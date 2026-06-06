@@ -205,18 +205,13 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 수동 입력값 우선 처리
+    // 1. 수동 입력값이 있으면 즉시 렌더링
     if (manualTitle) {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
     
-    if (localData) {
-        const data = JSON.parse(localData);
-        renderNoticeHTML(container, url, data.title, data.description);
-        return; // 파이어베이스까지 안 가고 여기서 즉시 종료!
-    }
-    // --------------------------------------
+    // [로컬 캐시 코드 모두 삭제됨]
 
     // 2. Firebase 캐시 조회
     const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
@@ -227,8 +222,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         
         if (cacheSnap.exists()) {
             const data = cacheSnap.data();
-            // 로컬 캐시에 저장 후 화면 출력
-            sessionStorage.setItem(localKey, JSON.stringify(data));
+            // 로컬 캐시 저장 없이 바로 렌더링
             renderNoticeHTML(container, url, data.title, data.description);
             return;
         }
@@ -237,7 +231,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 
     // 3. 크롤링 및 저장
-    container.innerHTML = '<div class="preview-loading" ...>공지 정보를 불러오는 중...</div>';
+    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
 
     try {
         const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
@@ -246,11 +240,10 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         if (response.ok && data.title) {
             const finalData = { title: data.title, description: data.description || '' };
             
-            // 파이어베이스 저장
+            // 파이어베이스에 저장
             await setDoc(noticeRef, { ...finalData, createdAt: new Date() });
             
-            // 로컬 캐시 저장
-            sessionStorage.setItem(localKey, JSON.stringify(finalData));
+            // [로컬 캐시 저장 로직 삭제됨]
             
             renderNoticeHTML(container, url, finalData.title, finalData.description);
         } else {
