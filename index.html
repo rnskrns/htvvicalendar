@@ -26,7 +26,6 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
     <link rel="stylesheet" href="style.css?v=20260607">
 
     <style>
@@ -55,8 +54,6 @@
     </style>
 </head>
 <body id="mainBody">
-
-    <div id="naverIdLogin" style="display: none;"></div>
 
     <div class="fixed-top-bar">
         <div class="top-bar-inner">
@@ -345,7 +342,28 @@
 
     <div id="infoModal" class="modal"><div class="modal-content"><div id="infoTitle" class="info-title"></div><div class="info-block"><div id="infoTime" class="time-badge"></div><div id="infoImageContainer" class="info-image-container"></div><div id="infoProfiles" class="profile-list"></div><div id="infoNoticePreview" class="notice-preview"></div></div><button class="btn btn-cancel" style="margin-top: 15px;" onclick="closeModal('infoModal')">닫기</button></div></div>
     
-    <div id="pwModal" class="modal"><div class="modal-content pw-modal"><h3 class="text-center font-black mb-5" style="font-size:24px;">관리자 인증</h3><input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()"><div class="remember-checkbox" style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; color:#4B4737;"><input type="checkbox" id="rememberAdmin" style="width:16px; height:16px; cursor:pointer;"><label for="rememberAdmin" style="cursor:pointer;">로그인 상태 유지</label></div><button id="naverLoginBtn" class="naver-login-btn" title="네이버 로그인" style="margin-top:16px; width:100%;"><img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img"></button><p id="pwError" class="pw-error hidden">틀렸습니다.</p><div class="btn-group"><button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button><button class="btn btn-save" onclick="loginAdmin()">확인</button></div></div></div>
+    <div id="pwModal" class="modal">
+        <div class="modal-content pw-modal" style="max-width: 400px;">
+            <h3 class="text-center font-black mb-5" style="font-size:24px;">관리자 인증</h3>
+            
+            <div id="profileSelectionArea" style="display:none; margin-bottom: 20px;">
+                <p style="text-align:center; font-weight:bold; color:#7A5A2F; margin-bottom: 12px;">누가 로그인하나요?</p>
+                <div id="adminProfileList" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; justify-content:center;"></div>
+                <hr style="border: 0; border-top: 1px dashed #E5E7EB; margin: 15px 0;">
+            </div>
+
+            <div id="idPwArea">
+                <input type="text" id="adminId" class="admin-pw" placeholder="아이디 (프로필 이름)" style="margin-bottom: 8px;">
+                <input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()">
+                <p id="pwError" class="pw-error hidden">로그인 정보가 올바르지 않습니다.</p>
+            </div>
+            
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>
+                <button class="btn btn-save" onclick="loginAdmin()">로그인</button>
+            </div>
+        </div>
+    </div>
     
     <div id="memberModal" class="modal"><div class="modal-content"><h3 class="modal-title">멤버 관리</h3><div id="memberList" class="member-list"></div><div class="member-add-box"><h4 style="font-weight:900; margin-bottom:12px;">새 멤버 추가</h4><input type="text" id="newMemberName" class="admin-input" placeholder="멤버 이름 (닉네임)" style="margin-bottom: 8px;"><input type="text" id="newMemberId" class="admin-input" placeholder="SOOP 아이디" style="margin-bottom: 12px;"><input type="hidden" id="newMemberImg"><button class="btn btn-save" style="width:100%; padding:14px;" onclick="addMember()">추가하기</button></div><button class="btn btn-cancel" style="margin-top:15px;" onclick="closeModal('memberModal')">닫기</button></div></div>
     

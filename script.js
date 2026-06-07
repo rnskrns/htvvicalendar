@@ -17,122 +17,136 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-let isAdmin = sessionStorage.getItem('htvvi_admin') === 'true' || localStorage.getItem('htvvi_admin_remember') === 'true';
-
-const NAVER_CLIENT_ID = 'ERL_zuPPOUB0BOwWzOA_';
-const NAVER_USER_STORAGE_KEY = 'htvvi_naver_user';
-let naverUser = null;
-const ALLOWED_ADMIN_EMAILS = ['rnskrns@naver.com', 'htvv2i@naver.com'];
+// 로컬 스토리지/세션 스토리지 기반 하이브리드 로그인 상태 관리
+let isAdmin = false;
+let currentAdminProfile = null;
 
 let dayManagerItems = [];
 let dayManagerActiveDateId = '';
 let dayManagerFormattedDateId = '';
 
-function initNaverLogin() {
-    if (typeof naver === 'undefined') {
-        console.warn('네이버 SDK가 로드되지 않았습니다.');
-        return;
-    }
+/* 하이브리드 로그인 로직 시작 */
+function getAdminProfiles() {
+    try { return JSON.parse(localStorage.getItem('htvvi_admin_profiles')) || []; }
+    catch { return []; }
+}
 
-    const naverLogin = new naver.LoginWithNaverId({
-        clientId: NAVER_CLIENT_ID,
-        callbackUrl: window.location.origin + window.location.pathname, 
-        isPopup: false,
-        loginButton: { color: "green", type: 3, height: 48 } 
-    });
-    
-    naverLogin.init();
-    
-    const btn = document.getElementById('naverLoginBtn');
-    if (btn) {
-        btn.onclick = function(e) {
-            if (!naverUser) {
-                e.preventDefault();
-                const naverSdkBtn = document.querySelector('#naverIdLogin > a');
-                if (naverSdkBtn) naverSdkBtn.click();
-            } else {
-                logoutNaver();
-            }
-        };
-    }
+function saveAdminProfiles(profiles) {
+    localStorage.setItem('htvvi_admin_profiles', JSON.stringify(profiles));
+}
 
-    naverLogin.getLoginStatus(function (status) {
-        if (status) {
-            const profile = {
-                id: naverLogin.user.getId(),
-                name: naverLogin.user.getName(),
-                email: naverLogin.user.getEmail(),
-                profile_image: naverLogin.user.getProfileImage() || '',
-            };
-            
-            localStorage.setItem(NAVER_USER_STORAGE_KEY, JSON.stringify(profile));
-            naverUser = profile;
-            updateNaverLoginUI();
-
-            if (ALLOWED_ADMIN_EMAILS.includes(profile.email)) {
-                isAdmin = true;
-                sessionStorage.setItem('htvvi_admin', 'true');
-                localStorage.setItem('htvvi_admin_remember', 'true');
-                updateAdminUI();
-                renderCalendar();
-                closeModal('pwModal');
-                showToast(`어서오세요 ${profile.name}님 환영합니다.`);
-            } else {
-                isAdmin = false;
-                sessionStorage.removeItem('htvvi_admin');
-                localStorage.removeItem('htvvi_admin_remember');
-                updateAdminUI();
-                renderCalendar();
-                closeModal('pwModal');
-                showToast('관리자 권한이 없는 계정입니다.');
-            }
-        } else {
-            const storedUser = getStoredNaverUser();
-            if (storedUser) {
-                naverUser = storedUser;
-                updateNaverLoginUI();
-            }
+function initAuth() {
+    const sessionToken = sessionStorage.getItem('htvvi_admin_session');
+    if (sessionToken) {
+        const profiles = getAdminProfiles();
+        const profile = profiles.find(p => p.token === sessionToken);
+        if (profile) {
+            isAdmin = true;
+            currentAdminProfile = profile;
+            updateAdminUI();
+            return;
         }
-    });
+    }
+    isAdmin = false;
+    currentAdminProfile = null;
+    updateAdminUI();
 }
 
-function getStoredNaverUser() {
-    try {
-        return JSON.parse(localStorage.getItem(NAVER_USER_STORAGE_KEY) || 'null');
-    } catch {
-        return null;
+window.loginAdmin = function() {
+    const id = document.getElementById('adminId').value.trim();
+    const pw = document.getElementById('adminPw').value;
+    const err = document.getElementById('pwError');
+
+    // ID와 PW 검증 (요청하신 htvv2i / 01121125 로 변경)
+    if (id === 'htvv2i' && pw === '01121125') {
+        err.classList.add('hidden');
+        
+        // 실제 비밀번호를 저장하지 않고 Mock 암호화 토큰 발급
+        const token = btoa(id + '_' + Date.now() + '_secret'); 
+        const newProfile = {
+            id: id,
+            name: '햇비', // 이름 고정
+            img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg', // 지정된 등록 이미지 적용
+            token: token
+        };
+        
+        let profiles = getAdminProfiles();
+        // 동일한 ID가 있다면 덮어쓰고, 없으면 추가
+        const existingIdx = profiles.findIndex(p => p.id === id);
+        if (existingIdx >= 0) profiles[existingIdx] = newProfile;
+        else profiles.push(newProfile);
+        
+        saveAdminProfiles(profiles);
+        setAdminSession(newProfile);
+        
+        document.getElementById('adminId').value = '';
+        document.getElementById('adminPw').value = '';
+        closeModal('pwModal');
+        showToast(`${newProfile.name}님 환영합니다.`);
+    } else {
+        if (err) {
+            // 다른 아이디나 잘못된 비번 입력 시 나오는 에러 메시지 변경
+            err.innerText = '등록되지 않은 아이디 입니다';
+            err.classList.remove('hidden');
+        }
     }
 }
 
-function logoutNaver() {
-    localStorage.removeItem(NAVER_USER_STORAGE_KEY);
-    naverUser = null;
-    isAdmin = false;
-    sessionStorage.removeItem('htvvi_admin');
-    localStorage.removeItem('htvvi_admin_remember');
+window.loginWithProfile = function(token) {
+    const profiles = getAdminProfiles();
+    const profile = profiles.find(p => p.token === token);
+    if (profile) {
+        setAdminSession(profile);
+        closeModal('pwModal');
+        showToast(`${profile.name}님 환영합니다.`);
+    } else {
+        showToast('인증이 만료되었습니다. 다시 로그인해 주세요.');
+        document.getElementById('profileSelectionArea').style.display = 'none';
+    }
+}
+
+function setAdminSession(profile) {
+    sessionStorage.setItem('htvvi_admin_session', profile.token);
+    isAdmin = true;
+    currentAdminProfile = profile;
     updateAdminUI();
     renderCalendar();
-    updateNaverLoginUI();
-    showToast('로그아웃 되었습니다.');
 }
 
-function updateNaverLoginUI() {
-    const btn = document.getElementById('naverLoginBtn');
-    const user = naverUser || getStoredNaverUser();
-    if (!btn) return;
+window.deleteAdminProfile = function(event, id) {
+    event.stopPropagation();
+    let profiles = getAdminProfiles();
+    profiles = profiles.filter(p => p.id !== id);
+    saveAdminProfiles(profiles);
+    renderAdminProfiles();
+}
+
+window.renderAdminProfiles = function() {
+    const profiles = getAdminProfiles();
+    const area = document.getElementById('profileSelectionArea');
+    const list = document.getElementById('adminProfileList');
     
-    if (user && user.name) {
-        btn.textContent = `네이버 ${user.name}님`;
-        btn.title = '로그아웃';
-        btn.onclick = logoutNaver;
+    if (profiles.length > 0) {
+        area.style.display = 'block';
+        list.innerHTML = '';
+        profiles.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'admin-profile-item';
+            div.style.cssText = 'display: flex; flex-direction: column; align-items: center; cursor: pointer;';
+            div.onclick = () => loginWithProfile(p.token);
+            div.innerHTML = `
+                <div style="position:relative; width: 50px; height: 50px; border-radius: 50%;" 
+                     onmouseenter="this.querySelector('.profile-delete-btn').style.display='flex'" 
+                     onmouseleave="this.querySelector('.profile-delete-btn').style.display='none'">
+                    <img src="${p.img}" alt="${p.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #FDE047;">
+                    <button class="profile-delete-btn" onclick="deleteAdminProfile(event, '${p.id}')" style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer; display:none; align-items:center; justify-content:center; padding:0;">✕</button>
+                </div>
+                <span class="profile-item-name" style="font-size:13px; font-weight:bold; color:#7A5A2F; margin-top: 6px;">${p.name}</span>
+            `;
+            list.appendChild(div);
+        });
     } else {
-        btn.innerHTML = '<img src="https://i.postimg.cc/909K4GDK/NAVER-login-Dark-KR-green-narrow-H56.png" alt="네이버 로그인" class="naver-login-img">';
-        btn.title = '네이버 로그인';
-        btn.onclick = function(e) {
-            e.preventDefault();
-            const naverSdkBtn = document.querySelector('#naverIdLogin > a');
-            if (naverSdkBtn) naverSdkBtn.click();
-        };
+        area.style.display = 'none';
     }
 }
 
@@ -793,7 +807,6 @@ function ensureDayManagerModal() {
             
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
-            <!-- 노란색 테두리(border)와 배경색(background)을 깔끔하게 수정 -->
             <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
                 <input type="text" id="dayManagerNoticeTitle" placeholder="공지 제목을 입력하세요" class="event-custom-input" style="margin-bottom: 8px;">
                 <textarea id="dayManagerNoticeDesc" placeholder="공지 내용을 입력하세요" class="event-custom-input" style="height: 80px; resize: vertical;"></textarea>
@@ -912,12 +925,10 @@ window.renderDayManagerList = function() {
         .mgr-time-row { display: flex; gap: 6px; align-items: center; }
         .mgr-date-row { display: flex; gap: 10px; }
 
-        /* 강제 스크롤 및 레이아웃 짤림 방지 핵심 처리 */
         .mgr-modal-box { overflow: hidden !important; display: flex !important; flex-direction: column !important; }
         #dayManagerList { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-right: 5px; }
 
         @media (max-width: 768px) {
-            /* 팝업이 화면 밖으로 밀리지 않도록 고정 */
             #dayManagerModal { padding: 15px 10px !important; align-items: flex-start !important; }
             .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }
             
@@ -928,7 +939,6 @@ window.renderDayManagerList = function() {
             .mgr-time-row { flex-wrap: wrap; gap: 8px; }
             .mgr-date-row { flex-direction: column; gap: 12px; }
 
-            /* 하단 저장 버튼 영역이 짤리지 않도록 공간 확보 */
             .mgr-footer { flex-shrink: 0 !important; flex-direction: column; gap: 12px; align-items: stretch !important; height: auto !important; margin-top: 10px !important; padding-top: 15px !important; }
             .mgr-footer-left { justify-content: space-between; width: 100%; box-sizing: border-box; }
             .mgr-footer-right { flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 6px; box-sizing: border-box; }
@@ -1453,7 +1463,7 @@ window.toggleUpBoard = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
     if (memoPanel) memoPanel.classList.remove('open', 'show-sheet');
     if (upPanel) {
-        upPanel.classList.toggle('open');
+        upPanel.classList.toggle('show-sheet');
         if (upPanel.classList.contains('open')) loadUpItems();
     }
     updateBoardButtonsState();
@@ -1706,11 +1716,14 @@ window.showAdminMenu = function(e) {
             menu.style.display = 'none'; 
             if (modifiedDates.size > 0) { if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders(); }
             
-            isAdmin = false; 
-            sessionStorage.removeItem('htvvi_admin'); 
-            localStorage.removeItem('htvvi_admin_remember'); 
+            isAdmin = false;
+            currentAdminProfile = null;
+            sessionStorage.removeItem('htvvi_admin_session'); 
             
-            modifiedDates.clear(); updateAdminUI(); renderCalendar(); showToast('관리자 모드 해제');
+            modifiedDates.clear(); 
+            updateAdminUI(); 
+            renderCalendar(); 
+            showToast('로그아웃 되었습니다.');
         };
         menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
     }
@@ -1774,8 +1787,14 @@ window.handlePopupImgUpload = async function(input) {
 window.promptAdmin = async function(e) {
     if (isAdmin) { window.showAdminMenu(e); } 
     else {
-        document.getElementById('adminPw').value = ''; const err = document.getElementById('pwError');
-        if (err) err.classList.add('hidden'); document.getElementById('pwModal').style.display = 'flex'; document.getElementById('adminPw').focus();
+        document.getElementById('adminId').value = '';
+        document.getElementById('adminPw').value = '';
+        const err = document.getElementById('pwError');
+        if (err) err.classList.add('hidden'); 
+        
+        window.renderAdminProfiles();
+        document.getElementById('pwModal').style.display = 'flex'; 
+        document.getElementById('adminId').focus();
     }
 }
 
@@ -1795,16 +1814,6 @@ async function saveAllModifiedOrders() {
     await Promise.all(updatePromises); 
     await updateDbStatus(); 
     modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
-}
-
-function loginAdmin() {
-    if (document.getElementById('adminPw').value === '0112') {
-        isAdmin = true; sessionStorage.setItem('htvvi_admin', 'true');
-        const rememberAdmin = document.getElementById('rememberAdmin');
-        if (rememberAdmin && rememberAdmin.checked) { localStorage.setItem('htvvi_admin_remember', 'true'); } 
-        else { localStorage.removeItem('htvvi_admin_remember'); }
-        closeModal('pwModal'); updateAdminUI(); renderCalendar(); showToast('관리자 인증 성공!');
-    } else { const err = document.getElementById('pwError'); if (err) err.classList.remove('hidden'); }
 }
 
 window.moveMonth = async function(v) {
@@ -1853,6 +1862,15 @@ function updateAdminUI() {
     document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
     const btnAdmin = document.getElementById('adminBtn');
     if(btnAdmin) btnAdmin.classList.toggle('admin-active', isAdmin);
+    const btnAdminPc = document.getElementById('adminBtn_pc');
+    if(btnAdminPc) btnAdminPc.classList.toggle('admin-active', isAdmin);
+
+    if (isAdmin && currentAdminProfile) {
+        document.querySelectorAll('.admin-profile-img').forEach(img => {
+            img.src = currentAdminProfile.img;
+        });
+    }
+
     applyDraggable(); updateMemoEditState(); updateSongbookAdminUI();
     const memoPanel = document.getElementById('memoPanel');
     if (memoPanel && memoPanel.classList.contains('open')) loadMemos();
@@ -2193,7 +2211,7 @@ function ensureDayInfoModal() {
     <div id="dayInfoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
         <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:fit-content; min-width:350px; max-width:95%; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
             <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:34px; font-weight:bold; text-align:center; flex-shrink:0;"></h2>
-            <div id="dayInfoList" style="flex:1; display:flex; flex-direction:row; gap:20px; align-items:stretch; overflow-x:auto; overflow-y:auto; padding:10px 0;"></div>
+            <div id="dayInfoList" style="flex:1; display:flex; flex-direction:column; gap:20px; align-items:center; overflow-x:hidden; overflow-y:auto; padding:10px 0; width: 100%;"></div>
             <div id="dayInfoNoticeArea" style="width: 100%; max-width: 600px; margin: 15px auto 0; display: none;"></div>
             <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
                 <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius:12px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
@@ -2211,11 +2229,7 @@ window.showDayInfo = function(dateId, dayEvents) {
     const list = document.getElementById('dayInfoList');
     list.innerHTML = '';
 
-    if (dayEvents && (dayEvents.length === 1 || (dayEvents.length === 2 && window.innerWidth > 768))) {
-        list.style.justifyContent = 'center';
-    } else {
-        list.style.justifyContent = 'flex-start';
-    }
+    list.style.justifyContent = 'flex-start';
 
     if (!dayEvents || dayEvents.length === 0) {
         list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'GMarketSans', sans-serif; width:100%;">등록된 일정이 없습니다.</div>`;
@@ -2248,7 +2262,7 @@ window.showDayInfo = function(dateId, dayEvents) {
             }
 
             const cardWrapper = document.createElement('div');
-            cardWrapper.style.cssText = 'flex: 1; min-width: 320px; max-width: 450px; display: flex; flex-direction: column;';
+            cardWrapper.style.cssText = 'width: 100%; min-width: 320px; max-width: 450px; display: flex; flex-direction: column;';
             
             cardWrapper.innerHTML = `
                 <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0;">
@@ -2271,7 +2285,7 @@ window.showDayInfo = function(dateId, dayEvents) {
 
             if (index < dayEvents.length - 1) {
                 const divider = document.createElement('div');
-                divider.style.cssText = 'width: 2px; background-color: #f1f5f9; margin: 15px 10px; flex-shrink: 0; border-radius: 2px;';
+                divider.style.cssText = 'height: 2px; width: 100%; max-width: 450px; background-color: #f1f5f9; margin: 15px 0; flex-shrink: 0; border-radius: 2px;';
                 list.appendChild(divider);
             }
         });
@@ -2303,7 +2317,7 @@ Object.assign(window, {
     setAMPM, openAddModal, saveEvent, deleteEvent, showInfo,
     toggleMemo, openMemoInput, closeMemoInput, saveMemoItem, selectMemoTab, openMonthPicker, changePickerYear,
     toggleUpBoard, toggleMobileUpBoard, loadUpItems, deleteUpItem,
-    promptAdmin, loginAdmin, showAdminMenu, openAdminSettings, savePopupImage, saveUpItem,
+    promptAdmin, showAdminMenu, openAdminSettings, savePopupImage, saveUpItem,
     renderSongbook, openBrowser, closeBrowser,
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
@@ -2333,8 +2347,8 @@ document.addEventListener('dragstart', function(e) {
 window.onload = async () => {
     try {
         await loadData();
-        initNaverLogin();
-        updateAdminUI(); 
+        initAuth(); // 새로 구현된 인증 시스템 초기화
+        
         handlePlayerPosition();
         
         const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
