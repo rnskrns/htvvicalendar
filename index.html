@@ -357,6 +357,9 @@
                 <input type="password" id="adminPw" class="admin-pw" placeholder="비밀번호" onkeyup="if(event.key==='Enter') loginAdmin()">
                 <p id="pwError" class="pw-error hidden">로그인 정보가 올바르지 않습니다.</p>
             </div>
+            <label style="display:flex; align-items:center; gap:5px; margin-top:10px; cursor:pointer;">
+                <input type="checkbox" id="stayLoggedIn"> 로그인 상태 유지
+            </label>
             
             <div class="btn-group" style="margin-top: 20px;">
                 <button class="btn btn-cancel" onclick="closeModal('pwModal')">취소</button>

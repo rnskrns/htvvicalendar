@@ -36,7 +36,14 @@ function saveAdminProfiles(profiles) {
 }
 
 function initAuth() {
-    const sessionToken = sessionStorage.getItem('htvvi_admin_session');
+    // 1. 먼저 localStorage 확인 (로그인 유지 체크한 경우)
+    let sessionToken = localStorage.getItem('htvvi_admin_session');
+    
+    // 2. 없으면 sessionStorage 확인 (일반 로그인)
+    if (!sessionToken) {
+        sessionToken = sessionStorage.getItem('htvvi_admin_session');
+    }
+
     if (sessionToken) {
         const profiles = getAdminProfiles();
         const profile = profiles.find(p => p.token === sessionToken);
@@ -56,28 +63,38 @@ window.loginAdmin = function() {
     const id = document.getElementById('adminId').value.trim();
     const pw = document.getElementById('adminPw').value;
     const err = document.getElementById('pwError');
+    const stayLoggedIn = document.getElementById('stayLoggedIn').checked; // 추가된 부분
 
-    // ID와 PW 검증 (요청하신 htvv2i / 01121125 로 변경)
     if (id === 'htvv2i' && pw === '01121125') {
         err.classList.add('hidden');
         
-        // 실제 비밀번호를 저장하지 않고 Mock 암호화 토큰 발급
         const token = btoa(id + '_' + Date.now() + '_secret'); 
         const newProfile = {
             id: id,
-            name: '햇비', // 이름 고정
-            img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg', // 지정된 등록 이미지 적용
+            name: '햇비',
+            img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg',
             token: token
         };
         
         let profiles = getAdminProfiles();
-        // 동일한 ID가 있다면 덮어쓰고, 없으면 추가
         const existingIdx = profiles.findIndex(p => p.id === id);
         if (existingIdx >= 0) profiles[existingIdx] = newProfile;
         else profiles.push(newProfile);
         
         saveAdminProfiles(profiles);
-        setAdminSession(newProfile);
+        
+        // --- 변경된 부분: 로그인 유지 여부에 따라 저장소 선택 ---
+        if (stayLoggedIn) {
+            localStorage.setItem('htvvi_admin_session', newProfile.token);
+        } else {
+            sessionStorage.setItem('htvvi_admin_session', newProfile.token);
+        }
+        
+        isAdmin = true;
+        currentAdminProfile = newProfile;
+        updateAdminUI();
+        renderCalendar();
+        // ----------------------------------------------------
         
         document.getElementById('adminId').value = '';
         document.getElementById('adminPw').value = '';
@@ -85,7 +102,6 @@ window.loginAdmin = function() {
         showToast(`${newProfile.name}님 환영합니다.`);
     } else {
         if (err) {
-            // 다른 아이디나 잘못된 비번 입력 시 나오는 에러 메시지 변경
             err.innerText = '등록되지 않은 아이디 입니다';
             err.classList.remove('hidden');
         }
@@ -1718,7 +1734,10 @@ window.showAdminMenu = function(e) {
             
             isAdmin = false;
             currentAdminProfile = null;
+            
+            // 두 저장소 모두 삭제
             sessionStorage.removeItem('htvvi_admin_session'); 
+            localStorage.removeItem('htvvi_admin_session');
             
             modifiedDates.clear(); 
             updateAdminUI(); 
