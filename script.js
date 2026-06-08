@@ -1476,22 +1476,52 @@ function updateSummary() {
 }
 
 window.toggleMemo = function() {
-    const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (upPanel) upPanel.classList.remove('open', 'show-sheet');
-    if (memoPanel) {
-        memoPanel.classList.toggle('open');
-        if (memoPanel.classList.contains('open')) { updateMemoTabUI(); loadMemos(); }
+    const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    if (!memoPanel) return;
+
+    // UP 패널이 열려있다면 닫기 (메모와 겹치지 않게)
+    if (upPanel) {
+        upPanel.classList.remove('open', 'show-sheet');
     }
+
+    const isOpen = memoPanel.classList.contains('open') || memoPanel.classList.contains('show-sheet');
+    memoPanel.classList.remove('open', 'show-sheet');
+
+    if (!isOpen) {
+        memoPanel.classList.add('open');
+        if (window.innerWidth <= 1050) {
+            memoPanel.classList.add('show-sheet');
+        }
+        loadMemos();
+    }
+
     updateBoardButtonsState();
 };
 
 window.toggleUpBoard = function() {
-    const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (memoPanel) memoPanel.classList.remove('open', 'show-sheet');
-    if (upPanel) {
-        upPanel.classList.toggle('show-sheet');
-        if (upPanel.classList.contains('open')) loadUpItems();
+    const memoPanel = document.getElementById('memoPanel');
+    const upPanel = document.getElementById('upPanel');
+    
+    if (!upPanel) return;
+
+    // 메모 패널이 열려있다면 닫기
+    if (memoPanel) {
+        memoPanel.classList.remove('open', 'show-sheet');
     }
+
+    const isOpen = upPanel.classList.contains('open') || upPanel.classList.contains('show-sheet');
+    upPanel.classList.remove('open', 'show-sheet');
+
+    if (!isOpen) {
+        upPanel.classList.add('open');
+        if (window.innerWidth <= 1050) {
+            upPanel.classList.add('show-sheet');
+        }
+        loadUpItems();
+    }
+
     updateBoardButtonsState();
 };
 
@@ -2214,8 +2244,9 @@ window.toggleMobilePlayer = function() {
 
 window.toggleMobileMemo = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (upPanel) upPanel.classList.remove('show-sheet');
+    if (upPanel) upPanel.classList.remove('open', 'show-sheet');
     if (memoPanel) {
+        memoPanel.classList.remove('open');
         memoPanel.classList.toggle('show-sheet');
         if (memoPanel.classList.contains('show-sheet')) { updateMemoTabUI(); loadMemos(); }
     }
@@ -2225,8 +2256,9 @@ window.toggleMobileMemo = function() {
 
 window.toggleMobileUpBoard = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (memoPanel) memoPanel.classList.remove('show-sheet');
+    if (memoPanel) memoPanel.classList.remove('open', 'show-sheet');
     if (upPanel) {
+        upPanel.classList.remove('open');
         upPanel.classList.toggle('show-sheet');
         if (upPanel.classList.contains('show-sheet')) loadUpItems();
     }
