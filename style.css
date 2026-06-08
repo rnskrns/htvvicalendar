@@ -640,7 +640,7 @@ body {
     .memo-input-actions .btn { flex: 1; min-width: 140px; }
     
     .memo-panel-container {
-        display: flex !important; flex-direction: column !important; position: fixed !important; bottom: -120% !important; top: auto !important; left: 0 !important; right: 0 !important; width: 100% !important; margin: 0 !important; border-radius: 28px 28px 0 0 !important; z-index: 9995 !important; box-shadow: none !important; transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; background: var(--white) !important; padding: 50px 24px 40px 24px !important; border: none !important; height: 85vh !important; max-height: none !important;
+        display: flex !important; flex-direction: column !important; position: fixed !important; bottom: -120% !important; top: auto !important; left: 0 !important; right: 0 !important; width: 100% !important; margin: 0 !important; border-radius: 28px 28px 0 0 !important; z-index: 9995 !important; box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2) !important; transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; background: var(--white) !important; padding: 50px 24px 40px 24px !important; border: none !important; height: 85vh !important; max-height: none !important;
     }
     .memo-panel-container.show-sheet { top: auto !important; bottom: 0 !important; }
     .memo-list { flex: 1 !important; max-height: none !important; overflow-y: auto !important; }

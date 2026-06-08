@@ -1944,30 +1944,53 @@ let songbookIsEditing = null;
 let currentModalSongId = null;
 
 async function loadSongbookSongs() {
-    const serverTime = await getServerLastUpdated();
+    // 1. 로컬 캐시 먼저 확인 (UI 빠르게 표시)
     const localCache = JSON.parse(localStorage.getItem('htvvi_songs_cache') || '{"time": 0, "data": []}');
-
-    if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
+    
+    if (localCache.data && localCache.data.length > 0) {
+        // 로컬 캐시가 있으면 바로 사용
         songbookSongs = localCache.data;
     } else {
         songbookSongs = [];
-        try {
-            const snapshot = await getDocs(collection(db, 'songbook_songs'));
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                if (data && data.title && data.artist) {
-                    songbookSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', isConditionSong: data.isConditionSong || false });
-                }
-            });
-            localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
-        } catch (error) { console.error('노래 데이터 로드 실패:', error); }
     }
 
+    // 정렬
     songbookSongs.sort((a, b) => {
         const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
         if (titleCompare !== 0) return titleCompare;
         return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
     });
+
+    // 2. 백그라운드에서 서버와 동기화 (새로운 곡 확인)
+    try {
+        const serverTime = await getServerLastUpdated();
+        const shouldUpdate = !localCache.time || serverTime > localCache.time;
+        
+        if (shouldUpdate) {
+            const snapshot = await getDocs(collection(db, 'songbook_songs'));
+            const serverSongs = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data && data.title && data.artist) {
+                    serverSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', isConditionSong: data.isConditionSong || false });
+                }
+            });
+            
+            // 데이터가 변경되었으면 업데이트
+            if (JSON.stringify(songbookSongs) !== JSON.stringify(serverSongs)) {
+                songbookSongs = serverSongs;
+                songbookSongs.sort((a, b) => {
+                    const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
+                    if (titleCompare !== 0) return titleCompare;
+                    return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
+                });
+                localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
+            }
+        }
+    } catch (error) { 
+        // 서버 연결 실패시 로컬 캐시만 사용 (오프라인 대응)
+        console.error('노래 데이터 서버 동기화 실패:', error); 
+    }
 }
 
 function renderSongbook() {
@@ -2162,6 +2185,7 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    // 1. 탭 버튼 상태 업데이트
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
     });
@@ -2177,40 +2201,56 @@ window.showTab = async function(tab) {
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
     const loadingOverlay = document.getElementById('loadingOverlay');
 
+    // 2. 화면 먼저 이동
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
         if(songbookSection) songbookSection.classList.add('visible');
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
         window.location.hash = '#songbook';
-        
-        if (!isSongbookLoaded) {
-            const songLoading = document.getElementById('songbookLoading');
-            if (songLoading) songLoading.classList.remove('hidden');
-            await loadSongbookSongs();
-            isSongbookLoaded = true;
-            if (songLoading) songLoading.classList.add('hidden');
-            renderSongbook();
-            updateFavPlayerPlaylist();
-        }
     } else {
         if(calendarTop) calendarTop.style.display = 'flex';
         if(calendarBody) calendarBody.style.display = 'flex';
         if(songbookSection) songbookSection.classList.remove('visible');
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
         window.location.hash = '#schedule';
+    }
 
-        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+    // 3. UI 렌더링을 위해 대기
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
-        try {
-            await new Promise(resolve => setTimeout(resolve, 50)); 
+    // 4. 데이터 로드 필요 여부 판단
+    let needsDataLoad = false;
+    if (tab === 'songbook') {
+        needsDataLoad = !isSongbookLoaded;
+    } else {
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
+        needsDataLoad = !loadedMonths.has(monthKey);
+    }
+
+    // 5. 로딩 필요시 표시
+    if (needsDataLoad && loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    // 6. 비동기 데이터 로드
+    try {
+        if (tab === 'songbook') {
+            if (!isSongbookLoaded) {
+                await loadSongbookSongs();
+                isSongbookLoaded = true;
+                renderSongbook();
+                updateFavPlayerPlaylist();
+            }
+        } else {
             await ensureMonthsLoadedForDate(currentDate);
             renderCalendar();
-        } catch (error) {
-            console.error('일정 탭 렌더링 중 오류 발생:', error);
-        } finally {
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
         }
+    } catch (error) {
+        console.error('탭 렌더링 중 오류 발생:', error);
+    } finally {
+        // 로딩 화면 제거 (데이터 로드 완료 후)
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
 }
 
@@ -2437,6 +2477,17 @@ window.onload = async () => {
         if (loadingOverlay) { loadingOverlay.classList.add('hidden'); setTimeout(() => { loadingOverlay.remove(); }, 500); }
     }, 1000);
 };
+
+function refreshLoadingOverlay() {
+    const randomLoadingImg = document.getElementById('randomLoadingImg');
+    if (randomLoadingImg) {
+        randomLoadingImg.style.opacity = '0';
+        const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
+        randomLoadingImg.src = randomGif;
+        // 이미지가 로드되면 다시 보이게 함
+        randomLoadingImg.onload = () => { randomLoadingImg.style.opacity = '1'; };
+    }
+}
 
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
