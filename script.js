@@ -2185,6 +2185,14 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // 0. 로딩 표시 시작 (이미지 갱신 포함)
+    if (loadingOverlay) {
+        if (typeof refreshLoadingOverlay === 'function') refreshLoadingOverlay();
+        loadingOverlay.classList.remove('hidden');
+    }
+
     // 1. 탭 버튼 상태 업데이트
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
@@ -2199,9 +2207,10 @@ window.showTab = async function(tab) {
     const calendarBody = document.querySelector('.calendar-body');
     const songbookSection = document.getElementById('songbookSection');
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-    const loadingOverlay = document.getElementById('loadingOverlay');
 
-    // 2. 화면 먼저 이동
+    // 2. 화면 이동 (약간의 지연을 주어 로딩 화면을 보여줌)
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
@@ -2219,29 +2228,15 @@ window.showTab = async function(tab) {
     // 3. UI 렌더링을 위해 대기
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    // 4. 데이터 로드 필요 여부 판단
-    let needsDataLoad = false;
-    if (tab === 'songbook') {
-        needsDataLoad = !isSongbookLoaded;
-    } else {
-        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
-        needsDataLoad = !loadedMonths.has(monthKey);
-    }
-
-    // 5. 로딩 필요시 표시
-    if (needsDataLoad && loadingOverlay) {
-        loadingOverlay.classList.remove('hidden');
-    }
-
-    // 6. 비동기 데이터 로드
+    // 4. 데이터 로드 및 렌더링
     try {
         if (tab === 'songbook') {
             if (!isSongbookLoaded) {
                 await loadSongbookSongs();
                 isSongbookLoaded = true;
-                renderSongbook();
                 updateFavPlayerPlaylist();
             }
+            renderSongbook();
         } else {
             await ensureMonthsLoadedForDate(currentDate);
             renderCalendar();
@@ -2249,8 +2244,10 @@ window.showTab = async function(tab) {
     } catch (error) {
         console.error('탭 렌더링 중 오류 발생:', error);
     } finally {
-        // 로딩 화면 제거 (데이터 로드 완료 후)
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        // 5. 로딩 종료 (최소 로딩 시간 보장)
+        setTimeout(() => {
+            if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        }, 300);
     }
 }
 
@@ -2474,7 +2471,7 @@ window.onload = async () => {
 
     setTimeout(() => {
         const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) { loadingOverlay.classList.add('hidden'); setTimeout(() => { loadingOverlay.remove(); }, 500); }
+        if (loadingOverlay) { loadingOverlay.classList.add('hidden'); }
     }, 1000);
 };
 
