@@ -759,4 +759,3 @@ body {
     z-index: 99999 !important; /* 가장 높은 우선순위 부여 */
     pointer-events: none;      /* 클릭 방해 방지 */
 }
-}
