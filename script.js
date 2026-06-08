@@ -111,8 +111,12 @@ window.loginAdmin = function() {
 window.loginWithProfile = function(token) {
     const profiles = getAdminProfiles();
     const profile = profiles.find(p => p.token === token);
+    // 로그인 유지 체크박스 상태를 가져옵니다.
+    const stayLoggedIn = document.getElementById('stayLoggedIn').checked; 
+
     if (profile) {
-        setAdminSession(profile);
+        // 체크박스 상태를 함께 전달합니다.
+        setAdminSession(profile, stayLoggedIn); 
         closeModal('pwModal');
         showToast(`${profile.name}님 환영합니다.`);
     } else {
@@ -121,8 +125,14 @@ window.loginWithProfile = function(token) {
     }
 }
 
-function setAdminSession(profile) {
-    sessionStorage.setItem('htvvi_admin_session', profile.token);
+function setAdminSession(profile, isPersistent) {
+    // isPersistent(boolean) 값에 따라 적절한 저장소를 사용합니다.
+    if (isPersistent) {
+        localStorage.setItem('htvvi_admin_session', profile.token);
+    } else {
+        sessionStorage.setItem('htvvi_admin_session', profile.token);
+    }
+    
     isAdmin = true;
     currentAdminProfile = profile;
     updateAdminUI();
