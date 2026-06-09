@@ -2189,7 +2189,6 @@ window.showTab = async function(tab) {
 
     // 0. 로딩 표시 시작 (이미지 갱신 포함)
     if (loadingOverlay) {
-        if (typeof refreshLoadingOverlay === 'function') refreshLoadingOverlay();
         loadingOverlay.classList.remove('hidden');
     }
 
@@ -2208,9 +2207,7 @@ window.showTab = async function(tab) {
     const songbookSection = document.getElementById('songbookSection');
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
 
-    // 2. 화면 이동 (약간의 지연을 주어 로딩 화면을 보여줌)
-    await new Promise(resolve => setTimeout(resolve, 100));
-
+    // 2. 화면 먼저 이동
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
@@ -2228,15 +2225,29 @@ window.showTab = async function(tab) {
     // 3. UI 렌더링을 위해 대기
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    // 4. 데이터 로드 및 렌더링
+    // 4. 데이터 로드 필요 여부 판단
+    let needsDataLoad = false;
+    if (tab === 'songbook') {
+        needsDataLoad = !isSongbookLoaded;
+    } else {
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
+        needsDataLoad = !loadedMonths.has(monthKey);
+    }
+
+    // 5. 로딩 표시
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    // 6. 비동기 데이터 로드
     try {
         if (tab === 'songbook') {
             if (!isSongbookLoaded) {
                 await loadSongbookSongs();
                 isSongbookLoaded = true;
+                renderSongbook();
                 updateFavPlayerPlaylist();
             }
-            renderSongbook();
         } else {
             await ensureMonthsLoadedForDate(currentDate);
             renderCalendar();
@@ -2244,10 +2255,8 @@ window.showTab = async function(tab) {
     } catch (error) {
         console.error('탭 렌더링 중 오류 발생:', error);
     } finally {
-        // 5. 로딩 종료 (최소 로딩 시간 보장)
-        setTimeout(() => {
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
-        }, 300);
+        // 로딩 화면 제거 (데이터 로드 완료 후)
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
 }
 
@@ -2475,17 +2484,6 @@ window.onload = async () => {
     }, 1000);
 };
 
-function refreshLoadingOverlay() {
-    const randomLoadingImg = document.getElementById('randomLoadingImg');
-    if (randomLoadingImg) {
-        randomLoadingImg.style.opacity = '0';
-        const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
-        randomLoadingImg.src = randomGif;
-        // 이미지가 로드되면 다시 보이게 함
-        randomLoadingImg.onload = () => { randomLoadingImg.style.opacity = '1'; };
-    }
-}
-
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -2498,9 +2496,11 @@ window.addEventListener('error', () => {
 });
 
 const loadingGifs = [
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/kqd0ua6kwuvtgwurzkw0.webp",
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/v8yulqs8c3txxna0lijr.webp",
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/w_120,h_120,c_fill,r_max/v1780584414/ponpy2tj1mr4kdugip7i.webp"
+    "https://i.postimg.cc/Kzpgzt2q/load-(1).webp",
+    "https://i.postimg.cc/ZRsyR6mh/load-(2).webp",
+    "https://i.postimg.cc/pTcnTKvM/load-(3).webp",
+    "https://i.postimg.cc/PxV8x1jF/load-(4).webp",
+    "https://i.postimg.cc/vT1x6DYJ/load-(5).webp"
 ];
 
 const randomLoadingImg = document.getElementById('randomLoadingImg');
