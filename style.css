@@ -488,7 +488,7 @@ body {
 .loading-overlay.hidden { opacity: 0; pointer-events: none; }
 .mobile-nav-arrow { display: none; }
 
-#randomLoadingImg { width: 150px; height: auto; }
+#randomLoadingImg { width: 200px; height: auto; }
 
 .cute-loading-text { display: none !important; }
 

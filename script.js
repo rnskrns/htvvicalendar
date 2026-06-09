@@ -2241,6 +2241,9 @@ window.showTab = async function(tab) {
 
     // 6. 비동기 데이터 로드
     try {
+        if (needsDataLoad) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
         if (tab === 'songbook') {
             if (!isSongbookLoaded) {
                 await loadSongbookSongs();
