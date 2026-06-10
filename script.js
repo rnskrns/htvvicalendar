@@ -59,14 +59,22 @@ function initAuth() {
     updateAdminUI();
 }
 
-window.loginAdmin = function() {
+window.loginAdmin = async function() {
     const id = document.getElementById('adminId').value.trim();
     const pw = document.getElementById('adminPw').value;
     const err = document.getElementById('pwError');
     const stayLoggedIn = document.getElementById('stayLoggedIn').checked; // 추가된 부분
 
-    if (id === 'htvv2i' && pw === '01121125') {
-        err.classList.add('hidden');
+    let currentPw = '01121125';
+    try {
+        const snap = await getDoc(doc(db, 'settings', 'admin_pw'));
+        if (snap.exists() && snap.data().pw) {
+            currentPw = snap.data().pw;
+        }
+    } catch(e) {}
+
+    if (id === 'htvv2i' && pw === currentPw) {
+        if (err) err.classList.add('hidden');
         
         const token = btoa(id + '_' + Date.now() + '_secret'); 
         const newProfile = {
@@ -112,16 +120,19 @@ window.loginWithProfile = function(token) {
     const profiles = getAdminProfiles();
     const profile = profiles.find(p => p.token === token);
     // 로그인 유지 체크박스 상태를 가져옵니다.
-    const stayLoggedIn = document.getElementById('stayLoggedIn').checked; 
+    const stayLoggedIn = document.getElementById('stayLoggedIn') ? document.getElementById('stayLoggedIn').checked : false; 
 
-    if (profile) {
+    if (profile && token !== 'expired') {
         // 체크박스 상태를 함께 전달합니다.
         setAdminSession(profile, stayLoggedIn); 
         closeModal('pwModal');
         showToast(`${profile.name}님 환영합니다.`);
     } else {
+        profiles = profiles.filter(p => p.token !== token && p.token !== 'expired');
+        saveAdminProfiles(profiles);
         showToast('인증이 만료되었습니다. 다시 로그인해 주세요.');
         document.getElementById('profileSelectionArea').style.display = 'none';
+        renderAdminProfiles();
     }
 }
 
@@ -1759,11 +1770,17 @@ window.showAdminMenu = function(e) {
         menu.style.cssText = 'position:fixed; background:white; border:2px solid #e2e8f0; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:9999; display:flex; flex-direction:column; padding:8px; gap:4px; min-width:140px;';
         
         const btnManage = document.createElement('button');
-        btnManage.innerText = '관리자 설정';
+        btnManage.innerText = '업링크 관리';
         btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
         btnManage.onmouseover = () => btnManage.style.background = '#f1f5f9'; btnManage.onmouseout = () => btnManage.style.background = 'none';
         btnManage.onclick = () => { menu.style.display = 'none'; window.openAdminSettings(); };
         
+        const btnChangePw = document.createElement('button');
+        btnChangePw.innerText = '암호 변경';
+        btnChangePw.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
+        btnChangePw.onmouseover = () => btnChangePw.style.background = '#f1f5f9'; btnChangePw.onmouseout = () => btnChangePw.style.background = 'none';
+        btnChangePw.onclick = () => { menu.style.display = 'none'; window.openPwChangeModal(); };
+
         const btnLogout = document.createElement('button');
         btnLogout.innerText = '로그아웃';
         btnLogout.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; color:#ef4444; font-size:14px; font-family: "GMarketSans";';
@@ -1785,6 +1802,7 @@ window.showAdminMenu = function(e) {
             showToast('로그아웃 되었습니다.');
         };
         menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
+        menu.appendChild(btnManage); menu.appendChild(btnChangePw); menu.appendChild(btnLogout); document.body.appendChild(menu);
     }
     
     menu.style.top = (rect.bottom + 8) + 'px';
@@ -1840,6 +1858,66 @@ window.handlePopupImgUpload = async function(input) {
                 showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
             }
         } catch (error) { showToast('이미지 업로드에 실패했습니다.'); }
+    }
+};
+
+window.openPwChangeModal = function() {
+    document.getElementById('currentPwInput').value = '';
+    document.getElementById('newPwInput').value = '';
+    document.getElementById('confirmPwInput').value = '';
+    const err = document.getElementById('pwChangeError');
+    if (err) err.classList.add('hidden');
+    document.getElementById('pwChangeModal').style.display = 'flex';
+    document.getElementById('currentPwInput').focus();
+};
+
+window.changeAdminPassword = async function() {
+    const currentPwInput = document.getElementById('currentPwInput').value;
+    const newPwInput = document.getElementById('newPwInput').value;
+    const confirmPwInput = document.getElementById('confirmPwInput').value;
+    const err = document.getElementById('pwChangeError');
+
+    let currentPw = '01121125';
+    try {
+        const snap = await getDoc(doc(db, 'settings', 'admin_pw'));
+        if (snap.exists() && snap.data().pw) {
+            currentPw = snap.data().pw;
+        }
+    } catch(e) {}
+
+    if (currentPwInput !== currentPw) {
+        if (err) { err.innerText = '현재 비밀번호가 일치하지 않습니다.'; err.classList.remove('hidden'); }
+        return;
+    }
+    if (!newPwInput) {
+        if (err) { err.innerText = '새 비밀번호를 입력해주세요.'; err.classList.remove('hidden'); }
+        return;
+    }
+    if (newPwInput !== confirmPwInput) {
+        if (err) { err.innerText = '새 비밀번호와 확인이 일치하지 않습니다.'; err.classList.remove('hidden'); }
+        return;
+    }
+
+    try {
+        const btn = document.querySelector('#pwChangeModal .btn-save');
+        if(btn) btn.innerText = '저장 중...';
+        await setDoc(doc(db, 'settings', 'admin_pw'), { pw: newPwInput });
+        
+        isAdmin = false;
+        currentAdminProfile = null;
+        sessionStorage.removeItem('htvvi_admin_session'); 
+        localStorage.removeItem('htvvi_admin_session');
+        
+        saveAdminProfiles([]);
+        
+        updateAdminUI(); 
+        renderCalendar(); 
+        
+        showToast('비밀번호가 변경되었습니다. 다시 로그인해 주세요.');
+        closeModal('pwChangeModal');
+        if(btn) btn.innerText = '변경';
+    } catch(e) {
+        if (err) { err.innerText = '비밀번호 변경 중 오류가 발생했습니다.'; err.classList.remove('hidden'); }
     }
 };
 
