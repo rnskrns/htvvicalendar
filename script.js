@@ -1357,7 +1357,10 @@ function createDay(num, isCurr, dayEvents = []) {
             const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
             const tag = document.createElement('div');
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap;">${ev.title}</div>`;
+            tag.style.cssText = 'position: relative; display: flex !important; flex-direction: column; justify-content: center; align-items: center;';
+
+            // 텍스트 중앙 정렬(text-align: center !important) 및 우측 상단 시간 뱃지
+            tag.innerHTML = `${ev.time ? `<span class="event-time-badge" style="position: absolute; top: 2px; right: 6px; left: auto; margin: 0; font-size: 10px; line-height: 1;">${formatTime12h(ev.time)}</span>` : ''}<div style="width: 100%; text-align: center !important; line-height: 1.3; word-break: break-word; white-space: pre-wrap; padding-top: 14px; padding-bottom: 4px;">${ev.title}</div>`;            
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };

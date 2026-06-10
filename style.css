@@ -404,9 +404,7 @@ body {
 }
 .event-tag:hover { transform: scale(0.97); }
 .event-time-badge { position: absolute; top: 5px; left: 5px; display: inline-block; border: 1.5px solid #FFFFFF; background-color: #FFFFFF; border-radius: 12px; padding: 3px 7px; font-size: 10px; font-weight: 800; line-height: 1; color: inherit; font-family: inherit !important; }
-.event-tag div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; font-weight: 900 !important; }
-.dragging-ghost { background-color: #FFF3B0 !important; opacity: 0.4; border: 2px dashed #EAB308; }
-.event-tag.long-term { position: relative; height: 28px !important; }
+.event-tag div { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center !important; font-weight: 900 !important; }
 
 .type-개인방송 { background-color: var(--color-personal); color: #B45309; }
 .type-합방 { background-color: var(--color-collab); color: #01579B; }
