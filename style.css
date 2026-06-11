@@ -486,8 +486,6 @@ body {
 .loading-overlay.hidden { opacity: 0; pointer-events: none; }
 .mobile-nav-arrow { display: none; }
 
-#randomLoadingImg { width: 200px; height: auto; }
-
 .cute-loading-text { display: none !important; }
 
 @media screen and (min-width: 1051px) {

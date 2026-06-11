@@ -8,12 +8,11 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="HTVVI">
     <meta property="og:description" content="방송일정 & 노래책">
-    <link rel="preload" as="image" href="https://i.postimg.cc/Kzpgzt2q/load-(1).webp">
-    <link rel="preload" as="image" href="https://i.postimg.cc/ZRsyR6mh/load-(2).webp">
-    <link rel="preload" as="image" href="https://i.postimg.cc/pTcnTKvM/load-(3).webp">
-    <link rel="preload" as="image" href="https://i.postimg.cc/PxV8x1jF/load-(4).webp">
-    <link rel="preload" as="image" href="https://i.postimg.cc/vT1x6DYJ/load-(5).webp">
-    <link rel="shortcut icon" href="https://i.postimg.cc/Xqx5y0Hn/Honeycam-export-2026-05-22-19-04-04.png" />
+    <link rel="preload" as="image" href="https://i.postimg.cc/QdyLgcRP/Honeycam-2026-06-12-00-44-24.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="https://i.postimg.cc/CxQyCbWQ/Honeycam-2026-06-12-00-44-47.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="https://i.postimg.cc/dVxMRGbY/Honeycam-2026-06-12-00-45-17.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="https://i.postimg.cc/bwBX01KK/Honeycam-2026-06-12-00-42-42.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="https://i.postimg.cc/K8HX7tdW/Honeycam-2026-06-12-00-44-00.webp" fetchpriority="high">    <link rel="shortcut icon" href="https://i.postimg.cc/Xqx5y0Hn/Honeycam-export-2026-05-22-19-04-04.png" />
     <link rel="icon" href="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png" type="image/png">
     <meta property="og:image" content="https://i.postimg.cc/qRD2Q4Jx/jemog-eul-iblyeoghaejuseyo.png">
     <meta property="og:url" content="https://htvvicalendar.vercel.app/">
@@ -135,17 +134,28 @@
         </button>
     </div>
 
-    <div id="loadingOverlay" class="loading-overlay">
+<div id="loadingOverlay" class="loading-overlay">
         <div class="custom-loading-container">
-            <div style="position: relative; width: 170px; height: 170px; display: flex; justify-content: center; align-items: center; margin: 0 auto;">
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 100%; border: 5px solid transparent; border-top-color: #FDE047; box-sizing: border-box; animation: force-spin 1s linear infinite;"></div>
-                <img id="randomLoadingImg" src="" alt="" style="position: relative; width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-sizing: border-box; z-index: 2;">
+            <div style="position: relative; width: 190px; height: 190px; display: flex; justify-content: center; align-items: center; margin: 0 auto;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 100%; border: 5px solid transparent; border-top-color: #fff783; box-sizing: border-box; animation: force-spin 1s linear infinite;"></div>
+                <img id="randomLoadingImg" src="" alt="로딩 이미지" style="position: relative; width: 170px; height: 170px; border-radius: 50%; object-fit: cover; border: none; box-sizing: border-box; z-index: 2;">
             </div>
         </div>
         <div class="cute-loading-text">
             <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
         </div>
     </div>
+
+    <script>
+        document.getElementById('randomLoadingImg').src = [
+            "https://i.postimg.cc/QdyLgcRP/Honeycam-2026-06-12-00-44-24.webp",
+            "https://i.postimg.cc/CxQyCbWQ/Honeycam-2026-06-12-00-44-47.webp",
+            "https://i.postimg.cc/dVxMRGbY/Honeycam-2026-06-12-00-45-17.webp",
+            "https://i.postimg.cc/bwBX01KK/Honeycam-2026-06-12-00-42-42.webp",
+            "https://i.postimg.cc/K8HX7tdW/Honeycam-2026-06-12-00-44-00.webp"
+        ][Math.floor(Math.random() * 5)];
+    </script>
+    
 
     <header class="main-header">
         <div class="header-left"></div>

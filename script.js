@@ -698,8 +698,6 @@ async function loadData() {
         await loadMemos();
         try { await loadUpItems(); } catch (e) { console.log("UP 컬렉션 로드 실패:", e); }
     } catch (error) { console.error("데이터 로드 오류:", error); }
-    const overlay = document.getElementById('loadingOverlay');
-    if(overlay) overlay.classList.add('hidden');
 }
 
 function resetImagePreviewUI(imgUrl) {
@@ -2631,24 +2629,3 @@ window.addEventListener('error', () => {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
 });
 
-const loadingGifs = [
-    "https://i.postimg.cc/Kzpgzt2q/load-(1).webp",
-    "https://i.postimg.cc/ZRsyR6mh/load-(2).webp",
-    "https://i.postimg.cc/pTcnTKvM/load-(3).webp",
-    "https://i.postimg.cc/PxV8x1jF/load-(4).webp",
-    "https://i.postimg.cc/vT1x6DYJ/load-(5).webp"
-];
-
-const randomLoadingImg = document.getElementById('randomLoadingImg');
-if (randomLoadingImg) {
-    randomLoadingImg.style.opacity = '0';
-    randomLoadingImg.style.transition = 'opacity 0.3s ease'; 
-
-    const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
-    
-    randomLoadingImg.onload = () => {
-        randomLoadingImg.style.opacity = '1';
-    };
-
-    randomLoadingImg.src = randomGif;
-}
