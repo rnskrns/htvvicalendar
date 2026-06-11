@@ -1495,6 +1495,8 @@ function updateSummary() {
 
     const todayLocal = new Date();
     todayLocal.setHours(0, 0, 0, 0);
+    // 통합일정 호출에 필요한 날짜 ID (예: 2026-6-12)
+    const dateId = `${todayLocal.getFullYear()}-${todayLocal.getMonth() + 1}-${todayLocal.getDate()}`;
 
     const allEventsRaw = [];
     const seenIds = new Set();
@@ -1518,12 +1520,25 @@ function updateSummary() {
 
     if (todaysEvents.length > 0) {
         todaysEvents.forEach((ev, idx) => {
-            const item = document.createElement('div'); item.className = 'summary-item'; item.onclick = () => showInfoByEvent(ev);
+            const item = document.createElement('div'); 
+            item.className = 'summary-item'; 
+            
+            // 화면 너비가 1050px 미만(모바일)이면 통합일정, 그렇지 않으면 단일일정 호출
+            item.onclick = () => {
+                if (window.innerWidth < 1050) {
+                    showDayInfo(dateId, todaysEvents);
+                } else {
+                    showInfoByEvent(ev);
+                }
+            };
+
             const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
             item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
             cont.appendChild(item);
         });
-    } else { cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>"; }
+    } else { 
+        cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>"; 
+    }
 }
 
 window.toggleMemo = function() {
