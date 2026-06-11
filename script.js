@@ -1006,8 +1006,7 @@ window.renderDayManagerList = function() {
 
         @media (max-width: 768px) {
             #dayManagerModal { padding: 15px 10px !important; align-items: flex-start !important; }
-            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }
-            
+            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }            
             .mgr-body { padding: 15px !important; display: flex !important; flex-direction: column !important; gap: 15px !important; }
             .mgr-col { width: 100% !important; min-width: 0 !important; margin-bottom: 0 !important; box-sizing: border-box; display: flex !important; flex-direction: column !important; gap: 12px !important; }
             .mgr-divider { display: none !important; }
@@ -1321,7 +1320,7 @@ function renderCalendar() {
                     const item = document.createElement('div');
                     item.className = `event-tag type-${typeClass}${isLong ? ' long-term' : ''}`;
                     
-                    item.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+                    item.onclick = (e) => { e.stopPropagation(); showDayInfo(dateId, todaysEvents); };
                     if (isAdmin) item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
                     
                     if (ev.time) { item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`; } 
