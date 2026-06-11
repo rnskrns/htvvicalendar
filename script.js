@@ -25,6 +25,26 @@ let dayManagerItems = [];
 let dayManagerActiveDateId = '';
 let dayManagerFormattedDateId = '';
 
+async function seedAdmin() {
+    try {
+        const q = query(collection(db, "admins"));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            console.log("관리자 정보가 없어 기본 계정을 생성합니다.");
+            const defaultAdmin = {
+                id: 'htvv2i',
+                pw: '01121125',
+                name: '햇비',
+                img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg'
+            };
+            await addDoc(collection(db, "admins"), defaultAdmin);
+            console.log("기본 관리자 계정 생성 완료.");
+        }
+    } catch (e) {
+        console.error("관리자 정보 초기화 오류:", e);
+    }
+}
+
 /* 하이브리드 로그인 로직 시작 */
 function getAdminProfiles() {
     try { return JSON.parse(localStorage.getItem('htvvi_admin_profiles')) || []; }
@@ -63,54 +83,75 @@ window.loginAdmin = async function() {
     const id = document.getElementById('adminId').value.trim();
     const pw = document.getElementById('adminPw').value;
     const err = document.getElementById('pwError');
-    const stayLoggedIn = document.getElementById('stayLoggedIn').checked; // 추가된 부분
+    const stayLoggedInElement = document.getElementById('stayLoggedIn');
+    const stayLoggedIn = stayLoggedInElement ? stayLoggedInElement.checked : false;
 
-    let currentPw = '01121125';
-    try {
-        const snap = await getDoc(doc(db, 'settings', 'admin_pw'));
-        if (snap.exists() && snap.data().pw) {
-            currentPw = snap.data().pw;
-        }
-    } catch(e) {}
-
-    if (id === 'htvv2i' && pw === currentPw) {
-        if (err) err.classList.add('hidden');
-        
-        const token = btoa(id + '_' + Date.now() + '_secret'); 
-        const newProfile = {
-            id: id,
-            name: '햇비',
-            img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg',
-            token: token
-        };
-        
-        let profiles = getAdminProfiles();
-        const existingIdx = profiles.findIndex(p => p.id === id);
-        if (existingIdx >= 0) profiles[existingIdx] = newProfile;
-        else profiles.push(newProfile);
-        
-        saveAdminProfiles(profiles);
-        
-        // --- 변경된 부분: 로그인 유지 여부에 따라 저장소 선택 ---
-        if (stayLoggedIn) {
-            localStorage.setItem('htvvi_admin_session', newProfile.token);
-        } else {
-            sessionStorage.setItem('htvvi_admin_session', newProfile.token);
-        }
-        
-        isAdmin = true;
-        currentAdminProfile = newProfile;
-        updateAdminUI();
-        renderCalendar();
-        // ----------------------------------------------------
-        
-        document.getElementById('adminId').value = '';
-        document.getElementById('adminPw').value = '';
-        closeModal('pwModal');
-        showToast(`${newProfile.name}님 환영합니다.`);
-    } else {
+    if (!id || !pw) {
         if (err) {
-            err.innerText = '등록되지 않은 아이디 입니다';
+            err.innerText = '아이디와 비밀번호를 모두 입력해주세요.';
+            err.classList.remove('hidden');
+        }
+        return;
+    }
+
+    try {
+        const q = query(collection(db, "admins"), where("id", "==", id));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const adminDoc = querySnapshot.docs[0];
+            const adminData = adminDoc.data();
+
+            if (adminData.pw === pw) {
+                if (err) err.classList.add('hidden');
+        
+                const token = btoa(id + '_' + Date.now() + '_secret'); 
+                const newProfile = {
+                    id: id,
+                    docId: adminDoc.id,
+                    name: adminData.name || '햇비',
+                    img: adminData.img || 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg',
+                    token: token
+                };
+                
+                let profiles = getAdminProfiles();
+                const existingIdx = profiles.findIndex(p => p.id === id);
+                if (existingIdx >= 0) profiles[existingIdx] = newProfile;
+                else profiles.push(newProfile);
+                
+                saveAdminProfiles(profiles);
+                
+                if (stayLoggedIn) {
+                    localStorage.setItem('htvvi_admin_session', newProfile.token);
+                } else {
+                    sessionStorage.setItem('htvvi_admin_session', newProfile.token);
+                }
+                
+                isAdmin = true;
+                currentAdminProfile = newProfile;
+                updateAdminUI();
+                renderCalendar();
+                
+                document.getElementById('adminId').value = '';
+                document.getElementById('adminPw').value = '';
+                closeModal('pwModal');
+                showToast(`${newProfile.name}님 환영합니다.`);
+            } else {
+                if (err) {
+                    err.innerText = '비밀번호가 일치하지 않습니다.';
+                    err.classList.remove('hidden');
+                }
+            }
+        } else {
+            if (err) {
+                err.innerText = '등록되지 않은 아이디 입니다';
+                err.classList.remove('hidden');
+            }
+        }
+    } catch (e) {
+        console.error("Login error:", e);
+        if (err) {
+            err.innerText = '로그인 중 오류가 발생했습니다.';
             err.classList.remove('hidden');
         }
     }
@@ -1879,38 +1920,48 @@ window.changeAdminPassword = async function() {
     const confirmPwInput = document.getElementById('confirmPwInput').value;
     const err = document.getElementById('pwChangeError');
 
-    let currentPw = '01121125';
+    if (!isAdmin || !currentAdminProfile || !currentAdminProfile.docId) {
+        if (err) { err.innerText = '로그인 정보가 없습니다.'; err.classList.remove('hidden'); }
+        return;
+    }
+
     try {
-        const snap = await getDoc(doc(db, 'settings', 'admin_pw'));
-        if (snap.exists() && snap.data().pw) {
-            currentPw = snap.data().pw;
+        const adminDocRef = doc(db, 'admins', currentAdminProfile.docId);
+        const adminDocSnap = await getDoc(adminDocRef);
+
+        if (!adminDocSnap.exists()) {
+            if (err) { err.innerText = '관리자 정보를 찾을 수 없습니다.'; err.classList.remove('hidden'); }
+            return;
         }
-    } catch(e) {}
 
-    if (currentPwInput !== currentPw) {
-        if (err) { err.innerText = '현재 비밀번호가 일치하지 않습니다.'; err.classList.remove('hidden'); }
-        return;
-    }
-    if (!newPwInput) {
-        if (err) { err.innerText = '새 비밀번호를 입력해주세요.'; err.classList.remove('hidden'); }
-        return;
-    }
-    if (newPwInput !== confirmPwInput) {
-        if (err) { err.innerText = '새 비밀번호와 확인이 일치하지 않습니다.'; err.classList.remove('hidden'); }
-        return;
-    }
+        const adminData = adminDocSnap.data();
 
-    try {
+        if (currentPwInput !== adminData.pw) {
+            if (err) { err.innerText = '현재 비밀번호가 일치하지 않습니다.'; err.classList.remove('hidden'); }
+            return;
+        }
+        if (!newPwInput) {
+            if (err) { err.innerText = '새 비밀번호를 입력해주세요.'; err.classList.remove('hidden'); }
+            return;
+        }
+        if (newPwInput !== confirmPwInput) {
+            if (err) { err.innerText = '새 비밀번호와 확인이 일치하지 않습니다.'; err.classList.remove('hidden'); }
+            return;
+        }
+
         const btn = document.querySelector('#pwChangeModal .btn-save');
         if(btn) btn.innerText = '저장 중...';
-        await setDoc(doc(db, 'settings', 'admin_pw'), { pw: newPwInput });
+        await updateDoc(adminDocRef, { pw: newPwInput });
         
         isAdmin = false;
+        
+        let profiles = getAdminProfiles();
+        profiles = profiles.filter(p => p.id !== currentAdminProfile.id);
+        saveAdminProfiles(profiles);
+
         currentAdminProfile = null;
         sessionStorage.removeItem('htvvi_admin_session'); 
         localStorage.removeItem('htvvi_admin_session');
-        
-        saveAdminProfiles([]);
         
         updateAdminUI(); 
         renderCalendar(); 
@@ -1919,7 +1970,8 @@ window.changeAdminPassword = async function() {
         closeModal('pwChangeModal');
         if(btn) btn.innerText = '변경';
     } catch(e) {
-        if (err) { err.innerText = '비밀번호 변경 중 오류가 발생했습니다.'; err.classList.remove('hidden'); }
+        console.error("Password change error:", e);
+        if (err) { err.innerText = '현재 비밀번호가 일치하지 않습니다.'; err.classList.remove('hidden'); }
     }
 };
 
@@ -2536,6 +2588,7 @@ document.addEventListener('dragstart', function(e) {
 
 window.onload = async () => {
     try {
+        await seedAdmin();
         await loadData();
         initAuth(); // 새로 구현된 인증 시스템 초기화
         
