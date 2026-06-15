@@ -293,33 +293,33 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 관리자가 수동으로 적은 제목이 있으면 즉시 출력
+    // 1. 관리자가 수동으로 적은 제목이 있으면 우선 사용
     if (manualTitle && manualTitle.trim() !== '') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. 제목이 없을 경우: 우리 봇이 저장해둔 Firebase DB에서 링크로 찾기
-    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">봇이 가져온 데이터 확인 중...</div>';
+    // 2. 제목이 없다면 Firebase DB를 뒤져서 봇이 긁어온 정보를 찾음
+    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px;">공지 정보 가져오는 중...</div>';
 
     try {
-        // Firebase에서 이 URL을 가진 이벤트를 검색 (events 컬렉션에서 noticeLink가 일치하는 것)
+        // Firebase의 events 컬렉션에서 noticeLink가 현재 url과 같은 문서를 찾음
         const q = query(collection(db, "events"), where("noticeLink", "==", url));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
+            // DB에 데이터가 있다면 봇이 저장해둔 제목/내용을 즉시 가져옴
             const data = querySnapshot.docs[0].data();
             renderNoticeHTML(container, url, data.noticeTitle || '공지사항', data.noticeDesc || '');
         } else {
-            // DB에도 없다면, 봇이 아직 긁어오지 않았거나 봇이 못 찾은 경우
-            throw new Error('DB 정보 없음');
+            // DB에도 없다면 봇이 아직 글을 못 긁어왔거나, 없는 페이지임
+            throw new Error('데이터 없음');
         }
     } catch (error) {
         // 데이터가 없으면 수동 버튼 노출
         container.innerHTML = `
-            <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #6b7280; font-size: 13px; margin-bottom: 10px;">데이터를 찾을 수 없습니다.</p>
-                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">📢 링크 바로가기</a>
+            <div style="margin-top: 10px; text-align: center;">
+                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 10px; border-radius: 8px; background: #FFF3B0; color: #7A5A2F; font-size: 13px;">📢 공지사항 바로가기</a>
             </div>
         `;
     }
@@ -1469,8 +1469,10 @@ function showInfoByEvent(ev) {
         noticePreview = document.createElement('div'); noticePreview.id = 'infoNoticePreview'; noticePreview.className = 'notice-preview'; noticePreview.style.display = 'none';
         const infoBlock = document.querySelector('.info-block'); if(infoBlock) infoBlock.appendChild(noticePreview);
     }
-    if (ev.noticeLink) {
-        if(window.loadNoticePreview && noticePreview) window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
+    if ((ev.noticeLink && ev.noticeLink.trim() !== '') || (ev.noticeTitle && ev.noticeTitle.trim() !== '')) {
+        if(window.loadNoticePreview && noticePreview) {
+            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
+        }
     } else {
         if(noticePreview) noticePreview.style.display = 'none';
     }
