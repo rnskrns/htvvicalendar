@@ -293,13 +293,13 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 이미 함수 호출 시 제목(manualTitle)이 들어왔다면(상세창 등), 바로 출력
+    // 1. 이미 제목이 있다면 상세 카드 출력
     if (manualTitle && manualTitle.trim() !== '' && manualTitle !== '공지사항') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. 제목이 없으면 Firebase events 컬렉션에서 해당 url을 가진 문서를 찾아냄
+    // 2. 제목이 없으면 Firebase에서 데이터 조회
     container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px;">공지 불러오는 중...</div>';
 
     try {
@@ -308,14 +308,19 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
 
         if (!querySnapshot.empty) {
             const data = querySnapshot.docs[0].data();
-            // DB에 저장된 noticeTitle과 noticeDesc를 우선 사용
-            renderNoticeHTML(container, url, data.noticeTitle, data.noticeDesc);
+            
+            // 상세 내용(제목/설명)이 등록되어 있으면 카드 출력, 없으면 바로가기 버튼 노출
+            if (data.noticeTitle && data.noticeTitle.trim() !== '') {
+                renderNoticeHTML(container, url, data.noticeTitle, data.noticeDesc);
+            } else {
+                throw new Error('상세 정보 없음');
+            }
         } else {
             throw new Error('데이터 없음');
         }
     } catch (error) {
-        // 데이터가 없으면 수동 버튼 노출
-        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:8px; text-decoration:none; font-weight:800;">📢 공지사항 바로가기</a>`;
+        // 데이터가 없거나 상세 정보가 비어있을 경우 바로가기 버튼 노출
+        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:8px; text-decoration:none; font-weight:800;">공지사항 바로가기</a>`;
     }
 };
 
@@ -1470,7 +1475,7 @@ function showInfoByEvent(ev) {
         const modal = document.getElementById('infoModal'); 
         if(modal) modal.style.display = 'flex';
     }
-    
+
 function updateSummary() {
     const cont = document.getElementById('summaryContent'); 
     if(!cont) return;
