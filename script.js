@@ -293,46 +293,18 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
+    // 이미 데이터베이스에 공지 제목과 설명이 포함되어 있으므로 즉시 이쁘게 출력합니다.
     if (manualTitle) {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
     
-    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
-    const noticeRef = doc(db, 'notice_cache', cacheDocId);
-    
-    try {
-        const cacheSnap = await getDoc(noticeRef);
-        if (cacheSnap.exists()) {
-            const data = cacheSnap.data();
-            renderNoticeHTML(container, url, data.title, data.description);
-            return;
-        }
-    } catch (e) {
-        console.warn("DB 조회 실패");
-    }
-
-    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
-
-    try {
-        const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        
-        if (response.ok && data.title) {
-            const finalData = { title: data.title, description: data.description || '' };
-            await setDoc(noticeRef, { ...finalData, createdAt: new Date() });
-            renderNoticeHTML(container, url, finalData.title, finalData.description);
-        } else {
-            throw new Error();
-        }
-    } catch (error) {
-        container.innerHTML = `
-            <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;"></p>
-                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
-            </div>
-        `;
-    }
+    // 만약 예전 글이라서 타이틀 정보가 비어있을 때의 최소한의 백업 링크만 남겨둡니다.
+    container.innerHTML = `
+        <div style="margin-top: 15px; text-align: center;">
+            <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">📢 방송국 공지사항 보러가기</a>
+        </div>
+    `;
 };
 
 function renderNoticeHTML(container, url, title, desc) {
