@@ -293,35 +293,29 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 관리자가 수동으로 적은 제목이 있으면 우선 사용
-    if (manualTitle && manualTitle.trim() !== '') {
+    // 1. 이미 함수 호출 시 제목(manualTitle)이 들어왔다면(상세창 등), 바로 출력
+    if (manualTitle && manualTitle.trim() !== '' && manualTitle !== '공지사항') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. 제목이 없다면 Firebase DB를 뒤져서 봇이 긁어온 정보를 찾음
-    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px;">공지 정보 가져오는 중...</div>';
+    // 2. 제목이 없으면 Firebase events 컬렉션에서 해당 url을 가진 문서를 찾아냄
+    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px;">공지 불러오는 중...</div>';
 
     try {
-        // Firebase의 events 컬렉션에서 noticeLink가 현재 url과 같은 문서를 찾음
         const q = query(collection(db, "events"), where("noticeLink", "==", url));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            // DB에 데이터가 있다면 봇이 저장해둔 제목/내용을 즉시 가져옴
             const data = querySnapshot.docs[0].data();
-            renderNoticeHTML(container, url, data.noticeTitle || '공지사항', data.noticeDesc || '');
+            // DB에 저장된 noticeTitle과 noticeDesc를 우선 사용
+            renderNoticeHTML(container, url, data.noticeTitle, data.noticeDesc);
         } else {
-            // DB에도 없다면 봇이 아직 글을 못 긁어왔거나, 없는 페이지임
             throw new Error('데이터 없음');
         }
     } catch (error) {
         // 데이터가 없으면 수동 버튼 노출
-        container.innerHTML = `
-            <div style="margin-top: 10px; text-align: center;">
-                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 10px; border-radius: 8px; background: #FFF3B0; color: #7A5A2F; font-size: 13px;">📢 공지사항 바로가기</a>
-            </div>
-        `;
+        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:8px; text-decoration:none; font-weight:800;">📢 공지사항 바로가기</a>`;
     }
 };
 
