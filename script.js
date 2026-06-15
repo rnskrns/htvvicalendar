@@ -289,40 +289,6 @@ window.extractYtId = function(url) {
 };
 const extractYtId = window.extractYtId;
 
-window.fetchNoticeData = async function(url) {
-    if (!url || !url.startsWith('http')) return;
-    
-    const titleInput = document.getElementById('eventNoticeTitle');
-    const descInput = document.getElementById('eventNoticeDesc');
-    
-    // 이미 관리자가 직접 입력한 값이 있다면 덮어쓰지 않음
-    if (titleInput.value.trim() !== '') return;
-    
-    titleInput.placeholder = "링크에서 정보를 불러오는 중...";
-    
-    try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Network error');
-        
-        const data = await response.json();
-        if (data.contents) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, "text/html");
-            
-            const ogTitle = doc.querySelector('meta[property="og:title"]')?.content || doc.title || '';
-            const ogDesc = doc.querySelector('meta[property="og:description"]')?.content || doc.querySelector('meta[name="description"]')?.content || '';
-            
-            if (ogTitle) titleInput.value = ogTitle;
-            if (ogDesc) descInput.value = ogDesc;
-        }
-    } catch (error) {
-        console.error("공지 정보 자동 추출 실패:", error);
-    } finally {
-        titleInput.placeholder = "공지 제목";
-    }
-};
-
 window.loadNoticePreview = async function(url, container, manualTitle, manualDesc) {
     if (!url || !container) return;
     container.style.display = 'block';
@@ -752,16 +718,10 @@ function openAddModal(id) {
     document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
-
-    // 👇 여기 두 줄 추가 👇
-    if (document.getElementById('eventNoticeTitle')) document.getElementById('eventNoticeTitle').value = '';
-    if (document.getElementById('eventNoticeDesc')) document.getElementById('eventNoticeDesc').value = '';
-    // 👆 추가 완료 👆
-
     document.getElementById('eventType').value = '개인방송';
     
     resetImagePreviewUI('');
-
+    
     const pad = (n) => n.toString().padStart(2, '0');
     if (document.getElementById('eventStartDate')) {
         const parts = id.split('-');
@@ -787,10 +747,6 @@ async function saveEvent() {
     const imageUrlInput = document.getElementById('eventImageUrl');
     const editingIdInput = document.getElementById('editingEventDocId');
 
-    // 👇 추가할 변수 👇
-    const noticeTitleInput = document.getElementById('eventNoticeTitle');
-    const noticeDescInput = document.getElementById('eventNoticeDesc');
-
     if (!titleInput || !startDateInput || !endDateInput || !hourInput || !minInput || !typeInput || !membersInput || !noticeInput || !imageUrlInput || !editingIdInput) {
         showToast('입력값을 확인해주세요.');
         return;
@@ -806,10 +762,6 @@ async function saveEvent() {
     const noticeLink = noticeInput.value.trim();
     const imageUrl = imageUrlInput.value.trim();
     const editingEventId = editingIdInput.value.trim();
-
-    // 👇 추가할 값 변수 👇
-    const noticeTitle = noticeTitleInput ? noticeTitleInput.value.trim() : '';
-    const noticeDesc = noticeDescInput ? noticeDescInput.value.trim() : '';
 
     if (!title) {
         showToast('일정 제목을 입력해주세요.');
@@ -828,7 +780,6 @@ async function saveEvent() {
     }
 
     let time = '';
-    // (중간 시간 파싱 로직은 그대로 유지...)
     if (hourValue || minValue) {
         const hour = parseInt(hourValue, 10);
         const min = minValue ? parseInt(minValue, 10) : 0;
@@ -849,14 +800,11 @@ async function saveEvent() {
         time = `${String(mergedHour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
     }
 
-    // 👇 저장할 데이터 객체에 noticeTitle, noticeDesc 추가 👇
     const eventData = {
         title,
         type,
         members,
         noticeLink,
-        noticeTitle, // 추가됨
-        noticeDesc,  // 추가됨
         imageUrl,
         startDate,
         endDate,
@@ -2685,3 +2633,11 @@ window.addEventListener('error', () => {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
 });
 
+// script.js 파일 가장 아래에 추가
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('서비스 워커 등록 성공'))
+            .catch(err => console.error('서비스 워커 등록 실패', err));
+    });
+}
