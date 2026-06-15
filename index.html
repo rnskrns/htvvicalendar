@@ -332,10 +332,18 @@
                 </div>
                 <div class="event-modal-right">
                     <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분)</label><input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" class="event-custom-input"></div>
-                    <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label><input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input"></div>
+
                     <div>
-                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">포스터 / 썸네일 이미지</label>
-                        <input type="file" id="eventImgFile" accept="image/*" onchange="handleEventImgUpload(this)" style="display: block; margin-bottom: 12px; font-size: 13px; color: #64748b; cursor: pointer;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label>
+                        <input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input" onblur="fetchNoticeData(this.value)">
+                    </div>
+                    <div id="noticeDetailInputs" style="margin-top: 12px; background: #fafaf9; padding: 12px; border-radius: 12px; border: 1px dashed #cbd5e1;">
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F; font-size: 13px;">공지 카드 상세정보 (자동입력 및 수정가능)</label>
+                        <input type="text" id="eventNoticeTitle" placeholder="공지 제목" class="event-custom-input" style="margin-bottom: 8px;">
+                        <textarea id="eventNoticeDesc" placeholder="공지 내용 요약" class="event-custom-input" style="height: 50px; resize: vertical;"></textarea>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">포스터 / 썸네일 이미지</label>                        <input type="file" id="eventImgFile" accept="image/*" onchange="handleEventImgUpload(this)" style="display: block; margin-bottom: 12px; font-size: 13px; color: #64748b; cursor: pointer;">
                         <input type="hidden" id="eventImageUrl">
                         <div id="imagePreviewContainer" style="text-align: center; background: #fafaf9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1;"><img id="eventImagePreview" src="" alt="미리보기" style="display: none; max-width: 100%; max-height: 160px; border-radius: 8px; margin: 0 auto 12px auto;"><p id="eventImagePlaceholder" style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: bold;">이미지를 업로드하면 여기에 표시됩니다</p><button type="button" id="removeImageBtn" onclick="removeEventImage()" style="display: none; background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold;">이미지 지우기 ✕</button></div>
                     </div>

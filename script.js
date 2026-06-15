@@ -289,6 +289,40 @@ window.extractYtId = function(url) {
 };
 const extractYtId = window.extractYtId;
 
+window.fetchNoticeData = async function(url) {
+    if (!url || !url.startsWith('http')) return;
+    
+    const titleInput = document.getElementById('eventNoticeTitle');
+    const descInput = document.getElementById('eventNoticeDesc');
+    
+    // 이미 관리자가 직접 입력한 값이 있다면 덮어쓰지 않음
+    if (titleInput.value.trim() !== '') return;
+    
+    titleInput.placeholder = "링크에서 정보를 불러오는 중...";
+    
+    try {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Network error');
+        
+        const data = await response.json();
+        if (data.contents) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, "text/html");
+            
+            const ogTitle = doc.querySelector('meta[property="og:title"]')?.content || doc.title || '';
+            const ogDesc = doc.querySelector('meta[property="og:description"]')?.content || doc.querySelector('meta[name="description"]')?.content || '';
+            
+            if (ogTitle) titleInput.value = ogTitle;
+            if (ogDesc) descInput.value = ogDesc;
+        }
+    } catch (error) {
+        console.error("공지 정보 자동 추출 실패:", error);
+    } finally {
+        titleInput.placeholder = "공지 제목";
+    }
+};
+
 window.loadNoticePreview = async function(url, container, manualTitle, manualDesc) {
     if (!url || !container) return;
     container.style.display = 'block';
@@ -320,7 +354,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
         }
     } catch (error) {
         // 데이터가 없거나 상세 정보가 비어있을 경우 바로가기 버튼 노출
-        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:8px; text-decoration:none; font-weight:800;">공지사항 바로가기</a>`;
+        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:15px; text-decoration:none; font-weight:800;">공지사항 바로가기</a>`;
     }
 };
 
@@ -718,10 +752,16 @@ function openAddModal(id) {
     document.getElementById('eventImageUrl').value = ''; document.getElementById('eventImgFile').value = '';
     document.getElementById('eventMembers').value = ''; 
     document.getElementById('eventNoticeLink').value = ''; 
+
+    // 👇 여기 두 줄 추가 👇
+    if (document.getElementById('eventNoticeTitle')) document.getElementById('eventNoticeTitle').value = '';
+    if (document.getElementById('eventNoticeDesc')) document.getElementById('eventNoticeDesc').value = '';
+    // 👆 추가 완료 👆
+
     document.getElementById('eventType').value = '개인방송';
     
     resetImagePreviewUI('');
-    
+
     const pad = (n) => n.toString().padStart(2, '0');
     if (document.getElementById('eventStartDate')) {
         const parts = id.split('-');
@@ -747,6 +787,10 @@ async function saveEvent() {
     const imageUrlInput = document.getElementById('eventImageUrl');
     const editingIdInput = document.getElementById('editingEventDocId');
 
+    // 👇 추가할 변수 👇
+    const noticeTitleInput = document.getElementById('eventNoticeTitle');
+    const noticeDescInput = document.getElementById('eventNoticeDesc');
+
     if (!titleInput || !startDateInput || !endDateInput || !hourInput || !minInput || !typeInput || !membersInput || !noticeInput || !imageUrlInput || !editingIdInput) {
         showToast('입력값을 확인해주세요.');
         return;
@@ -762,6 +806,10 @@ async function saveEvent() {
     const noticeLink = noticeInput.value.trim();
     const imageUrl = imageUrlInput.value.trim();
     const editingEventId = editingIdInput.value.trim();
+
+    // 👇 추가할 값 변수 👇
+    const noticeTitle = noticeTitleInput ? noticeTitleInput.value.trim() : '';
+    const noticeDesc = noticeDescInput ? noticeDescInput.value.trim() : '';
 
     if (!title) {
         showToast('일정 제목을 입력해주세요.');
@@ -780,6 +828,7 @@ async function saveEvent() {
     }
 
     let time = '';
+    // (중간 시간 파싱 로직은 그대로 유지...)
     if (hourValue || minValue) {
         const hour = parseInt(hourValue, 10);
         const min = minValue ? parseInt(minValue, 10) : 0;
@@ -800,11 +849,14 @@ async function saveEvent() {
         time = `${String(mergedHour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
     }
 
+    // 👇 저장할 데이터 객체에 noticeTitle, noticeDesc 추가 👇
     const eventData = {
         title,
         type,
         members,
         noticeLink,
+        noticeTitle, // 추가됨
+        noticeDesc,  // 추가됨
         imageUrl,
         startDate,
         endDate,
