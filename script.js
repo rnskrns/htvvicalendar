@@ -1463,17 +1463,14 @@ function showInfoByEvent(ev) {
         noticePreview = document.createElement('div'); noticePreview.id = 'infoNoticePreview'; noticePreview.className = 'notice-preview'; noticePreview.style.display = 'none';
         const infoBlock = document.querySelector('.info-block'); if(infoBlock) infoBlock.appendChild(noticePreview);
     }
-    if ((ev.noticeLink && ev.noticeLink.trim() !== '') || (ev.noticeTitle && ev.noticeTitle.trim() !== '')) {
-        if(window.loadNoticePreview && noticePreview) {
-            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
-        }
+if (ev.noticeLink && ev.noticeLink.trim() !== '') {
+        window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
     } else {
         if(noticePreview) noticePreview.style.display = 'none';
     }
     
     const modal = document.getElementById('infoModal'); if(modal) modal.style.display = 'flex';
 }
-
 function updateSummary() {
     const cont = document.getElementById('summaryContent'); 
     if(!cont) return;
