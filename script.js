@@ -293,48 +293,32 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 스케줄러가 가져왔거나, 관리자가 직접 적은 제목이 있다면 0.1초 만에 바로 출력!
-    if (manualTitle) {
+    // 1. 관리자가 수동으로 적은 제목이 있으면 즉시 출력
+    if (manualTitle && manualTitle.trim() !== '') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // --- 👇 여기서부터는 제목을 안 적었을 때 작동하는 로직입니다 ---
-
-    // 2. 예전에 한 번이라도 긁어와서 DB(notice_cache)에 저장해둔 제목이 있는지 확인
-    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
-    const noticeRef = doc(db, 'notice_cache', cacheDocId);
-    
-    try {
-        const cacheSnap = await getDoc(noticeRef);
-        if (cacheSnap.exists()) {
-            const data = cacheSnap.data();
-            renderNoticeHTML(container, url, data.title, data.description);
-            return;
-        }
-    } catch (e) {
-        console.warn("DB 캐시 조회 실패");
-    }
-
-    // 3. 캐시에도 없으면? get-notice.js (Vercel API) 요원 출동
-    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">링크 정보를 불러오는 중...</div>';
+    // 2. 제목이 없을 경우: 우리 봇이 저장해둔 Firebase DB에서 링크로 찾기
+    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">봇이 가져온 데이터 확인 중...</div>';
 
     try {
-        const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        
-        if (response.ok && data.title) {
-            // 성공적으로 긁어왔다면 화면에 보여주고, 다음을 위해 Firebase에 캐싱(저장)
-            await setDoc(noticeRef, { title: data.title, description: data.description || '', createdAt: new Date() });
-            renderNoticeHTML(container, url, data.title, data.description);
+        // Firebase에서 이 URL을 가진 이벤트를 검색 (events 컬렉션에서 noticeLink가 일치하는 것)
+        const q = query(collection(db, "events"), where("noticeLink", "==", url));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const data = querySnapshot.docs[0].data();
+            renderNoticeHTML(container, url, data.noticeTitle || '공지사항', data.noticeDesc || '');
         } else {
-            throw new Error('정보 없음');
+            // DB에도 없다면, 봇이 아직 긁어오지 않았거나 봇이 못 찾은 경우
+            throw new Error('DB 정보 없음');
         }
     } catch (error) {
-        // 🚨 Vercel 서버가 SOOP 보안에 막혀서 긁어오지 못했을 때 띄워주는 최후의 버튼
+        // 데이터가 없으면 수동 버튼 노출
         container.innerHTML = `
             <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;">보안상 미리보기를 지원하지 않는 링크입니다.</p>
+                <p style="color: #6b7280; font-size: 13px; margin-bottom: 10px;">데이터를 찾을 수 없습니다.</p>
                 <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">📢 링크 바로가기</a>
             </div>
         `;
