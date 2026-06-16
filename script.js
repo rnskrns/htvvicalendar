@@ -1660,10 +1660,16 @@ window.saveUpItem = async function() {
     if (!link) return showToast('링크를 입력하세요.');
 
     try {
-        await addDoc(collection(db, 'up'), { title, link, deadline, createdAt: new Date() });
-        document.getElementById('upTitleInput').value = ''; document.getElementById('upLinkInput').value = ''; document.getElementById('upDeadlineInput').value = '';
-        loadUpItems(); showToast('UP 항목이 추가되었습니다.');
-    } catch (error) { showToast('저장 실패: ' + error.message); }
+        // 기존 'up' 컬렉션 대신 'uplink' 컬렉션에 저장되도록 변경
+        await addDoc(collection(db, 'uplink'), { title, link, deadline, createdAt: new Date() });
+        document.getElementById('upTitleInput').value = ''; 
+        document.getElementById('upLinkInput').value = ''; 
+        document.getElementById('upDeadlineInput').value = '';
+        loadUpItems(); 
+        showToast('UP 항목이 추가되었습니다.');
+    } catch (error) { 
+        showToast('저장 실패: ' + error.message); 
+    }
 };
 
 window.loadUpItems = async function() {
