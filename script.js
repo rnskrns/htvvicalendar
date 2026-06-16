@@ -293,46 +293,49 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    // 1. 이미 제목이 있다면 상세 카드 출력
+    // 1. 관리자가 수동으로 제목을 직접 적어둔 경우엔 그걸 먼저 보여줍니다.
     if (manualTitle && manualTitle.trim() !== '' && manualTitle !== '공지사항') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
 
-    // 2. 제목이 없으면 Firebase에서 데이터 조회
-    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px;">공지 불러오는 중...</div>';
+    // 2. 파이어베이스 soop_posts 컬렉션에서 긁어온 숲 최신글 검색
+    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px; font-weight: bold;">숲 게시판 연동 중... 🔄</div>';
 
     try {
-        const q = query(collection(db, "events"), where("noticeLink", "==", url));
+        // 기존 'events' 대신 'soop_posts' 컬렉션에서 현재 입력한 링크(url)와 똑같은 글을 찾습니다.
+        const q = query(collection(db, "soop_posts"), where("link", "==", url));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
+            // 일치하는 글을 찾았다면 파이썬이 긁어둔 제목과 본문(content)을 가져옵니다.
             const data = querySnapshot.docs[0].data();
             
-            // 상세 내용(제목/설명)이 등록되어 있으면 카드 출력, 없으면 바로가기 버튼 노출
-            if (data.noticeTitle && data.noticeTitle.trim() !== '') {
-                renderNoticeHTML(container, url, data.noticeTitle, data.noticeDesc);
+            if (data.title && data.title.trim() !== '') {
+                // 가져온 제목(data.title)과 본문(data.content)을 화면에 렌더링
+                renderNoticeHTML(container, url, data.title, data.content);
             } else {
                 throw new Error('상세 정보 없음');
             }
         } else {
-            throw new Error('데이터 없음');
+            throw new Error('파이어베이스에 등록된 링크 데이터 없음');
         }
     } catch (error) {
-        // 데이터가 없거나 상세 정보가 비어있을 경우 바로가기 버튼 노출
+        // DB에 해당 링크가 없거나 옛날 글이라면 기본 바로가기 버튼만 띄워줍니다.
+        console.log("게시판 연동 실패:", error);
         container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:15px; text-decoration:none; font-weight:800;">공지사항 바로가기</a>`;
     }
 };
 
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
-        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
-            <div class="premium-notice-header">
-                <span class="premium-notice-badge">공지사항</span>
-                <span class="premium-notice-date">바로가기 ↗</span>
+        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 15px; border: none; border-radius: 12px; background: #FFF9C4; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div class="premium-notice-header" style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                <span class="premium-notice-badge" style="font-size: 11px; font-weight: 900; color: #7A5A2F; background: #FDE047; padding: 4px 8px; border-radius: 6px; border: none;">공지사항</span>
+                <span class="premium-notice-date" style="font-size: 12px; color: #7A5A2F; font-weight: bold;">바로가기 ↗</span>
             </div>
-            <h3 class="premium-notice-title">${title}</h3>
-            ${desc ? `<p class="premium-notice-desc">${desc}</p>` : ''}
+            <h3 class="premium-notice-title" style="margin: 0 0 10px 0; font-size: 16px; color: #1e293b; font-weight: 800; word-break: keep-all;">${title}</h3>
+            ${desc ? `<div class="premium-notice-desc" style="font-size: 13px; color: #475569; white-space: pre-wrap; word-break: break-all; line-height: 1.6; background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 8px; border: none;">${desc}</div>` : ''}
         </a>
     `;
 }
