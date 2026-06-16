@@ -1669,34 +1669,55 @@ window.saveUpItem = async function() {
 window.loadUpItems = async function() {
     const list = document.getElementById('upList'); if(!list) return;
     try {
-        const snapshot = await getDocs(collection(db, 'up'));
+        const [uplinkSnapshot, upSnapshot] = await Promise.all([
+            getDocs(collection(db, 'uplink')),
+            getDocs(collection(db, 'up'))
+        ]);
+
         list.innerHTML = '';
-        if (snapshot.empty) {
+        if (uplinkSnapshot.empty && upSnapshot.empty) {
             list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px;">등록된 UP! 컨텐츠가 없습니다.</p>';
             return;
         }
 
         let items = [];
-        snapshot.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
+        const todayLocal = new Date();
+        todayLocal.setHours(0, 0, 0, 0);
+        const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
+
+        uplinkSnapshot.forEach(docSnap => { 
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            items.push({ id: docSnap.id, collectionName: 'uplink', ...data }); 
+        });
+
+        upSnapshot.forEach(docSnap => { 
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            items.push({ id: docSnap.id, collectionName: 'up', ...data }); 
+        });
         
         items.sort((a, b) => {
             if(a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
             return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
         });
 
-        const todayLocal = new Date();
-        todayLocal.setHours(0, 0, 0, 0);
-        const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
-        
         let renderCount = 0;
 
         items.forEach(data => {
-            if (data.deadline && data.deadline < todayStr) return;
-            
             renderCount++;
             const entry = document.createElement('div'); entry.className = 'up-item-card';
             entry.style.cssText = "background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;";
             entry.onmouseover = () => entry.style.background = "#e0f2fe"; entry.onmouseout = () => entry.style.background = "#ffffff";
+
+            // ✨ 명확한 전역 함수 호출로 변경 (사이드바 항목)
+            if (isAdmin) {
+                entry.oncontextmenu = (e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    window.openEditUpModal(data.id, data.collectionName, data.title, data.deadline);
+                };
+            }
 
             let deadlineText = '';
             if (data.deadline) {
@@ -1712,7 +1733,7 @@ window.loadUpItems = async function() {
                     <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
                     </a>
-                    ${isAdmin ? `<button onclick="event.stopPropagation(); deleteUpItem('${data.id}')" style="color: #aaa; font-weight: bold; cursor: pointer; border: none; background: none;">✕</button>` : ''}
+                    ${isAdmin ? `<button onclick="event.stopPropagation(); deleteUpItem('${data.id}', '${data.collectionName}')" style="color: #aaa; font-weight: bold; cursor: pointer; border: none; background: none;">✕</button>` : ''}
                 </div>
             `;
             list.appendChild(entry);
@@ -1722,11 +1743,79 @@ window.loadUpItems = async function() {
     } catch (error) { console.error("데이터 로드 중 에러 발생:", error); }
 };
 
-window.deleteUpItem = async function(id) {
+window.deleteUpItem = async function(id, collectionName) {
     if (!isAdmin) return;
     if(confirm('이 항목을 삭제하시겠습니까?')) {
-        try { await deleteDoc(doc(db, "up", id)); showToast('항목이 삭제되었습니다.'); await loadUpItems(); }
+        try { 
+            // 전달받은 컬렉션 이름(uplink 또는 up)에서 삭제
+            await deleteDoc(doc(db, collectionName, id)); 
+            showToast('항목이 삭제되었습니다.'); 
+            await loadUpItems(); 
+        }
         catch (error) { console.error('삭제 실패:', error); showToast('삭제에 실패했습니다.'); }
+    }
+};
+
+// ✨ 업보드 수정 모달 열기
+window.openEditUpModal = function(id, collectionName, title, deadline) {
+    if (!isAdmin) return;
+    
+    // 모달 HTML이 없으면 동적으로 생성
+    if (!document.getElementById('upEditModal')) {
+        const modalHtml = `
+        <div id="upEditModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
+            <div style="background:#fff; padding:32px; border-radius:16px; width:400px; max-width:90%; display:flex; flex-direction:column; gap:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                <h3 style="margin:0; color:#7A5A2F; font-size:24px; font-family:'OngleipParkDahyeon', sans-serif;">업링크 수정</h3>
+                <input type="hidden" id="editUpId">
+                <input type="hidden" id="editUpCollection">
+                <div>
+                    <label style="font-weight:bold; color:#7A5A2F; font-size:14px;">제목 *</label>
+                    <input type="text" id="editUpTitle" class="event-custom-input" style="width:100%; padding:10px; margin-top:4px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-weight:bold; color:#7A5A2F; font-size:14px;">마감 날짜</label>
+                    <input type="date" id="editUpDeadline" class="event-custom-input" style="width:100%; padding:10px; margin-top:4px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button onclick="closeModal('upEditModal')" style="padding:10px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; font-weight:800; cursor:pointer;">취소</button>
+                    <button onclick="saveEditUpItem()" style="padding:10px 16px; background:#FDE047; color:#7A5A2F; border:none; border-radius:8px; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 데이터 세팅
+    document.getElementById('editUpId').value = id;
+    document.getElementById('editUpCollection').value = collectionName;
+    document.getElementById('editUpTitle').value = title || '';
+    document.getElementById('editUpDeadline').value = deadline || '';
+    
+    // 모달 표시
+    document.getElementById('upEditModal').style.display = 'flex';
+};
+
+// ✨ 업보드 수정 사항 파이어베이스에 저장
+window.saveEditUpItem = async function() {
+    if (!isAdmin) return;
+    
+    const id = document.getElementById('editUpId').value;
+    const collectionName = document.getElementById('editUpCollection').value;
+    const title = document.getElementById('editUpTitle').value.trim();
+    const deadline = document.getElementById('editUpDeadline').value;
+
+    if (!title) return showToast('제목을 입력해주세요.');
+
+    try {
+        // 파이어베이스 데이터 업데이트
+        await updateDoc(doc(db, collectionName, id), { title, deadline });
+        
+        showToast('업링크가 수정되었습니다.');
+        closeModal('upEditModal');
+        await loadUpItems(); // 목록 새로고침
+    } catch (error) {
+        console.error("수정 실패:", error);
+        showToast('수정에 실패했습니다.');
     }
 };
 
@@ -1755,19 +1844,37 @@ window.checkAndShowPopup = async function() {
             if (settingsSnap.exists()) popupImageUrl = settingsSnap.data().imageUrl || '';
         } catch(e) {}
 
-        const snapshot = await getDocs(collection(db, 'up'));
+        const [uplinkSnapshot, upSnapshot] = await Promise.all([
+            getDocs(collection(db, 'uplink')),
+            getDocs(collection(db, 'up'))
+        ]);
         
         let validItems = [];
         const todayLocal = new Date();
         const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
 
-        snapshot.forEach(docSnap => {
+        // ✨ 팝업에서도 컬렉션 이름을 알 수 있도록 collectionName 속성 추가
+        uplinkSnapshot.forEach(docSnap => {
             const data = docSnap.data();
             if (data.deadline && data.deadline < todayStr) return;
-            validItems.push({ id: docSnap.id, ...data });
+            validItems.push({ id: docSnap.id, collectionName: 'uplink', ...data });
+        });
+        upSnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            validItems.push({ id: docSnap.id, collectionName: 'up', ...data });
         });
 
-        if (!popupImageUrl && validItems.length === 0) return;
+        if (validItems.length === 0) {
+            if (popupImageUrl) {
+                try {
+                    await deleteDoc(doc(db, 'settings', 'popup'));
+                    const popupInput = document.getElementById('popupImageUrlInput');
+                    if (popupInput) popupInput.value = '';
+                } catch(e) { console.error("팝업 이미지 자동 삭제 실패:", e); }
+            }
+            return;
+        }
 
         validItems.sort((a, b) => {
             if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
@@ -1785,8 +1892,12 @@ window.checkAndShowPopup = async function() {
                 if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
             }
             
+            // ✨ 팝업창 항목에도 우클릭 이벤트 적용
+            const safeTitle = data.title.replace(/'/g, "\\'");
+            const contextMenuHtml = isAdmin ? `oncontextmenu="event.preventDefault(); event.stopPropagation(); window.openEditUpModal('${data.id}', '${data.collectionName}', '${safeTitle}', '${data.deadline || ''}');"` : '';
+
             popupList.innerHTML += `
-                <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                <div class="up-item-card" ${contextMenuHtml} style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
                     <div style="flex: 1;">
                         <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
                         ${deadlineText}
@@ -2570,7 +2681,8 @@ Object.assign(window, {
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
     toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
     closeUpPopup, checkAndShowPopup, removeEventImage,
-    openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager, deleteAllDayManagerItems
+    openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager, deleteAllDayManagerItems,
+    openEditUpModal, saveEditUpItem
 });
 
 document.addEventListener('contextmenu', function(e) {
