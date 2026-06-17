@@ -249,28 +249,88 @@ body {
 .memo-panel-container {
     display: none; width: 360px; min-width: 280px; border-radius: var(--radius-lg); background: #fffef7;
     border: none; box-shadow: none; padding: 22px; box-sizing: border-box;
-    align-self: stretch; overflow: hidden;
+    align-self: stretch; overflow: hidden; /* 💡 패널 자체는 스크롤되지 않게 고정합니다 */
 }
 .memo-panel-container.open { display: flex; flex-direction: column; }
-.memo-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; }
-.memo-tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.memo-tab { background: #ffffff; border: 1px solid #F5F5F5; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: inherit; }
-.memo-tab.memo-tab-active { background: #ffffff; color: #68cfff; border: 2px solid #68cfff; }
 
-.memo-add-button { color: #FDE047; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-weight: 900; font-size: 24px; line-height: 1; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
-.memo-add-button:hover { opacity: 0.9; }
-.memo-input-area { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; align-items: center; }
+/* 💡 1. 탭을 상단에 고정하고 카드 영역과 분리선 추가 */
+.memo-panel-header { 
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; /* gap을 살짝 줄임 */
+    padding-bottom: 16px; margin-bottom: 16px;
+    border-bottom: 2px dashed #E5E1DA; 
+    flex-shrink: 0; 
+}
+.memo-tabs { 
+    display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; 
+    overflow-x: auto; /* 혹시라도 화면이 너무 좁아지면 가로로 스크롤 되게 방어 */
+    scrollbar-width: none; /* 파이어폭스 스크롤바 숨김 */
+}
+.memo-tabs::-webkit-scrollbar { display: none; } /* 크롬 스크롤바 숨김 */
+
+.memo-tab { 
+    background: #ffffff; border: 1px solid #F5F5F5; border-radius: 999px; 
+    padding: 8px 12px; /* 좌우 여백을 살짝 줄여서 공간 확보 */
+    font-size: 14px; /* 글자 크기 살짝 조정 */
+    white-space: nowrap; /* 글씨가 찌그러지며 줄바꿈되는 것 방지 */
+    cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: inherit; 
+}
+.memo-tab.memo-tab-active { background: #ffffff; color: #68cfff; border: 2px solid #68cfff; }
+.memo-add-button { 
+    color: #FDE047; border: none; border-radius: 50%; width: 40px; height: 40px; 
+    cursor: pointer; font-weight: 900; font-size: 24px; line-height: 1; transition: 0.2s; 
+    display: flex; align-items: center; justify-content: center; padding: 0; 
+    flex-shrink: 0; /* 공간이 부족해도 이 버튼은 찌그러지지 않음 */
+}
+.memo-add-button:hover { opacity: 0.9; transform: scale(1.1); }
+/* 메모 입력 영역 */
+.memo-input-area { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; align-items: center; flex-shrink: 0; }
 .memo-input-area.hidden { display: none; }
 .memo-item-input { width: 100%; max-width: 100%; min-height: 100px; border: 2px solid #F5F5F5; border-radius: 18px; padding: 16px; resize: vertical; font-family: inherit; background: #FFFFFF; color: var(--text-dark); box-sizing: border-box; }
 .memo-input-actions { display: flex; justify-content: flex-end; gap: 12px; width: 100%; }
 
-.memo-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: calc(100% - 180px); padding-right: 4px; }
-.memo-item-entry { background: #FFFFFF; border: 1px solid #F5F5F5; border-radius: 18px; padding: 16px; display: flex; align-items: center; gap: 10px; word-break: break-word; }
-.memo-content-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.memo-datetime { font-size: 12px; font-weight: 800; color: #A09586; background: #F9F9F9; padding: 4px 10px; border-radius: 12px; font-family: inherit; }
-.memo-text-content { font-size: 16px; font-weight: 800; line-height: 1.5; color: var(--text-dark); white-space: pre-wrap; font-family: inherit; text-align: center; width: 100%; }
-.memo-item-delete { background: transparent; border: none; color: #D32F2F; font-weight: 900; cursor: pointer; padding: 5px; flex-shrink: 0; }
+/* 💡 2. 메모 카드들이 스크롤 되며 차곡차곡 쌓이는 리스트 영역 */
+.memo-list { 
+    display: flex; flex-direction: column; gap: 16px; /* 카드 사이의 간격을 넓혀서 쌓인 느낌을 줍니다 */
+    overflow-y: auto; flex: 1; /* 탭 아래의 남은 공간을 모두 차지하고, 내부에서만 스크롤 되게 만듭니다 */
+    padding-right: 6px; padding-bottom: 20px;
+    max-height: none; 
+}
 
+/* 💡 3. 메모 카드 디자인 (입체적인 포스트잇/카드 느낌으로 정리) */
+.memo-item-entry { 
+    background: #FFFFFF; border: 1px solid #F0F0EE; border-radius: 20px; 
+    padding: 20px; display: flex; align-items: flex-start; gap: 12px; 
+    word-break: break-word; flex-direction: column; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
+    position: relative; /* 💡 삭제 버튼을 카드 안에서 자유롭게 띄우기 위한 기준점 */
+}
+/* 카드에 마우스를 올리면 살짝 위로 떠오르는 효과 */
+
+.memo-content-wrapper { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.memo-datetime { font-size: 12px; font-weight: 800; color: #A09586; background: #F9F9F9; padding: 6px 12px; border-radius: 12px; font-family: inherit; align-self: flex-start; }
+.memo-text-content { font-size: 15px; font-weight: 800; line-height: 1.6; color: var(--text-dark); white-space: pre-wrap; font-family: inherit; text-align: left; width: 100%; padding-right: 24px; box-sizing: border-box; }
+/* 메모 삭제 버튼 디자인 최적화 */
+.memo-item-delete { 
+    position: absolute; 
+    top: 20px; 
+    right: 16px; 
+    background: transparent !important; /* 배경 투명하게 */
+    border: none; 
+    color: #D1D5DB; /* 평소엔 연한 회색 */
+    font-weight: 900; 
+    font-size: 16px;
+    cursor: pointer; 
+    transition: color 0.2s, transform 0.2s;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: 4px; /* 클릭하기 편하게 투명 여백 확보 */
+    line-height: 1;
+}
+.memo-item-delete:hover { 
+    color: #EF4444 !important; 
+    transform: scale(1.15); 
+}
 .songbook-section { display: none; width: 100%; flex-direction: row; gap: 0; padding: 0; margin: 0; flex: 1; min-height: 600px; background: white; border-radius: 0; overflow: visible; position: relative; }
 .songbook-section.visible { display: flex; max-height: calc(100vh - 260px); height: calc(100vh - 260px); }
 .songbook-loading {
@@ -803,4 +863,95 @@ body {
         max-width: 100% !important;
         margin-top: 15px !important;
     }
+}
+
+
+/* =========================================
+   달력 크기 고정 & 메모보드 높이 일치 레이아웃 (Absolute)
+   + 스윽~ 나오는 서랍 애니메이션 적용
+   ========================================= */
+.main-layout-wrapper {
+    position: relative; 
+    width: 90%;
+    max-width: 1700px;
+    margin-left: 3%; /* 💡 왼쪽 여백을 주어 캘린더를 오른쪽으로 살짝 밉니다. */
+}
+
+/* 캘린더 컨테이너 설정 */
+.main-layout-wrapper > .container {
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* PC 화면: 메모보드 위치, 폭 조절 및 애니메이션 */
+@media screen and (min-width: 1051px) {
+    /* 💡 1. 달력을 메모보드보다 앞쪽에 배치 (서랍의 덮개 역할) */
+    .main-layout-wrapper > .container {
+        position: relative;
+        z-index: 1000 !important; 
+    }
+
+    /* 💡 2. 달력 뒤쪽(-100px)에서부터 튀어나오는 움직임 정의 */
+    @keyframes drawerSlideOut {
+        0% {
+            opacity: 0;
+            transform: translateX(-150px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .memo-panel-container.open {
+        display: flex !important;
+        position: absolute !important;
+        top: 0;
+        height: 1225px !important;
+        max-height: none !important;
+        left: calc(100% + -200px); /* 달력 옆에 바짝 붙임 */
+        
+        width: 382px !important; /* 사이드바에 안 가려지게 메모보드 폭을 줄임 */
+        overflow-y: auto !important; 
+        
+        /* 💡 3. 달력(1000) 뒤에서 나오도록 z-index를 900으로 낮춤 */
+        z-index: 900 !important;
+        
+        /* 💡 4. 스윽 나오는 애니메이션 실행 (0.5초간 부드럽게) */
+        animation: drawerSlideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        
+        /* 디자인 속성 */
+        background: #ffffff !important;
+        border: 2px solid #fffac3 !important;
+        box-shadow: none !important; 
+        border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
+        padding: 20px 20px 20px 100px !important; /* 좁아진 폭에 맞춰 안쪽 여백도 살짝 줄임 */
+    }
+}
+
+/* 모바일 화면 대응 방어 코드 */
+@media screen and (max-width: 1050px) {
+    .main-layout-wrapper { width: 100%; margin: 0 auto; gap: 0; }
+    .main-layout-wrapper > .container { width: 100% !important; }
+}
+
+.memo-input-area {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.memo-input-area > div {
+    width: 100% !important;
+    box-sizing: border-box;
+    gap: 8px !important; /* 창이 좁으니 사이 간격을 살짝 줄임 */
+}
+
+/* flex 박스 안에서 입력창이 영역을 넘지 않도록 강제 제어 */
+.memo-input-area input[type="date"],
+.memo-input-area input[type="time"] {
+    flex: 1;
+    min-width: 0 !important; /* 핵심: 브라우저 기본 크기를 무시하고 부모 크기에 억지로 맞춤 */
+    width: 100%;
+    box-sizing: border-box !important;
+    padding: 12px 10px !important; /* 안쪽 여백도 좁은 창에 맞게 다듬기 */
 }

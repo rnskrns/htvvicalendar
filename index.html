@@ -173,6 +173,7 @@
         </div>
     </header>
 
+<div class="main-layout-wrapper">
     <div class="container">
         <div class="calendar-top">
             <div class="calendar-header mt-2">
@@ -201,39 +202,101 @@
 
             <button class="mobile-nav-arrow left-arrow" onclick="moveMonth(-1)" aria-label="이전 달"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <button class="mobile-nav-arrow right-arrow" onclick="moveMonth(1)" aria-label="다음 달"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-            
-            <div id="memoPanel" class="memo-panel-container">
-                <button class="mobile-player-close" onclick="toggleMobileMemo()" title="닫기" id="mobileMemoCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                <div class="memo-panel-header">
-                    <div class="memo-tabs">
-                        <button class="memo-tab memo-tab-active" data-tab="컨텐츠" onclick="selectMemoTab('컨텐츠')">컨텐츠</button>
-                        <button class="memo-tab" data-tab="LCK" onclick="selectMemoTab('LCK')">LCK</button>
-                        <button class="memo-tab" data-tab="시네티" onclick="selectMemoTab('시네티')">시네티</button>
-                    </div>
-                    <button id="memoAddBtn" class="memo-add-button admin-only-btn" onclick="openMemoInput()">+</button>
-                </div>
-                <div id="memoInputArea" class="memo-input-area hidden">
-                    <div style="display: flex; gap: 10px; width: 100%;">
-                        <input type="date" id="memoDateInput" class="admin-input" style="flex: 1; padding: 10px; font-size: 14px;" title="일정 날짜">
-                        <input type="time" id="memoTimeInput" class="admin-input" style="flex: 1; padding: 10px; font-size: 14px;" title="일정 시간">
-                    </div>
-                    <textarea id="memoItemText" class="memo-item-input" placeholder="메모 내용을 입력하세요"></textarea>
-                    <div class="memo-input-actions">
-                        <button class="btn btn-cancel" onclick="closeMemoInput()">취소</button>
-                        <button class="btn btn-save" onclick="saveMemoItem()">추가하기</button>
+        </div>
+
+        <div id="songbookSection" class="songbook-section">
+            <div class="songbook-sidebar">
+                <div id="favoritePlayerPanel" class="fav-player-panel is-minimized">
+                    <button id="mobilePlayerCloseBtn" class="mobile-player-close" onclick="toggleMobilePlayer()" title="닫기"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                    <div id="panelContent">
+                        <h4 class="font-black text-xl mb-4 flex items-center gap-2" style="font-family: 'Cafe24SurroundAir', sans-serif;">플레이어</h4>
+                        <div id="playerWrapper" style="width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; margin-bottom: 10px; overflow: hidden; display: none;"></div>
+                        <div class="track-info" id="playerTrackTitle">재생할 곡이 없습니다</div>
+                        <div class="track-artist" id="playerTrackArtist">곡을 선택해주세요.</div>
+                        <div id="visualizer" class="wave-container" style="display: none;"><div class="wave"></div></div>
+                        <div class="player-controls" style="position: relative; margin-top: 15px; height: 50px;">
+                            <button class="ctrl-btn" id="btnMin" onclick="toggleScreen()" title="화면 켜기/끄기"><svg id="iconMin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                            <button class="ctrl-btn" onclick="prevFavSong()">⏮</button>
+                            <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="toggleFavPlay()">▶</button>
+                            <button class="ctrl-btn" onclick="nextFavSong()">⏭</button>
+                        </div>
                     </div>
                 </div>
-                <div id="memoList" class="memo-list"></div>
+                <div class="artist-list-wrapper"><div class="artist-grid" id="artistList"></div></div>
             </div>
 
-            <div id="upPanel" class="memo-panel-container">
-                <button class="mobile-player-close" onclick="toggleMobileUpBoard()" title="닫기" id="mobileUpCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                <div class="memo-panel-header" style="justify-content: center;">
-                    <h3 style="margin: 0; font-family: 'Cafe24SurroundAir'; font-weight: 900; color: #0284c7;">💦UP구걸</h3>
+            <div class="songbook-main-content">
+                <div class="songbook-header">
+                    <div class="search-input-wrapper">
+                        <button id="favFilterBtn" onclick="setSongbookFilter('Favorites')" type="button" title="즐겨찾기"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" /></svg></button>
+                        <input id="songbookSearch" class="songbook-search" type="text" placeholder="노래 제목 또는 가수를 검색하세요" oninput="renderSongbook()">
+                    </div>
+                    <button id="songbookAddBtn" class="add-song-btn admin-only-btn" type="button" onclick="document.getElementById('adminSongForm').classList.add('visible'); document.getElementById('newSongTitle').focus();">+</button>
                 </div>
-                <div id="upList" class="memo-list" style="padding: 10px;"></div>
+                <div id="adminSongForm" class="admin-song-form">
+                    <div class="admin-form-row">
+                        <input id="newSongTitle" class="admin-input" type="text" placeholder="노래 제목">
+                        <input id="newSongArtist" class="admin-input" type="text" placeholder="가수명">
+                        <input id="newSongUrl" class="admin-input" type="text" placeholder="유튜브 또는 링크 주소 (선택)">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-dark); padding: 4px 8px; cursor: pointer; font-family: 'Cafe24SurroundAir', sans-serif;">
+                            <input type="checkbox" id="isConditionSong" style="width: 18px; height: 18px; accent-color: #F48FB1; cursor: pointer;">컨디션곡 (목 상태에 따라 부르는 곡)
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                        <button class="admin-add-btn" type="button" onclick="addSong()" id="addSongBtn">노래 추가</button>
+                        <button class="admin-add-btn" type="button" onclick="cancelEdit()" style="background: #e5e7eb; color: #6b7280;">취소</button>
+                    </div>
+                </div>
+                <div id="songList" class="songbook-content"></div>
             </div>
         </div>
+
+        <div id="browserModal" class="songbook-modal">
+            <div class="browser-container">
+                <div class="browser-header">
+                    <span id="browserTitle" style="font-weight: 800; color: #4E4942; font-family: 'Cafe24SurroundAir', sans-serif;">HTVVI 브라우저</span>
+                    <button class="close-browser" onclick="closeBrowser()">닫기</button>
+                </div>
+                <div class="browser-content-wrapper">
+                    <iframe id="browserIframe" class="browser-iframe" allow="autoplay; clipboard-write; web-share;" allowfullscreen="true"></iframe>
+                </div>
+                <div class="browser-footer">
+                    <button id="modalFavoriteBtn" class="modal-favorite-btn" onclick="toggleModalFavorite()">☆ 즐겨찾기 추가</button>
+                </div>
+            </div>
+        </div>
+    </div> <div id="memoPanel" class="memo-panel-container">
+        <button class="mobile-player-close" onclick="toggleMobileMemo()" title="닫기" id="mobileMemoCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+        <div class="memo-panel-header">
+            <div class="memo-tabs">
+                <button class="memo-tab memo-tab-active" data-tab="컨텐츠" onclick="selectMemoTab('컨텐츠')">컨텐츠</button>
+                <button class="memo-tab" data-tab="LCK" onclick="selectMemoTab('LCK')">LCK</button>
+                <button class="memo-tab" data-tab="시네티" onclick="selectMemoTab('시네티')">시네티</button>
+            </div>
+            <button id="memoAddBtn" class="memo-add-button admin-only-btn" onclick="openMemoInput()">+</button>
+        </div>
+        <div id="memoInputArea" class="memo-input-area hidden">
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <input type="date" id="memoDateInput" class="admin-input" style="flex: 1; padding: 10px; font-size: 14px;" title="일정 날짜">
+                <input type="time" id="memoTimeInput" class="admin-input" style="flex: 1; padding: 10px; font-size: 14px;" title="일정 시간">
+            </div>
+            <textarea id="memoItemText" class="memo-item-input" placeholder="메모 내용을 입력하세요"></textarea>
+            <div class="memo-input-actions">
+                <button class="btn btn-cancel" onclick="closeMemoInput()">취소</button>
+                <button class="btn btn-save" onclick="saveMemoItem()">추가하기</button>
+            </div>
+        </div>
+        <div id="memoList" class="memo-list"></div>
+    </div>
+
+    <div id="upPanel" class="memo-panel-container">
+        <button class="mobile-player-close" onclick="toggleMobileUpBoard()" title="닫기" id="mobileUpCloseBtn" style="display: none;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+        <div class="memo-panel-header" style="justify-content: center;">
+            <h3 style="margin: 0; font-family: 'Cafe24SurroundAir'; font-weight: 900; color: #0284c7;">💦UP구걸</h3>
+        </div>
+        <div id="upList" class="memo-list" style="padding: 10px;"></div>
+    </div>        
+</div>
 
         <div id="songbookSection" class="songbook-section">
             <div class="songbook-sidebar">
