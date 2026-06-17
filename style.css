@@ -592,19 +592,42 @@ body {
     body.admin-mode #adminBtn_pc:hover .admin-profile-img { transform: scale(1.08); transition: transform 0.2s ease; }
     .sidebar-item:hover .cafe-img-1 { display: none !important; }
     .sidebar-item:hover .cafe-img-2 { display: block !important; }
+
+    @keyframes drawerSlideOut {
+        0% { opacity: 0; transform: translateX(-150px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    
     .memo-panel-container.open {
         display: flex !important;
         position: static !important;
         width: 360px !important;
         max-height: calc(100vh - 160px) !important;
+        position: absolute !important;
+        top: 0;
+        height: 1225px !important;
+        max-height: none !important;
+        left: calc(100% - 145px); 
+        width: 382px !important; 
         overflow-y: auto !important;
         z-index: 999 !important;
         margin-left: 24px !important;
         flex-shrink: 0;
+        z-index: 900 !important;
+        animation: drawerSlideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        
+        background: #ffffff !important;
+        border: 2px solid #fff7a4 !important;
+        box-shadow: none !important; 
+        border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
+        padding: 20px 20px 20px 100px !important; 
     }
 }
 
 @media screen and (max-width: 1050px) {
+    .main-layout-wrapper { width: 100%; margin: 0 auto; gap: 0; transform: none !important; }
+    .main-layout-wrapper > .container { width: 100% !important; }
+
     .header-center { display: none !important; } 
     .main-header { display: flex !important; flex-direction: column !important; padding: 10px 16px 20px !important; min-height: 0 !important; }
     .header-right { width: 100% !important; padding: 0 !important; justify-content: center !important; }
@@ -629,8 +652,8 @@ body {
     .today-summary { width: 100%; max-width: 100%; }
     
     .week-row {
-        display: grid !important; grid-template-columns: 75px 1fr !important; background-color: #FFFFFF !important; border: 2px solid #fffac3 !important;
-        border-radius: 12px !important; box-shadow: 3px 4px 0px #fffac3 !important; 
+        display: grid !important; grid-template-columns: 75px 1fr !important; background-color: #FFFFFF !important; border: 2px solid #fff7a4 !important;
+        border-radius: 12px !important; box-shadow: 3px 4px 0px #fff7a4 !important; 
         margin-bottom: 0px !important; /* 요일 칸 사이의 간격을 16px에서 8px로 줄임 */
         padding: 0 !important; overflow: visible !important; 
         min-height: 65px !important; /* 요일 칸 자체의 최소 높이를 85px에서 65px로 줄임 */
@@ -761,6 +784,50 @@ body {
     .week-row .event-tag { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; padding: 12px 16px !important; }
     .week-row .event-tag div { text-align: left !important; order: 1 !important; flex: 1 !important; margin-right: 12px !important; display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; width: auto !important; }
     .week-row .event-tag .event-time-badge { position: static !important; order: 2 !important; margin: 0 !important; flex-shrink: 0 !important; }
+
+    #dayInfoModal .event-modal-box {
+        width: 95% !important;
+        min-width: 320px !important;
+    }
+    
+    #dayInfoModal #dayInfoList > div {
+        max-width: 100% !important;
+        min-width: auto !important;
+    }
+    
+    #dayInfoModal #dayInfoList h2 {
+        font-size: 22px !important;
+        margin-bottom: 12px !important;
+    }
+    
+    #dayInfoModal #dayInfoList .info-time {
+        font-size: 13px !important;
+        padding: 8px 16px !important;
+    }
+    
+    #dayInfoModal #dayInfoList .info-profiles {
+        gap: 12px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    #dayInfoModal #dayInfoList .profile-card {
+        width: 60px !important;
+        gap: 6px !important;
+    }
+    
+    #dayInfoModal #dayInfoList .profile-img {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    #dayInfoModal #dayInfoList .profile-name {
+        font-size: 12px !important;
+    }
+    
+    #dayInfoModal #dayInfoNoticeArea {
+        max-width: 100% !important;
+        margin-top: 15px !important;
+    }
 }
 
 .notice-preview { margin-top: 20px; padding: 0; background: transparent; border: none; width: 100%; text-align: left; box-sizing: border-box; box-shadow: none; }
