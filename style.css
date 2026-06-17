@@ -959,17 +959,17 @@ body {
         display: flex !important;
         position: absolute !important;
         top: 0;
-        height: 1225px !important;
+        height: 1215px !important;
         max-height: none !important;
         left: calc(100% - 145px); 
-        width: 382px !important; 
+        width: 370px !important; 
         overflow-y: auto !important; 
         z-index: 900 !important;
         animation: drawerSlideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
         
         background: #ffffff !important;
         border: 2px solid #fff7a4 !important;
-        box-shadow: none !important; 
+        box-shadow: 10px 10px 0px #fff7a4 !important; 
         border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
         padding: 20px 20px 20px 100px !important; 
     }
