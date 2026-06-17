@@ -2329,6 +2329,7 @@ function renderSongbook() {
 
 function openBrowser(url, id, title) {
     if(!url) { showToast("등록된 링크가 없습니다."); return; }
+    document.body.appendChild(document.getElementById('browserModal'));
     currentModalSongId = id; document.getElementById('browserTitle').innerText = title ? title : 'HTVVI 브라우저';
     document.getElementById('browserModal').classList.add('visible');
     let src = url;
