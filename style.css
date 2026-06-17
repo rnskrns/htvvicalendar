@@ -177,7 +177,7 @@ body {
 
 .today-summary {
     background: var(--white); padding: 20px; border-radius: var(--radius-lg); width: 320px; 
-    border: 2px solid #fffac3; box-shadow: 7px 7px 0px #fffac3 !important; 
+    border: 2px solid #fff7a4; box-shadow: 7px 7px 0px #fff7a4 !important; 
 }
 .summary-item {
     display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
@@ -222,7 +222,7 @@ body {
 .container {
     width: 96%; max-width: 1600px; background: var(--white); border-radius: var(--radius-xl);
     padding: 45px; box-sizing: border-box; position: relative; display: flex; flex-direction: column;
-    border: 2px solid #fffac3; box-shadow: 10px 10px 0px #fffac3 !important; 
+    border: 2px solid #fff7a4; box-shadow: 10px 10px 0px #fff7a4 !important; 
 }
 
 .calendar-top { display: flex; justify-content: center; align-items: center; margin-bottom: 5px; width: 100%; }
@@ -569,7 +569,7 @@ body {
     .right-sidebar {
         width: 142px !important; display: flex !important; position: fixed; right: 40px; top: 50%; transform: translateY(-50%);
         flex-direction: column; gap: 6px; background: var(--white); padding: 20px 16px; border-radius: var(--radius-lg);
-        border: 2px solid #fffac3; box-shadow: 5px 5px 0px #fffac3 !important; z-index: 9990; min-width: 135px;
+        border: 2px solid #fff7a4; box-shadow: 5px 5px 0px #fff7a4 !important; z-index: 9990; min-width: 135px;
     }
     .sidebar-item {
         display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 12px 14px;
@@ -601,9 +601,6 @@ body {
         z-index: 999 !important;
         margin-left: 24px !important;
         flex-shrink: 0;
-    }
-    #memoPanel.open, #upPanel.open {
-        margin-left: 24px !important;
     }
 }
 
@@ -677,7 +674,6 @@ body {
     body { padding-top: 60px; padding-bottom: 90px; }
     
     .memo-panel-container { order: -1; width: 100%; max-width: 100%; padding: 16px 16px 18px; margin-top: 16px; }
-    .memo-panel-container.open { width: 100%; padding-left: 0; height: auto; max-height: none; }
     .memo-panel-header { flex-direction: column; align-items: stretch; gap: 12px; }
     .memo-tabs { width: 100%; display: flex; justify-content: center; overflow-x: auto; padding: 0 12px 8px; margin: 0 -12px 10px -12px; }
     .memo-tab { background: #FFFFFF; border: none; border-radius: 999px; padding: 10px 16px; cursor: pointer; font-weight: 800; color: #4E4942; transition: background 0.2s, color 0.2s; font-family: inherit; }
@@ -872,35 +868,24 @@ body {
    ========================================= */
 .main-layout-wrapper {
     position: relative; 
-    width: 90%;
-    max-width: 1700px;
-    margin-left: 3%; /* 💡 왼쪽 여백을 주어 캘린더를 오른쪽으로 살짝 밉니다. */
+    width: 96%;
+    max-width: 1600px;
+    margin: 0 auto !important; /* 💡 화면 가운데 정렬 */
+    transform: translateX(30px) !important; /* 💡 가운데에서 오른쪽으로 30px만 밉니다 (필요시 숫자 조절) */
 }
 
-/* 캘린더 컨테이너 설정 */
 .main-layout-wrapper > .container {
     width: 100% !important;
     margin: 0 !important;
+    position: relative;
+    z-index: 1000 !important; 
 }
 
 /* PC 화면: 메모보드 위치, 폭 조절 및 애니메이션 */
 @media screen and (min-width: 1051px) {
-    /* 💡 1. 달력을 메모보드보다 앞쪽에 배치 (서랍의 덮개 역할) */
-    .main-layout-wrapper > .container {
-        position: relative;
-        z-index: 1000 !important; 
-    }
-
-    /* 💡 2. 달력 뒤쪽(-100px)에서부터 튀어나오는 움직임 정의 */
     @keyframes drawerSlideOut {
-        0% {
-            opacity: 0;
-            transform: translateX(-150px);
-        }
-        100% {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        0% { opacity: 0; transform: translateX(-150px); }
+        100% { opacity: 1; transform: translateX(0); }
     }
     
     .memo-panel-container.open {
@@ -909,49 +894,28 @@ body {
         top: 0;
         height: 1225px !important;
         max-height: none !important;
-        left: calc(100% + -200px); /* 달력 옆에 바짝 붙임 */
-        
-        width: 382px !important; /* 사이드바에 안 가려지게 메모보드 폭을 줄임 */
+        left: calc(100% - 145px); 
+        width: 382px !important; 
         overflow-y: auto !important; 
-        
-        /* 💡 3. 달력(1000) 뒤에서 나오도록 z-index를 900으로 낮춤 */
         z-index: 900 !important;
-        
-        /* 💡 4. 스윽 나오는 애니메이션 실행 (0.5초간 부드럽게) */
         animation: drawerSlideOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
         
-        /* 디자인 속성 */
         background: #ffffff !important;
-        border: 2px solid #fffac3 !important;
+        border: 2px solid #fff7a4 !important;
         box-shadow: none !important; 
         border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
-        padding: 20px 20px 20px 100px !important; /* 좁아진 폭에 맞춰 안쪽 여백도 살짝 줄임 */
+        padding: 20px 20px 20px 100px !important; 
     }
 }
 
-/* 모바일 화면 대응 방어 코드 */
 @media screen and (max-width: 1050px) {
-    .main-layout-wrapper { width: 100%; margin: 0 auto; gap: 0; }
+    .main-layout-wrapper { width: 100%; margin: 0 auto; gap: 0; transform: none !important; }
     .main-layout-wrapper > .container { width: 100% !important; }
 }
 
-.memo-input-area {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.memo-input-area > div {
-    width: 100% !important;
-    box-sizing: border-box;
-    gap: 8px !important; /* 창이 좁으니 사이 간격을 살짝 줄임 */
-}
-
-/* flex 박스 안에서 입력창이 영역을 넘지 않도록 강제 제어 */
+.memo-input-area { width: 100%; box-sizing: border-box; }
+.memo-input-area > div { width: 100% !important; box-sizing: border-box; gap: 8px !important; }
 .memo-input-area input[type="date"],
 .memo-input-area input[type="time"] {
-    flex: 1;
-    min-width: 0 !important; /* 핵심: 브라우저 기본 크기를 무시하고 부모 크기에 억지로 맞춤 */
-    width: 100%;
-    box-sizing: border-box !important;
-    padding: 12px 10px !important; /* 안쪽 여백도 좁은 창에 맞게 다듬기 */
+    flex: 1; min-width: 0 !important; width: 100%; box-sizing: border-box !important; padding: 12px 10px !important;
 }
