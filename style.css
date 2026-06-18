@@ -54,6 +54,13 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'KccHanbit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2403-2@1.0/KCC-Hanbit.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
@@ -620,6 +627,25 @@ body {
         box-shadow: none !important; 
         border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
         padding: 20px 20px 20px 100px !important; 
+    }
+
+    .calendar-grid .day-label {
+        font-family: 'KccHanbit', sans-serif !important;
+        color: var(--text-dark); /* 평일 색상 */
+        font-size: 18px;
+    }
+    
+    /* 토요일 (6번째 요일) 파란색 복구 */
+    .calendar-grid .day-label:nth-child(6) {
+        color: #60A5FA !important;
+    }
+    
+    /* 일요일 (7번째 요일) 빨간색 복구 */
+    .calendar-grid .day-label:nth-child(7) {
+        color: #F87171 !important;
+    }
+    .calendar-grid .day {
+    border-radius: 12px; /* 숫자를 조절해서 원하는 둥글기를 맞추세요! (예: 8px, 15px 등) */
     }
 }
 
