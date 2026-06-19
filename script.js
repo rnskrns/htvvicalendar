@@ -1,15 +1,16 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDjlTRqOqZPgRIcMK9MvLtLsYd7qbQ6rXU",
-  authDomain: "sompunchcalendar.firebaseapp.com",
-  projectId: "sompunchcalendar",
-  storageBucket: "sompunchcalendar.firebasestorage.app",
-  messagingSenderId: "962209932620",
-  appId: "1:962209932620:web:ead31ed4b85bfb24ec9be9",
-  measurementId: "G-QNFDJEHXWB"
+    apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
+    authDomain: "htvvi-calendar.firebaseapp.com",
+    projectId: "htvvi-calendar",
+    storageBucket: "htvvi-calendar.firebasestorage.app",
+    messagingSenderId: "629395623347",
+    appId: "1:629395623347:web:64b75d50633ac275c58fc6",
+    measurementId: "G-QECSWX905Y",
+    databaseURL: "https://htvvi-calendar-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -31,10 +32,10 @@ async function seedAdmin() {
         if (snapshot.empty) {
             console.log("관리자 정보가 없어 기본 계정을 생성합니다.");
             const defaultAdmin = {
-                id: 'ldrboo',
-                pw: 'som11110915',
-                name: '솜주먹',
-                img: 'https://stimg.sooplive.com/LOGO/ld/ldrboo/ldrboo.jpg'
+                id: 'htvv2i',
+                pw: '01121125',
+                name: '햇비',
+                img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg'
             };
             await addDoc(collection(db, "admins"), defaultAdmin);
             console.log("기본 관리자 계정 생성 완료.");
@@ -46,21 +47,21 @@ async function seedAdmin() {
 
 /* 하이브리드 로그인 로직 시작 */
 function getAdminProfiles() {
-    try { return JSON.parse(localStorage.getItem('sompunch_admin_profiles')) || []; }
+    try { return JSON.parse(localStorage.getItem('htvvi_admin_profiles')) || []; }
     catch { return []; }
 }
 
 function saveAdminProfiles(profiles) {
-    localStorage.setItem('sompunch_admin_profiles', JSON.stringify(profiles));
+    localStorage.setItem('htvvi_admin_profiles', JSON.stringify(profiles));
 }
 
 function initAuth() {
     // 1. 먼저 localStorage 확인 (로그인 유지 체크한 경우)
-    let sessionToken = localStorage.getItem('sompunch_admin_session');
+    let sessionToken = localStorage.getItem('htvvi_admin_session');
     
     // 2. 없으면 sessionStorage 확인 (일반 로그인)
     if (!sessionToken) {
-        sessionToken = sessionStorage.getItem('sompunch_admin_session');
+        sessionToken = sessionStorage.getItem('htvvi_admin_session');
     }
 
     if (sessionToken) {
@@ -82,7 +83,6 @@ window.loginAdmin = async function() {
     const id = document.getElementById('adminId').value.trim();
     const pw = document.getElementById('adminPw').value;
     const err = document.getElementById('pwError');
-    
     const stayLoggedInElement = document.getElementById('stayLoggedIn');
     const stayLoggedIn = stayLoggedInElement ? stayLoggedInElement.checked : false;
 
@@ -109,8 +109,8 @@ window.loginAdmin = async function() {
                 const newProfile = {
                     id: id,
                     docId: adminDoc.id,
-                    name: adminData.name || '솜주먹',
-                    img: adminData.img || 'https://stimg.sooplive.com/LOGO/ld/ldrboo/ldrboo.jpg',
+                    name: adminData.name || '햇비',
+                    img: adminData.img || 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg',
                     token: token
                 };
                 
@@ -122,9 +122,9 @@ window.loginAdmin = async function() {
                 saveAdminProfiles(profiles);
                 
                 if (stayLoggedIn) {
-                    localStorage.setItem('sompunch_admin_session', newProfile.token);
+                    localStorage.setItem('htvvi_admin_session', newProfile.token);
                 } else {
-                    sessionStorage.setItem('sompunch_admin_session', newProfile.token);
+                    sessionStorage.setItem('htvvi_admin_session', newProfile.token);
                 }
                 
                 isAdmin = true;
@@ -158,25 +158,32 @@ window.loginAdmin = async function() {
 }
 
 window.loginWithProfile = function(token) {
-    let profiles = getAdminProfiles();
+    const profiles = getAdminProfiles();
     const profile = profiles.find(p => p.token === token);
-    
+    // 로그인 유지 체크박스 상태를 가져옵니다.
+    const stayLoggedIn = document.getElementById('stayLoggedIn') ? document.getElementById('stayLoggedIn').checked : false; 
+
     if (profile && token !== 'expired') {
-        setAdminSession(profile);
+        // 체크박스 상태를 함께 전달합니다.
+        setAdminSession(profile, stayLoggedIn); 
         closeModal('pwModal');
         showToast(`${profile.name}님 환영합니다.`);
     } else {
         profiles = profiles.filter(p => p.token !== token && p.token !== 'expired');
         saveAdminProfiles(profiles);
-        
         showToast('인증이 만료되었습니다. 다시 로그인해 주세요.');
+        document.getElementById('profileSelectionArea').style.display = 'none';
         renderAdminProfiles();
     }
 }
 
-function setAdminSession(profile) {
-    // 프로필 클릭 로그인은 '로그인 유지'를 의도한 것으로 간주하고 localStorage에 저장합니다.
-    localStorage.setItem('sompunch_admin_session', profile.token);
+function setAdminSession(profile, isPersistent) {
+    // isPersistent(boolean) 값에 따라 적절한 저장소를 사용합니다.
+    if (isPersistent) {
+        localStorage.setItem('htvvi_admin_session', profile.token);
+    } else {
+        sessionStorage.setItem('htvvi_admin_session', profile.token);
+    }
     
     isAdmin = true;
     currentAdminProfile = profile;
@@ -209,7 +216,7 @@ window.renderAdminProfiles = function() {
                 <div style="position:relative; width: 50px; height: 50px; border-radius: 50%;" 
                      onmouseenter="this.querySelector('.profile-delete-btn').style.display='flex'" 
                      onmouseleave="this.querySelector('.profile-delete-btn').style.display='none'">
-                    <img src="${p.img}" alt="${p.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #F5BDD6;">
+                    <img src="${p.img}" alt="${p.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #FDE047;">
                     <button class="profile-delete-btn" onclick="deleteAdminProfile(event, '${p.id}')" style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer; display:none; align-items:center; justify-content:center; padding:0;">✕</button>
                 </div>
                 <span class="profile-item-name" style="font-size:13px; font-weight:bold; color:#7A5A2F; margin-top: 6px;">${p.name}</span>
@@ -228,7 +235,7 @@ let loadedMonths = new Set();
 let isSongbookLoaded = false;
 let members = {};
 let currentAMPM = '오전';
-let activeMemoTab = '메모';
+let activeMemoTab = '컨텐츠';
 let activeDateId = '';
 let pickerYear = currentDate.getFullYear();
 let memoLoadToken = 0;
@@ -286,57 +293,49 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     if (!url || !container) return;
     container.style.display = 'block';
 
-    if (manualTitle) {
+    // 1. 관리자가 수동으로 제목을 직접 적어둔 경우엔 그걸 먼저 보여줍니다.
+    if (manualTitle && manualTitle.trim() !== '' && manualTitle !== '공지사항') {
         renderNoticeHTML(container, url, manualTitle, manualDesc);
         return;
     }
-    
-    const cacheDocId = btoa(url.replace(/[^a-zA-Z0-9]/g, '').substring(0, 50)); 
-    const noticeRef = doc(db, 'notice_cache', cacheDocId);
-    
-    try {
-        const cacheSnap = await getDoc(noticeRef);
-        if (cacheSnap.exists()) {
-            const data = cacheSnap.data();
-            renderNoticeHTML(container, url, data.title, data.description);
-            return;
-        }
-    } catch (e) {
-        console.warn("DB 조회 실패");
-    }
 
-    container.innerHTML = '<div class="preview-loading" style="padding: 20px; text-align: center; color: #A09586; font-weight: 800;">공지 정보를 불러오는 중...</div>';
+    // 2. 파이어베이스 soop_posts 컬렉션에서 긁어온 숲 최신글 검색
+    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px; font-weight: bold;">숲 게시판 연동 중... 🔄</div>';
 
     try {
-        const response = await fetch(`/api/get-notice?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        
-        if (response.ok && data.title) {
-            const finalData = { title: data.title, description: data.description || '' };
-            await setDoc(noticeRef, { ...finalData, createdAt: new Date() });
-            renderNoticeHTML(container, url, finalData.title, finalData.description);
+        // 기존 'events' 대신 'soop_posts' 컬렉션에서 현재 입력한 링크(url)와 똑같은 글을 찾습니다.
+        const q = query(collection(db, "soop_posts"), where("link", "==", url));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // 일치하는 글을 찾았다면 파이썬이 긁어둔 제목과 본문(content)을 가져옵니다.
+            const data = querySnapshot.docs[0].data();
+            
+            if (data.title && data.title.trim() !== '') {
+                // 가져온 제목(data.title)과 본문(data.content)을 화면에 렌더링
+                renderNoticeHTML(container, url, data.title, data.content);
+            } else {
+                throw new Error('상세 정보 없음');
+            }
         } else {
-            throw new Error();
+            throw new Error('파이어베이스에 등록된 링크 데이터 없음');
         }
     } catch (error) {
-        container.innerHTML = `
-            <div style="margin-top: 15px; text-align: center;">
-                <p style="color: #ef4444; font-size: 13px; font-weight: 800; margin-bottom: 10px;"></p>
-                <a href="${url}" target="_blank" class="btn btn-save" style="display: block; text-decoration: none; padding: 15px; border-radius: 12px; background: #FFF3B0; color: #7A5A2F;">공지 원문 보러가기</a>
-            </div>
-        `;
+        // DB에 해당 링크가 없거나 옛날 글이라면 기본 바로가기 버튼만 띄워줍니다.
+        console.log("게시판 연동 실패:", error);
+        container.innerHTML = `<a href="${url}" target="_blank" class="btn" style="display: block; padding: 12px; background: #FFF3B0; text-align:center; color:#7A5A2F; border-radius:15px; text-decoration:none; font-weight:800;">공지사항 바로가기</a>`;
     }
 };
 
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
-        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card">
-            <div class="premium-notice-header">
-                <span class="premium-notice-badge">공지사항</span>
-                <span class="premium-notice-date">바로가기 ↗</span>
+        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 15px; border: none; border-radius: 12px; background: #FFF9C4; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div class="premium-notice-header" style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                <span class="premium-notice-badge" style="font-size: 11px; font-weight: 900; color: #7A5A2F; background: #FDE047; padding: 4px 8px; border-radius: 6px; border: none;">공지사항</span>
+                <span class="premium-notice-date" style="font-size: 12px; color: #7A5A2F; font-weight: bold;">바로가기 ↗</span>
             </div>
-            <h3 class="premium-notice-title">${title}</h3>
-            ${desc ? `<p class="premium-notice-desc">${desc}</p>` : ''}
+            <h3 class="premium-notice-title" style="margin: 0 0 10px 0; font-size: 16px; color: #1e293b; font-weight: 800; word-break: keep-all;">${title}</h3>
+            ${desc ? `<div class="premium-notice-desc" style="font-size: 13px; color: #475569; white-space: pre-wrap; word-break: break-all; line-height: 1.6; background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 8px; border: none;">${desc}</div>` : ''}
         </a>
     `;
 }
@@ -577,26 +576,7 @@ function deleteMember(name) {
     document.getElementById('confirmModal').style.display = 'flex';
 }
 
-async function openMemberManager() { 
-    if (!isAdmin) {
-        showToast('관리자만 멤버를 관리할 수 있습니다.');
-        return;
-    }
-
-    try {
-        await loadMembersFromFirebase();
-        renderMemberList();
-        const memberModal = document.getElementById('memberModal');
-        if (memberModal) {
-            memberModal.style.display = 'flex';
-        } else {
-            showToast('멤버 관리 모달을 찾을 수 없습니다.');
-        }
-    } catch (error) {
-        console.error('멤버 관리자 열기 오류:', error);
-        showToast('멤버 관리를 열 수 없습니다.');
-    }
-}
+function openMemberManager() { renderMemberList(); document.getElementById('memberModal').style.display = 'flex'; }
 
 function renderMemberList() {
     const list = document.getElementById('memberList');
@@ -710,8 +690,6 @@ async function loadData() {
         await loadMemos();
         try { await loadUpItems(); } catch (e) { console.log("UP 컬렉션 로드 실패:", e); }
     } catch (error) { console.error("데이터 로드 오류:", error); }
-    const overlay = document.getElementById('loadingOverlay');
-    if(overlay) overlay.classList.add('hidden');
 }
 
 function resetImagePreviewUI(imgUrl) {
@@ -890,9 +868,11 @@ async function deleteEvent() {
 
 function ensureDayManagerModal() {
     if (document.getElementById('dayManagerModal')) return;
-const html = `
-        <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-            <div class="event-modal-box mgr-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:95%; max-width:1200px; background:#fff; border-radius:16px; box-sizing:border-box;">            <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'RomanticGumi', sans-serif; color:#7A5A2F; font-size:38px; font-weight:normal; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>            
+    const html = `
+    <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px); box-sizing:border-box; padding:10px;">
+        <div class="event-modal-box mgr-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:100%; max-width:850px; background:#fff; border-radius:16px; box-sizing:border-box;">
+            <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
+            
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             
             <div id="noticeDetailArea" style="display:none; margin: 15px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
@@ -902,14 +882,14 @@ const html = `
 
             <div class="mgr-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9; flex-shrink:0;">
                 <div class="mgr-footer-left" style="display:flex; gap:10px;">
-                    <button onclick="deleteAllDayManagerItems()" style="padding:12px 24px; background:#fee2e2; color:#ef4444; border:none; border-radius:999px; cursor:pointer; font-weight:800; font-family:'AliceDigitalLearning';">일괄 삭제</button>
-                    <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:999px; cursor:pointer; font-weight:800; font-family:'AliceDigitalLearning';">+ 새 일정</button>
+                    <button onclick="deleteAllDayManagerItems()" style="padding:12px 24px; background:#fee2e2; color:#ef4444; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">일괄 삭제</button>
+                    <button onclick="addDayManagerItem()" style="padding:12px 24px; background:#e0f2fe; color:#0284c7; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-family:'Cafe24SurroundAir';">+ 새 일정</button>
                 </div>
                 <div class="mgr-footer-right" style="display:flex; gap:8px; align-items:center;">
-                    <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="display:none;">공지 상세 ▼</button>
-                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="display:none;">
-                    <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:999px; cursor:pointer; font-weight:800;">닫기</button>
-                    <button onclick="saveDayManager()" style="padding:12px 24px; background:#F5BDD6; color:#ffffff; border:none; border-radius:999px; cursor:pointer; font-weight:800;">저장</button>
+                    <button id="toggleNoticeBtn" onclick="toggleNoticeDetail()" style="padding:10px 15px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#7A5A2F;">공지 상세 ▼</button>
+                    <input type="text" id="dayManagerNoticeInput" placeholder="공지 링크 (선택)" style="width: 200px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 14px; color:#7A5A2F;">
+                    <button onclick="closeModal('dayManagerModal')" style="padding:12px 24px; background:#f1f5f9; color:#64748b; border:none; border-radius:10px; cursor:pointer; font-weight:800;">닫기</button>
+                    <button onclick="saveDayManager()" style="padding:12px 24px; background:#FDE047; color:#7A5A2F; border:none; border-radius:10px; cursor:pointer; font-weight:800; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
                 </div>
             </div>
         </div>
@@ -1009,7 +989,7 @@ window.renderDayManagerList = function() {
     style.innerHTML = `
         .event-custom-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 8px; color: #7A5A2F; font-weight: bold; }
         .mgr-ampm-btn { padding: 8px 12px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 8px; font-weight: bold; color: #7A5A2F; flex-shrink: 0; }
-        .mgr-ampm-btn.active { background: #F5BDD6; border-color: #F5BDD6; color: #ffffff; }
+        .mgr-ampm-btn.active { background: #FDE047; border-color: #FDE047; color: #7A5A2F; }
         .mgr-time-row { display: flex; gap: 6px; align-items: center; }
         .mgr-date-row { display: flex; gap: 10px; }
 
@@ -1017,8 +997,8 @@ window.renderDayManagerList = function() {
         #dayManagerList { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-right: 5px; }
 
         @media (max-width: 768px) {
-            #dayManagerModal { padding: 15px 0 !important; align-items: flex-start !important; }
-            .mgr-modal-box { padding: 20px 15px !important; width: 95% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }            
+            #dayManagerModal { padding: 15px 10px !important; align-items: flex-start !important; }
+            .mgr-modal-box { padding: 20px 15px !important; width: 100% !important; max-height: calc(100vh - 30px) !important; box-sizing: border-box; }            
             .mgr-body { padding: 15px !important; display: flex !important; flex-direction: column !important; gap: 15px !important; }
             .mgr-col { width: 100% !important; min-width: 0 !important; margin-bottom: 0 !important; box-sizing: border-box; display: flex !important; flex-direction: column !important; gap: 12px !important; }
             .mgr-divider { display: none !important; }
@@ -1060,7 +1040,7 @@ window.renderDayManagerList = function() {
         orderDiv.innerHTML = `<button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, -1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === 0 ? 'opacity:0.3; pointer-events:none;' : ''}">▲</button><button onclick="event.stopPropagation(); moveDayManagerItem(${idx}, 1)" style="border:none; background:none; cursor:pointer; padding:2px; line-height:1; font-size:12px; color:#94a3b8; ${idx === dayManagerItems.length - 1 ? 'opacity:0.3; pointer-events:none;' : ''}">▼</button>`;
         
         const titleSpan = document.createElement('div');
-        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#7A5A2F; overflow:hidden; text-overflow:ellipsis; font-family:"AliceDigitalLearning", sans-serif;';
+        titleSpan.style.cssText = 'flex:1; font-weight:800; font-size:16px; color:#7A5A2F; overflow:hidden; text-overflow:ellipsis; font-family:"Cafe24SurroundAir", sans-serif;';
         titleSpan.innerText = item.title || '(새 일정)';
         
         const deleteBtn = document.createElement('button');
@@ -1076,12 +1056,12 @@ window.renderDayManagerList = function() {
             body.className = 'mgr-body';
             body.style.cssText = 'padding:24px; display:flex; gap:20px; flex-wrap:wrap; background:#ffffff;';
             
-            const types = ['개인방송', '합방', '휴방', '미확정', '시네티'];
+            const types = ['개인방송', '합방', '휴방', '미확정', 'LCK', '시네티'];
             let typeOpts = types.map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('');
             
             body.innerHTML = `
                 <div class="mgr-col" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
-                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><textarea class="event-custom-input mgr-title" style="resize:vertical; min-height: 60px;">${item.title || ''}</textarea></div>                    <div>
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">일정 제목 *</label><textarea class="event-custom-input mgr-title" style="resize: vertical; min-height: 42px; font-family: inherit;">${item.title || ''}</textarea></div>                    <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">시간</label>
                         <div class="mgr-time-row">
                             <button class="mgr-ampm-btn ${item.ampm === '오전' ? 'active' : ''}" onclick="setMgrAmPm(this, '오전')">오전</button>
@@ -1098,7 +1078,7 @@ window.renderDayManagerList = function() {
                 </div>
                 <div class="mgr-divider" style="border-left: 1px solid #e2e8f0; margin: 0 10px;"></div>
                 <div class="mgr-col" style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px;">
-                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">참여 멤버 (쉼표로 구분)</label><input type="text" class="event-custom-input mgr-members" value="${item.members || ''}" placeholder="예시) 솜주먹,멤버2,멤버3"></div>
+                    <div><label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">참여 멤버</label><input type="text" class="event-custom-input mgr-members" value="${item.members || ''}"></div>
                     <div>
                         <label style="display:block; font-weight:800; color:#7A5A2F; font-size:14px; margin-bottom:4px;">이미지 URL</label>
                         <div style="display:flex; gap:8px;">
@@ -1325,45 +1305,22 @@ function renderCalendar() {
             });
 
             const eventsDiv = document.createElement('div'); eventsDiv.className = 'week-events';
-                if (todaysEvents.length > 0) {
-                        todaysEvents.forEach((ev, idx) => {
-                            const item = document.createElement('div'); 
-                            
-                            // 일정 타입에 따라 카드 배경색과 글씨색을 예쁘게 직접 지정합니다
-                            let bgColor = '#F5F5F5';
-                            let textColor = '#616161';
-                            
-                            if (ev.type === '개인방송') {
-                                bgColor = '#FFE4E8'; // 연한 분홍 배경
-                                textColor = '#D81B60'; // 진한 분홍 글씨
-                            } else if (ev.type === '합방') {
-                                bgColor = '#f7f3ee'; // 베이지 배경
-                                textColor = '#D81B60'; // 진한 분홍 글씨
-                            } else if (ev.type === '시네티') {
-                                bgColor = '#DCEDC8';
-                                textColor = '#33691E';
-                            } else if (ev.type === '미확정') {
-                                bgColor = '#F3E5F5';
-                                textColor = '#4A148C';
-                            }
-                            
-                            // 카드 모양을 강제로 둥글고 예쁘게 잡아주는 스타일 적용
-                            item.className = 'summary-item'; 
-                            item.style.cssText = `background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; margin-bottom: 12px; border-radius: 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 800;`;
-                            
-                            item.onclick = (e) => {
-                                e.stopPropagation();
-                                showDayInfo(dateId, todaysEvents);
-                            };
-                            
-                            // 제목은 왼쪽, 시간은 오른쪽에 깔끔하게 배치
-                            item.innerHTML = `<span style="flex: 1; text-align: left;">${ev.title}</span>${ev.time ? `<span style="font-size: 12px; opacity: 0.8; margin-left: 10px; white-space: nowrap;">${formatTime12h(ev.time)}</span>` : ''}`;
-                            
-                            eventsDiv.appendChild(item);
-                        });
-                    } else { 
-                        eventsDiv.innerHTML = "<p style='text-align: center; color: #A09586; font-weight: 800; padding: 20px 0;'>오늘은 일정이 없습니다.</p>"; 
-                    }
+            if (todaysEvents.length > 0) {
+                todaysEvents.forEach((ev, idx) => {
+                    const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
+                    const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
+                    const item = document.createElement('div');
+                    item.className = `event-tag type-${typeClass}${isLong ? ' long-term' : ''}`;
+                    
+                    item.onclick = (e) => { e.stopPropagation(); showDayInfo(dateId, todaysEvents); };
+                    if (isAdmin) item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
+                    
+                    if (ev.time) { item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`; } 
+                    else { item.innerHTML = `<div>${ev.title}</div>`; }
+                    eventsDiv.appendChild(item);
+                });
+            } else { eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>"; }
+
             row.appendChild(dayLabel); row.appendChild(eventsDiv); grid.appendChild(row);
         }
         } else {
@@ -1430,7 +1387,11 @@ function createDay(num, isCurr, dayEvents = []) {
             const isLong = ev.startDate && ev.endDate && (new Date(ev.endDate) > new Date(ev.startDate));
             const tag = document.createElement('div');
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
-            tag.innerHTML = `${ev.time ? `<span class="event-time-badge">${formatTime12h(ev.time)}</span>` : ''}<div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.2; word-break: break-word; white-space: pre-wrap; text-align: center;">${ev.title}</div>`;            tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
+            tag.style.cssText = 'position: relative; display: flex !important; flex-direction: column; justify-content: center; align-items: center;';
+
+            // 텍스트 중앙 정렬(text-align: center !important) 및 우측 상단 시간 뱃지
+            tag.innerHTML = `${ev.time ? `<span class="event-time-badge" style="position: absolute; top: 2px; right: 6px; left: auto; margin: 0; font-size: 10px; line-height: 1;">${formatTime12h(ev.time)}</span>` : ''}<div style="width: 100%; text-align: center !important; line-height: 1.3; word-break: break-word; white-space: pre-wrap; padding-top: 14px; padding-bottom: 4px;">${ev.title}</div>`;            
+            tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
             evCont.appendChild(tag);
@@ -1506,18 +1467,17 @@ function showInfoByEvent(ev) {
     }
 
     let noticePreview = document.getElementById('infoNoticePreview');
-    if (!noticePreview) {
-        noticePreview = document.createElement('div'); noticePreview.id = 'infoNoticePreview'; noticePreview.className = 'notice-preview'; noticePreview.style.display = 'none';
-        const infoBlock = document.querySelector('.info-block'); if(infoBlock) infoBlock.appendChild(noticePreview);
+        
+        if (ev.noticeLink && ev.noticeLink.trim() !== '') {
+            // 💡 핵심 수정: ev.noticeTitle과 ev.noticeDesc를 봇이 채워넣은 대로 전달
+            window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
+        } else {
+            if(noticePreview) noticePreview.style.display = 'none';
+        }
+        
+        const modal = document.getElementById('infoModal'); 
+        if(modal) modal.style.display = 'flex';
     }
-    if (ev.noticeLink) {
-        if(window.loadNoticePreview && noticePreview) window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
-    } else {
-        if(noticePreview) noticePreview.style.display = 'none';
-    }
-    
-    const modal = document.getElementById('infoModal'); if(modal) modal.style.display = 'flex';
-}
 
 function updateSummary() {
     const cont = document.getElementById('summaryContent'); 
@@ -1526,6 +1486,8 @@ function updateSummary() {
 
     const todayLocal = new Date();
     todayLocal.setHours(0, 0, 0, 0);
+    // 통합일정 호출에 필요한 날짜 ID (예: 2026-6-12)
+    const dateId = `${todayLocal.getFullYear()}-${todayLocal.getMonth() + 1}-${todayLocal.getDate()}`;
 
     const allEventsRaw = [];
     const seenIds = new Set();
@@ -1550,22 +1512,23 @@ function updateSummary() {
     if (todaysEvents.length > 0) {
         todaysEvents.forEach((ev, idx) => {
             const item = document.createElement('div'); 
+            item.className = 'summary-item'; 
+            
+            // 화면 너비가 1050px 미만(모바일)이면 통합일정, 그렇지 않으면 단일일정 호출
+            item.onclick = () => {
+                if (window.innerWidth < 1050) {
+                    showDayInfo(dateId, todaysEvents);
+                } else {
+                    showInfoByEvent(ev);
+                }
+            };
+
             const typeClass = (ev.type || '개인방송').replace(/\s+/g, '');
-            
-            // 기존 'summary-item' 클래스에 'type-개인방송' 등의 클래스를 함께 달아줍니다.
-            item.className = `summary-item type-${typeClass}`; 
-            
-            // 날짜 ID를 만들고 통합 일정 팝업창(showDayInfo)을 호출하도록 변경합니다.
-            const targetDateId = `${todayLocal.getFullYear()}-${todayLocal.getMonth() + 1}-${todayLocal.getDate()}`;
-            item.onclick = () => showDayInfo(targetDateId, todaysEvents);
-            
-            // 기존의 동그란 점(summary-dot)을 빼고 제목과 시간만 넣습니다.
-            item.innerHTML = `<span style="flex: 1; text-align: left; font-weight: 800;">${ev.title}</span>${ev.time ? `<span style="font-size: 12px; font-weight: 800; opacity: 0.8; white-space: nowrap;">${formatTime12h(ev.time)}</span>` : ''}`;
-            
+            item.innerHTML = `<span class="summary-dot type-dot-${typeClass}"></span><span class="summary-title">${ev.title}</span>${ev.time ? `<span class="summary-time">${formatTime12h(ev.time)}</span>` : ''}`;
             cont.appendChild(item);
         });
     } else { 
-        cont.innerHTML = "<p style='text-align: center; color: #A09586; font-weight: 800; padding: 20px 0; width: 100%;'>오늘은 일정이 없습니다.</p>"; 
+        cont.innerHTML = "<p class='text-gray-400 font-bold'>오늘은 일정이 없습니다.</p>"; 
     }
 }
 
@@ -1573,22 +1536,24 @@ window.toggleMemo = function() {
     const memoPanel = document.getElementById('memoPanel');
     const upPanel = document.getElementById('upPanel');
     
-    // 업 보드가 켜져 있다면 끄기
+    if (!memoPanel) return;
+
+    // UP 패널이 열려있다면 닫기 (메모와 겹치지 않게)
     if (upPanel) {
-        upPanel.style.display = ''; 
         upPanel.classList.remove('open', 'show-sheet');
     }
-    
-    // 메모 패널 토글
-    if (memoPanel) {
-        memoPanel.style.display = ''; 
-        memoPanel.classList.toggle('open');
-        
-        if (memoPanel.classList.contains('open')) {
-            updateMemoTabUI();
-            loadMemos();
+
+    const isOpen = memoPanel.classList.contains('open') || memoPanel.classList.contains('show-sheet');
+    memoPanel.classList.remove('open', 'show-sheet');
+
+    if (!isOpen) {
+        memoPanel.classList.add('open');
+        if (window.innerWidth <= 1050) {
+            memoPanel.classList.add('show-sheet');
         }
+        loadMemos();
     }
+
     updateBoardButtonsState();
 };
 
@@ -1596,29 +1561,24 @@ window.toggleUpBoard = function() {
     const memoPanel = document.getElementById('memoPanel');
     const upPanel = document.getElementById('upPanel');
     
-    // 메모 패널이 열려 있다면 확실하게 닫기
+    if (!upPanel) return;
+
+    // 메모 패널이 열려있다면 닫기
     if (memoPanel) {
-        memoPanel.style.display = 'none';
         memoPanel.classList.remove('open', 'show-sheet');
     }
-    
-    // 업 보드 토글 로직 (PC 및 모바일 호환)
-    if (upPanel) {
-        const isHidden = upPanel.style.display === 'none' || upPanel.style.display === '';
-        
-        if (isHidden) {
-            upPanel.style.display = 'flex'; // UI 구조에 따라 'block'이 필요할 수도 있습니다.
-            upPanel.classList.add('open');
-            // 모바일 해상도일 경우 sheet 형태 적용
-            if (window.innerWidth < 1050) {
-                upPanel.classList.add('show-sheet');
-            }
-            loadUpItems();
-        } else {
-            upPanel.style.display = 'none';
-            upPanel.classList.remove('open', 'show-sheet');
+
+    const isOpen = upPanel.classList.contains('open') || upPanel.classList.contains('show-sheet');
+    upPanel.classList.remove('open', 'show-sheet');
+
+    if (!isOpen) {
+        upPanel.classList.add('open');
+        if (window.innerWidth <= 1050) {
+            upPanel.classList.add('show-sheet');
         }
+        loadUpItems();
     }
+
     updateBoardButtonsState();
 };
 
@@ -1700,100 +1660,168 @@ window.saveUpItem = async function() {
     if (!link) return showToast('링크를 입력하세요.');
 
     try {
-        await addDoc(collection(db, 'up'), { title, link, deadline, createdAt: new Date() });
-        document.getElementById('upTitleInput').value = ''; document.getElementById('upLinkInput').value = ''; document.getElementById('upDeadlineInput').value = '';
-        loadUpItems(); showToast('UP 항목이 추가되었습니다.');
-    } catch (error) { showToast('저장 실패: ' + error.message); }
+        // 기존 'up' 컬렉션 대신 'uplink' 컬렉션에 저장되도록 변경
+        await addDoc(collection(db, 'uplink'), { title, link, deadline, createdAt: new Date() });
+        document.getElementById('upTitleInput').value = ''; 
+        document.getElementById('upLinkInput').value = ''; 
+        document.getElementById('upDeadlineInput').value = '';
+        loadUpItems(); 
+        showToast('UP 항목이 추가되었습니다.');
+    } catch (error) { 
+        showToast('저장 실패: ' + error.message); 
+    }
 };
 
 window.loadUpItems = async function() {
     const list = document.getElementById('upList'); if(!list) return;
     try {
-        const snapshot = await getDocs(collection(db, 'up'));
+        const [uplinkSnapshot, upSnapshot] = await Promise.all([
+            getDocs(collection(db, 'uplink')),
+            getDocs(collection(db, 'up'))
+        ]);
+
         list.innerHTML = '';
-        if (snapshot.empty) {
+        if (uplinkSnapshot.empty && upSnapshot.empty) {
             list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px;">등록된 UP! 컨텐츠가 없습니다.</p>';
             return;
         }
 
         let items = [];
-        snapshot.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
+        const todayLocal = new Date();
+        todayLocal.setHours(0, 0, 0, 0);
+        const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
+
+        uplinkSnapshot.forEach(docSnap => { 
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            items.push({ id: docSnap.id, collectionName: 'uplink', ...data }); 
+        });
+
+        upSnapshot.forEach(docSnap => { 
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            items.push({ id: docSnap.id, collectionName: 'up', ...data }); 
+        });
         
         items.sort((a, b) => {
             if(a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
             return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
         });
 
-        const todayLocal = new Date();
-        todayLocal.setHours(0, 0, 0, 0);
-        const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
-        
         let renderCount = 0;
 
         items.forEach(data => {
-            if (data.deadline && data.deadline < todayStr) return;
-            
             renderCount++;
             const entry = document.createElement('div'); entry.className = 'up-item-card';
             entry.style.cssText = "background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;";
             entry.onmouseover = () => entry.style.background = "#e0f2fe"; entry.onmouseout = () => entry.style.background = "#ffffff";
 
+            // ✨ 명확한 전역 함수 호출로 변경 (사이드바 항목)
+            if (isAdmin) {
+                entry.oncontextmenu = (e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    window.openEditUpModal(data.id, data.collectionName, data.title, data.deadline);
+                };
+            }
+
             let deadlineText = '';
             if (data.deadline) {
                 const parts = data.deadline.split('-');
-                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'AliceDigitalLearning', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
             }
             entry.innerHTML = `
                 <div style="flex: 1;" onclick="window.open('${data.link}', '_blank')">
-                    <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'AliceDigitalLearning', sans-serif;">${data.title}</div>
+                    <div style="font-weight: 800; color: #1e293b; font-size: 16px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
                     ${deadlineText}
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
                     </a>
-                    ${isAdmin ? `<button onclick="event.stopPropagation(); deleteUpItem('${data.id}')" style="color: #aaa; font-weight: bold; cursor: pointer; border: none; background: none;">✕</button>` : ''}
+                    ${isAdmin ? `<button onclick="event.stopPropagation(); deleteUpItem('${data.id}', '${data.collectionName}')" style="color: #aaa; font-weight: bold; cursor: pointer; border: none; background: none;">✕</button>` : ''}
                 </div>
             `;
             list.appendChild(entry);
         });
 
-        if (renderCount === 0) { list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px; font-family:\'AliceDigitalLearning\';">현재 진행중인 컨텐츠가 없습니다.</p>'; }
+        if (renderCount === 0) { list.innerHTML = '<p style="text-align:center; color:#A09586; padding: 20px; font-family:\'GMarketSans\';">현재 진행중인 컨텐츠가 없습니다.</p>'; }
     } catch (error) { console.error("데이터 로드 중 에러 발생:", error); }
 };
 
-window.deleteUpItem = async function(id) {
+window.deleteUpItem = async function(id, collectionName) {
     if (!isAdmin) return;
     if(confirm('이 항목을 삭제하시겠습니까?')) {
-        try {
-            await deleteDoc(doc(db, "up", id));
-            showToast('항목이 삭제되었습니다.');
-
-            // 삭제 후 남은 유효한 업링크가 있는지 확인
-            const snapshot = await getDocs(collection(db, 'up'));
-            let validCount = 0;
-            const todayLocal = new Date();
-            const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
-
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                if (!data.deadline || data.deadline >= todayStr) validCount++;
-            });
-
-            // 남은 업링크가 없으면 팝업 이미지도 자동 삭제
-            if (validCount === 0) {
-                try {
-                    await deleteDoc(doc(db, 'settings', 'popup'));
-                    const popupInput = document.getElementById('popupImageUrlInput');
-                    if (popupInput) popupInput.value = ''; // 설정 모달의 입력칸도 초기화
-                } catch(e) {
-                    console.error('팝업 이미지 자동 삭제 실패:', e);
-                }
-            }
-
-            await loadUpItems();
+        try { 
+            // 전달받은 컬렉션 이름(uplink 또는 up)에서 삭제
+            await deleteDoc(doc(db, collectionName, id)); 
+            showToast('항목이 삭제되었습니다.'); 
+            await loadUpItems(); 
         }
         catch (error) { console.error('삭제 실패:', error); showToast('삭제에 실패했습니다.'); }
+    }
+};
+
+// ✨ 업보드 수정 모달 열기
+window.openEditUpModal = function(id, collectionName, title, deadline) {
+    if (!isAdmin) return;
+    
+    // 모달 HTML이 없으면 동적으로 생성
+    if (!document.getElementById('upEditModal')) {
+        const modalHtml = `
+        <div id="upEditModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
+            <div style="background:#fff; padding:32px; border-radius:16px; width:400px; max-width:90%; display:flex; flex-direction:column; gap:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                <h3 style="margin:0; color:#7A5A2F; font-size:24px; font-family:'OngleipParkDahyeon', sans-serif;">업링크 수정</h3>
+                <input type="hidden" id="editUpId">
+                <input type="hidden" id="editUpCollection">
+                <div>
+                    <label style="font-weight:bold; color:#7A5A2F; font-size:14px;">제목 *</label>
+                    <input type="text" id="editUpTitle" class="event-custom-input" style="width:100%; padding:10px; margin-top:4px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-weight:bold; color:#7A5A2F; font-size:14px;">마감 날짜</label>
+                    <input type="date" id="editUpDeadline" class="event-custom-input" style="width:100%; padding:10px; margin-top:4px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button onclick="closeModal('upEditModal')" style="padding:10px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; font-weight:800; cursor:pointer;">취소</button>
+                    <button onclick="saveEditUpItem()" style="padding:10px 16px; background:#FDE047; color:#7A5A2F; border:none; border-radius:8px; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(253, 224, 71, 0.4);">저장</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 데이터 세팅
+    document.getElementById('editUpId').value = id;
+    document.getElementById('editUpCollection').value = collectionName;
+    document.getElementById('editUpTitle').value = title || '';
+    document.getElementById('editUpDeadline').value = deadline || '';
+    
+    // 모달 표시
+    document.getElementById('upEditModal').style.display = 'flex';
+};
+
+// ✨ 업보드 수정 사항 파이어베이스에 저장
+window.saveEditUpItem = async function() {
+    if (!isAdmin) return;
+    
+    const id = document.getElementById('editUpId').value;
+    const collectionName = document.getElementById('editUpCollection').value;
+    const title = document.getElementById('editUpTitle').value.trim();
+    const deadline = document.getElementById('editUpDeadline').value;
+
+    if (!title) return showToast('제목을 입력해주세요.');
+
+    try {
+        // 파이어베이스 데이터 업데이트
+        await updateDoc(doc(db, collectionName, id), { title, deadline });
+        
+        showToast('업링크가 수정되었습니다.');
+        closeModal('upEditModal');
+        await loadUpItems(); // 목록 새로고침
+    } catch (error) {
+        console.error("수정 실패:", error);
+        showToast('수정에 실패했습니다.');
     }
 };
 
@@ -1822,34 +1850,44 @@ window.checkAndShowPopup = async function() {
             if (settingsSnap.exists()) popupImageUrl = settingsSnap.data().imageUrl || '';
         } catch(e) {}
 
-        const snapshot = await getDocs(collection(db, 'up'));
+        const [uplinkSnapshot, upSnapshot] = await Promise.all([
+            getDocs(collection(db, 'uplink')),
+            getDocs(collection(db, 'up'))
+        ]);
         
         let validItems = [];
         const todayLocal = new Date();
         const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
 
-        snapshot.forEach(docSnap => {
+        // ✨ 팝업에서도 컬렉션 이름을 알 수 있도록 collectionName 속성 추가
+        uplinkSnapshot.forEach(docSnap => {
             const data = docSnap.data();
             if (data.deadline && data.deadline < todayStr) return;
-            validItems.push({ id: docSnap.id, ...data });
+            validItems.push({ id: docSnap.id, collectionName: 'uplink', ...data });
+        });
+        upSnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.deadline && data.deadline < todayStr) return;
+            validItems.push({ id: docSnap.id, collectionName: 'up', ...data });
         });
 
-        // ★ 업링크가 하나도 없다면 팝업 이미지를 자동 삭제하고 팝업 띄우기 종료
         if (validItems.length === 0) {
             if (popupImageUrl) {
-                try { await deleteDoc(doc(db, 'settings', 'popup')); } catch(e) {}
+                try {
+                    await deleteDoc(doc(db, 'settings', 'popup'));
+                    const popupInput = document.getElementById('popupImageUrlInput');
+                    if (popupInput) popupInput.value = '';
+                } catch(e) { console.error("팝업 이미지 자동 삭제 실패:", e); }
             }
             return;
         }
-
-        if (!popupImageUrl && validItems.length === 0) return;
 
         validItems.sort((a, b) => {
             if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
             return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
         });
         
-        popupList.innerHTML = `<div style="font-family: 'RomanticGumi', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">당장 UP해!</div>`;
+        popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
         
         if (popupImageUrl) { popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`; }
 
@@ -1857,13 +1895,17 @@ window.checkAndShowPopup = async function() {
             let deadlineText = '';
             if (data.deadline) {
                 const parts = data.deadline.split('-');
-                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'AliceDigitalLearning', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
             }
             
+            // ✨ 팝업창 항목에도 우클릭 이벤트 적용
+            const safeTitle = data.title.replace(/'/g, "\\'");
+            const contextMenuHtml = isAdmin ? `oncontextmenu="event.preventDefault(); event.stopPropagation(); window.openEditUpModal('${data.id}', '${data.collectionName}', '${safeTitle}', '${data.deadline || ''}');"` : '';
+
             popupList.innerHTML += `
-                <div class="up-item-card" style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                <div class="up-item-card" ${contextMenuHtml} style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
                     <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'AliceDigitalLearning', sans-serif;">${data.title}</div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
                         ${deadlineText}
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -1892,19 +1934,19 @@ window.showAdminMenu = function(e) {
         
         const btnManage = document.createElement('button');
         btnManage.innerText = '업링크 관리';
-        btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "AliceDigitalLearning";';
+        btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
         btnManage.onmouseover = () => btnManage.style.background = '#f1f5f9'; btnManage.onmouseout = () => btnManage.style.background = 'none';
         btnManage.onclick = () => { menu.style.display = 'none'; window.openAdminSettings(); };
         
         const btnChangePw = document.createElement('button');
         btnChangePw.innerText = '암호 변경';
-        btnChangePw.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "AliceDigitalLearning";';
+        btnChangePw.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
         btnChangePw.onmouseover = () => btnChangePw.style.background = '#f1f5f9'; btnChangePw.onmouseout = () => btnChangePw.style.background = 'none';
         btnChangePw.onclick = () => { menu.style.display = 'none'; window.openPwChangeModal(); };
 
         const btnLogout = document.createElement('button');
         btnLogout.innerText = '로그아웃';
-        btnLogout.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; color:#ef4444; font-size:14px; font-family: "AliceDigitalLearning";';
+        btnLogout.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; color:#ef4444; font-size:14px; font-family: "GMarketSans";';
         btnLogout.onmouseover = () => btnLogout.style.background = '#fef2f2'; btnLogout.onmouseout = () => btnLogout.style.background = 'none';
         btnLogout.onclick = async () => { 
             menu.style.display = 'none'; 
@@ -1914,14 +1956,15 @@ window.showAdminMenu = function(e) {
             currentAdminProfile = null;
             
             // 두 저장소 모두 삭제
-            sessionStorage.removeItem('sompunch_admin_session'); 
-            localStorage.removeItem('sompunch_admin_session');
+            sessionStorage.removeItem('htvvi_admin_session'); 
+            localStorage.removeItem('htvvi_admin_session');
             
             modifiedDates.clear(); 
             updateAdminUI(); 
             renderCalendar(); 
             showToast('로그아웃 되었습니다.');
         };
+        menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
         menu.appendChild(btnManage); menu.appendChild(btnChangePw); menu.appendChild(btnLogout); document.body.appendChild(menu);
     }
     
@@ -1954,6 +1997,31 @@ window.savePopupImage = async function() {
         await setDoc(doc(db, 'settings', 'popup'), { imageUrl: imgUrl });
         showToast('팝업 이미지가 설정되었습니다. 새로고침 후 확인하세요.');
     } catch(e) { showToast('설정 저장 실패: ' + e.message); }
+};
+
+window.deletePopupImage = async function() {
+    if (!confirm('설정된 팝업 이미지를 삭제하시겠습니까?')) return;
+    try {
+        await deleteDoc(doc(db, 'settings', 'popup'));
+        document.getElementById('popupImageUrlInput').value = '';
+        showToast('팝업 이미지가 삭제되었습니다.');
+    } catch(e) { showToast('삭제 실패: ' + e.message); }
+};
+
+window.handlePopupImgUpload = async function(input) {
+    if (input.files && input.files[0]) {
+        try {
+            showToast('팝업 이미지를 서버에 업로드 중입니다...');
+            const formData = new FormData(); formData.append("file", input.files[0]); formData.append("upload_preset", "IMG_1234");
+            const response = await fetch(`https://api.cloudinary.com/v1_1/dtlqzklk5/image/upload`, { method: "POST", body: formData });
+            const data = await response.json();
+
+            if (data.secure_url) {
+                document.getElementById('popupImageUrlInput').value = data.secure_url;
+                showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
+            }
+        } catch (error) { showToast('이미지 업로드에 실패했습니다.'); }
+    }
 };
 
 window.openPwChangeModal = function() {
@@ -2012,8 +2080,8 @@ window.changeAdminPassword = async function() {
         saveAdminProfiles(profiles);
 
         currentAdminProfile = null;
-        sessionStorage.removeItem('sompunch_admin_session'); 
-        localStorage.removeItem('sompunch_admin_session');
+        sessionStorage.removeItem('htvvi_admin_session'); 
+        localStorage.removeItem('htvvi_admin_session');
         
         updateAdminUI(); 
         renderCalendar(); 
@@ -2024,31 +2092,6 @@ window.changeAdminPassword = async function() {
     } catch(e) {
         console.error("Password change error:", e);
         if (err) { err.innerText = '현재 비밀번호가 일치하지 않습니다.'; err.classList.remove('hidden'); }
-    }
-};
-
-window.deletePopupImage = async function() {
-    if (!confirm('설정된 팝업 이미지를 삭제하시겠습니까?')) return;
-    try {
-        await deleteDoc(doc(db, 'settings', 'popup'));
-        document.getElementById('popupImageUrlInput').value = '';
-        showToast('팝업 이미지가 삭제되었습니다.');
-    } catch(e) { showToast('삭제 실패: ' + e.message); }
-};
-
-window.handlePopupImgUpload = async function(input) {
-    if (input.files && input.files[0]) {
-        try {
-            showToast('팝업 이미지를 서버에 업로드 중입니다...');
-            const formData = new FormData(); formData.append("file", input.files[0]); formData.append("upload_preset", "IMG_1234");
-            const response = await fetch(`https://api.cloudinary.com/v1_1/dtlqzklk5/image/upload`, { method: "POST", body: formData });
-            const data = await response.json();
-
-            if (data.secure_url) {
-                document.getElementById('popupImageUrlInput').value = data.secure_url;
-                showToast('업로드 완료! [적용] 버튼을 눌러 저장해주세요.');
-            }
-        } catch (error) { showToast('이미지 업로드에 실패했습니다.'); }
     }
 };
 
@@ -2126,33 +2169,24 @@ function updateMemoEditState() {
 }
 
 function updateAdminUI() {
-    // 1. 관리자 모드 바디 클래스 토글
     document.body.classList.toggle('admin-mode', isAdmin);
-
-    // 2. 관리자 전용 버튼 제어 (클래스 토글 방식)
-    const adminButtons = document.querySelectorAll('.admin-only-btn');
-    adminButtons.forEach(btn => {
-        // isAdmin이 true이면 클래스 추가(보임), false이면 제거(숨김)
-        btn.classList.toggle('is-admin-visible', isAdmin);
-    });
-    
-    // 3. 버튼 아이콘 및 상태 업데이트
+    document.querySelectorAll('.admin-only-btn').forEach(b => b.classList.toggle('admin-visible', isAdmin));
     const btnAdmin = document.getElementById('adminBtn');
     if(btnAdmin) btnAdmin.classList.toggle('admin-active', isAdmin);
-    
     const btnAdminPc = document.getElementById('adminBtn_pc');
     if(btnAdminPc) btnAdminPc.classList.toggle('admin-active', isAdmin);
 
-    // 4. 프로필 이미지 업데이트
     if (isAdmin && currentAdminProfile) {
         document.querySelectorAll('.admin-profile-img').forEach(img => {
             img.src = currentAdminProfile.img;
         });
     }
 
-    applyDraggable(); 
-    updateMemoEditState(); 
-    updateSongbookAdminUI();
+    applyDraggable(); updateMemoEditState(); updateSongbookAdminUI();
+    const memoPanel = document.getElementById('memoPanel');
+    if (memoPanel && memoPanel.classList.contains('open')) loadMemos();
+    const upPanel = document.getElementById('upPanel');
+    if (upPanel && (upPanel.classList.contains('open') || upPanel.classList.contains('show-sheet'))) loadUpItems();
 }
 
 let songbookSongs = [];
@@ -2162,33 +2196,53 @@ let songbookIsEditing = null;
 let currentModalSongId = null;
 
 async function loadSongbookSongs() {
-    const serverTime = await getServerLastUpdated();
+    // 1. 로컬 캐시 먼저 확인 (UI 빠르게 표시)
     const localCache = JSON.parse(localStorage.getItem('htvvi_songs_cache') || '{"time": 0, "data": []}');
-
-    if (localCache.time >= serverTime && localCache.data.length > 0 && serverTime !== 0) {
-        songbookSongs = localCache.data.map(song => ({
-            ...song,
-            note: song.note !== undefined ? song.note : (song.isConditionSong ? '컨디션곡' : '')
-        }));
+    
+    if (localCache.data && localCache.data.length > 0) {
+        // 로컬 캐시가 있으면 바로 사용
+        songbookSongs = localCache.data;
     } else {
         songbookSongs = [];
-        try {
-            const snapshot = await getDocs(collection(db, 'songbook_songs'));
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                if (data && data.title && data.artist) {
-                    songbookSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', note: data.note !== undefined ? data.note : (data.isConditionSong ? '컨디션곡' : '') });
-                }
-            });
-            localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
-        } catch (error) { console.error('노래 데이터 로드 실패:', error); }
     }
 
+    // 정렬
     songbookSongs.sort((a, b) => {
         const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
         if (titleCompare !== 0) return titleCompare;
         return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
     });
+
+    // 2. 백그라운드에서 서버와 동기화 (새로운 곡 확인)
+    try {
+        const serverTime = await getServerLastUpdated();
+        const shouldUpdate = !localCache.time || serverTime > localCache.time;
+        
+        if (shouldUpdate) {
+            const snapshot = await getDocs(collection(db, 'songbook_songs'));
+            const serverSongs = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data && data.title && data.artist) {
+                    serverSongs.push({ id: docSnap.id, title: data.title, artist: data.artist, url: data.url || '', isConditionSong: data.isConditionSong || false });
+                }
+            });
+            
+            // 데이터가 변경되었으면 업데이트
+            if (JSON.stringify(songbookSongs) !== JSON.stringify(serverSongs)) {
+                songbookSongs = serverSongs;
+                songbookSongs.sort((a, b) => {
+                    const titleCompare = a.title.localeCompare(b.title, 'ko', { sensitivity: 'base' });
+                    if (titleCompare !== 0) return titleCompare;
+                    return a.artist.localeCompare(b.artist, 'ko', { sensitivity: 'base' });
+                });
+                localStorage.setItem('htvvi_songs_cache', JSON.stringify({ time: serverTime || new Date().getTime(), data: songbookSongs }));
+            }
+        }
+    } catch (error) { 
+        // 서버 연결 실패시 로컬 캐시만 사용 (오프라인 대응)
+        console.error('노래 데이터 서버 동기화 실패:', error); 
+    }
 }
 
 function renderSongbook() {
@@ -2202,16 +2256,12 @@ function renderSongbook() {
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: thin;
-                        scrollbar-color: #FFBEE2 transparent;
             }
             /* 스크롤바 투명/얇게 설정 */
             #songList::-webkit-scrollbar { width: 6px; }
-            #songList::-webkit-scrollbar-thumb, .artist-list-wrapper::-webkit-scrollbar-thumb { 
-                background: #FFBEE2 !important; 
+            #songList::-webkit-scrollbar-thumb { 
+                background: rgba(122, 90, 47, 0.2); /* 고동색 계열 투명도 조절 */
                 border-radius: 10px; 
-            }
-            #songList::-webkit-scrollbar-thumb:hover, .artist-list-wrapper::-webkit-scrollbar-thumb:hover { 
-                background: #FFA8D5 !important; 
             }
             #songList::-webkit-scrollbar-track { background: transparent; }
         `;
@@ -2237,17 +2287,17 @@ function renderSongbook() {
         const isFav = favorites.includes(song.id);
         const favIcon = isFav ? starSolid : starOutline; const favClass = isFav ? 'is-favorite' : '';
         const safeUrl = song.url ? song.url.replace(/'/g, "\\'") : ''; const safeTitle = song.title ? song.title.replace(/'/g, "\\'") : '';
-        const conditionBadge = song.note ? `<span class="condition-badge">${song.note}</span>` : '';
+        const conditionBadge = song.isConditionSong ? `<span class="condition-badge">컨디션곡</span>` : '';
 
         songListDiv.innerHTML += `
             <div class="song-item" oncontextmenu="editSong(event, '${song.id}')">
                 <div class="song-item-left"><button class="favorite-btn ${favClass}" onclick="toggleFavorite(event, '${song.id}')" title="즐겨찾기">${favIcon}</button></div>
                 <div class="song-clickable" onclick="openBrowser('${safeUrl}', '${song.id}', '${safeTitle}')" style="align-items: flex-start; justify-content: center; overflow: hidden;">
                     <div style="display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden;">
-                        <span class="song-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; flex: 0 1 auto; font-family: 'AliceDigitalLearning', sans-serif;">${song.title}</span>
+                        <span class="song-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; flex: 0 1 auto; font-family: 'GMarketSans', sans-serif;">${song.title}</span>
                         ${conditionBadge}
                     </div>
-                    <span class="song-artist" style="text-align: left; font-family: 'AliceDigitalLearning', sans-serif;">${song.artist}</span>
+                    <span class="song-artist" style="text-align: left; font-family: 'GMarketSans', sans-serif;">${song.artist}</span>
                 </div>
                 ${isAdmin ? `<button class="song-delete-btn" type="button" onclick="deleteSong('${song.id}')" title="삭제">✕</button>` : ''}
             </div>
@@ -2279,6 +2329,7 @@ function renderSongbook() {
 
 function openBrowser(url, id, title) {
     if(!url) { showToast("등록된 링크가 없습니다."); return; }
+    document.body.appendChild(document.getElementById('browserModal'));
     currentModalSongId = id; document.getElementById('browserTitle').innerText = title ? title : 'HTVVI 브라우저';
     document.getElementById('browserModal').classList.add('visible');
     let src = url;
@@ -2318,12 +2369,7 @@ function editSong(event, id) {
     if (!isAdmin) return true;
     event.preventDefault(); const song = songbookSongs.find(item => item.id === id); if (!song) return false;
     document.getElementById('newSongTitle').value = song.title; document.getElementById('newSongArtist').value = song.artist;
-    document.getElementById('newSongUrl').value = song.url; 
-    const noteInput = document.getElementById('songNote') || document.getElementById('isConditionSong');
-    if (noteInput) {
-        if (noteInput.type === 'checkbox') noteInput.checked = song.note ? true : false;
-        else noteInput.value = song.note || '';
-    }
+    document.getElementById('newSongUrl').value = song.url; document.getElementById('isConditionSong').checked = song.isConditionSong || false;
     document.getElementById('adminSongForm').classList.add('visible'); songbookIsEditing = id; document.getElementById('addSongBtn').textContent = '수정 저장';
     return false;
 }
@@ -2339,29 +2385,19 @@ async function addSong() {
     const title = document.getElementById('newSongTitle').value.trim();
     const artist = document.getElementById('newSongArtist').value.trim();
     const url = document.getElementById('newSongUrl').value.trim();
-    
-    const noteInput = document.getElementById('songNote') || document.getElementById('isConditionSong');
-    let note = '';
-    if (noteInput) {
-        if (noteInput.type === 'checkbox') note = noteInput.checked ? '컨디션곡' : '';
-        else note = noteInput.value.trim();
-    }
+    const isConditionSong = document.getElementById('isConditionSong').checked;
     
     if (!title || !artist) { showToast('노래 제목과 가수명을 입력해주세요.'); return; }
     try {
         if (songbookIsEditing !== null) {
-            await setDoc(doc(db, 'songbook_songs', songbookIsEditing), { title, artist, url, note });
+            await setDoc(doc(db, 'songbook_songs', songbookIsEditing), { title, artist, url, isConditionSong });
             songbookIsEditing = null;
-        } else { await addDoc(collection(db, 'songbook_songs'), { title, artist, url, note }); }
+        } else { await addDoc(collection(db, 'songbook_songs'), { title, artist, url, isConditionSong }); }
         
         await updateDbStatus(); 
 
         document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
-        document.getElementById('newSongUrl').value = ''; 
-        if (noteInput) {
-            if (noteInput.type === 'checkbox') noteInput.checked = false;
-            else noteInput.value = '';
-        }
+        document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
         document.getElementById('addSongBtn').textContent = '노래 추가';
         document.getElementById('adminSongForm').classList.remove('visible');
 
@@ -2371,12 +2407,7 @@ async function addSong() {
 
 function cancelEdit() {
     document.getElementById('newSongTitle').value = ''; document.getElementById('newSongArtist').value = '';
-    document.getElementById('newSongUrl').value = ''; 
-    const noteInput = document.getElementById('songNote') || document.getElementById('isConditionSong');
-    if (noteInput) {
-        if (noteInput.type === 'checkbox') noteInput.checked = false;
-        else noteInput.value = '';
-    }
+    document.getElementById('newSongUrl').value = ''; document.getElementById('isConditionSong').checked = false;
     songbookIsEditing = null; document.getElementById('addSongBtn').textContent = '노래 추가';
     document.getElementById('adminSongForm').classList.remove('visible');
 }
@@ -2407,6 +2438,14 @@ window.setSongbookFilter = function(filter) {
 }
 
 window.showTab = async function(tab) {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // 0. 로딩 표시 시작 (이미지 갱신 포함)
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    // 1. 탭 버튼 상태 업데이트
     document.querySelectorAll('.mobile-menu-item').forEach(btn => {
         if (btn.dataset.tab) btn.classList.toggle('active-mobile-tab', btn.dataset.tab === tab);
     });
@@ -2420,67 +2459,72 @@ window.showTab = async function(tab) {
     const calendarBody = document.querySelector('.calendar-body');
     const songbookSection = document.getElementById('songbookSection');
     const todaySchedulePanel = document.getElementById('todaySchedulePanel');
-    const loadingOverlay = document.getElementById('loadingOverlay');
 
-    let needsDataLoad = false;
-    if (tab === 'songbook') {
-        needsDataLoad = !isSongbookLoaded;
-    } else {
-        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
-        needsDataLoad = !loadedMonths.has(monthKey);
-        const isMobile = window.innerWidth < 1050;
-        if (isMobile) {
-            const target = new Date(currentDate);
-            const dayNum = target.getDay();
-            const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
-            const monday = new Date(target.setDate(diff));
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            if (monday.getMonth() !== currentDate.getMonth() && !loadedMonths.has(`${monday.getFullYear()}-${monday.getMonth() + 1}`)) needsDataLoad = true;
-            if (sunday.getMonth() !== currentDate.getMonth() && !loadedMonths.has(`${sunday.getFullYear()}-${sunday.getMonth() + 1}`)) needsDataLoad = true;
-        }
-    }
-
-    if (needsDataLoad && loadingOverlay) {
-        loadingOverlay.classList.remove('hidden');
-    }
-
+    // 2. 화면 먼저 이동
     if (tab === 'songbook') {
         if(calendarTop) calendarTop.style.display = 'none';
         if(calendarBody) calendarBody.style.display = 'none';
         if(songbookSection) songbookSection.classList.add('visible');
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'none';
         window.location.hash = '#songbook';
-        
-        try {
-            if (needsDataLoad) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                await loadSongbookSongs();
-                isSongbookLoaded = true;
-                renderSongbook();
-                updateFavPlayerPlaylist();
-            }
-        } finally {
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
-        }
     } else {
         if(calendarTop) calendarTop.style.display = 'flex';
         if(calendarBody) calendarBody.style.display = 'flex';
         if(songbookSection) songbookSection.classList.remove('visible');
         if(todaySchedulePanel) todaySchedulePanel.style.display = 'block';
         window.location.hash = '#schedule';
+    }
 
-        try {
-            if (needsDataLoad) {
-                await new Promise(resolve => setTimeout(resolve, 500)); 
+    // 3. UI 렌더링을 위해 대기
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    // 4. 데이터 로드 필요 여부 판단
+    let needsDataLoad = false;
+    if (tab === 'songbook') {
+        needsDataLoad = !isSongbookLoaded;
+    } else {
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
+        needsDataLoad = !loadedMonths.has(monthKey);
+    }
+
+    // 5. 로딩 표시
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    // 6. 비동기 데이터 로드
+    try {
+        if (needsDataLoad) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (tab === 'songbook') {
+            if (!isSongbookLoaded) {
+                await loadSongbookSongs();
+                isSongbookLoaded = true;
+                renderSongbook();
+                updateFavPlayerPlaylist();
             }
+        } else {
             await ensureMonthsLoadedForDate(currentDate);
             renderCalendar();
-        } catch (error) {
-            console.error('일정 탭 렌더링 중 오류 발생:', error);
-        } finally {
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
         }
+    } catch (error) {
+        console.error('탭 렌더링 중 오류 발생:', error);
+    } finally {
+        // 로딩 화면 제거 (데이터 로드 완료 후)
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    }
+}
+
+function handlePlayerPosition() {
+    const playerPanel = document.getElementById('favoritePlayerPanel');
+    const sidebar = document.querySelector('.songbook-sidebar');
+    if (!playerPanel || !sidebar) return;
+
+    if (window.innerWidth <= 1050) {
+        if (playerPanel.parentElement !== document.body) document.body.appendChild(playerPanel);
+    } else {
+        if (playerPanel.parentElement !== sidebar) { sidebar.insertBefore(playerPanel, sidebar.firstChild); playerPanel.classList.remove('show-sheet'); }
     }
 }
 
@@ -2495,11 +2539,16 @@ window.toggleMobileMenu = function() {
 };
 
 window.handleMobileTab = function(tab) { window.showTab(tab); window.toggleMobileMenu(); };
+window.toggleMobilePlayer = function() {
+    const playerPanel = document.getElementById('favoritePlayerPanel'); if (playerPanel) playerPanel.classList.toggle('show-sheet');
+    window.toggleMobileMenu();
+};
 
 window.toggleMobileMemo = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (upPanel) upPanel.classList.remove('show-sheet');
+    if (upPanel) upPanel.classList.remove('open', 'show-sheet');
     if (memoPanel) {
+        memoPanel.classList.remove('open');
         memoPanel.classList.toggle('show-sheet');
         if (memoPanel.classList.contains('show-sheet')) { updateMemoTabUI(); loadMemos(); }
     }
@@ -2509,8 +2558,9 @@ window.toggleMobileMemo = function() {
 
 window.toggleMobileUpBoard = function() {
     const memoPanel = document.getElementById('memoPanel'); const upPanel = document.getElementById('upPanel');
-    if (memoPanel) memoPanel.classList.remove('show-sheet');
+    if (memoPanel) memoPanel.classList.remove('open', 'show-sheet');
     if (upPanel) {
+        upPanel.classList.remove('open');
         upPanel.classList.toggle('show-sheet');
         if (upPanel.classList.contains('show-sheet')) loadUpItems();
     }
@@ -2523,11 +2573,10 @@ function ensureDayInfoModal() {
     const html = `
     <div id="dayInfoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
         <div class="event-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:85vh; width:fit-content; min-width:600px; max-width:850px; border-radius:25px; background:#fff; border-radius:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-            <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'RomanticGumi', sans-serif; color:#7A5A2F; font-size:34px; font-weight:normal; text-align:center; flex-shrink:0;"></h2>
+            <h2 id="dayInfoTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:34px; font-weight:bold; text-align:center; flex-shrink:0;"></h2>
             <div id="dayInfoList" style="flex:1; display:flex; flex-direction:column; gap:20px; align-items:center; overflow-x:hidden; overflow-y:auto; padding:10px 0; width: 100%;"></div>
-            <div id="dayInfoNoticeArea" style="width: 100%; max-width: 600px; margin: 15px auto 0; display: none;"></div>
-            <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
-                <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius: 999px; cursor:pointer; font-weight:800; font-size:15px; font-family:'AliceDigitalLearning', sans-serif;">닫기</button>
+            <div id="dayInfoNoticeArea" style="width: 100%; max-width: 900px; margin: 20px auto 0; display: none;"></div>            <div style="display:flex; justify-content:center; margin-top:24px; flex-shrink:0;">
+                <button onclick="closeModal('dayInfoModal')" style="padding:12px 32px; background:#f1f5f9; color:#64748b; border:none; border-radius:12px; cursor:pointer; font-weight:800; font-size:15px; font-family:'Cafe24SurroundAir', sans-serif;">닫기</button>
             </div>
         </div>
     </div>`;
@@ -2545,7 +2594,7 @@ window.showDayInfo = function(dateId, dayEvents) {
     list.style.justifyContent = 'flex-start';
 
     if (!dayEvents || dayEvents.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'AliceDigitalLearning', sans-serif; width:100%;">등록된 일정이 없습니다.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px 10px; color:#A09586; font-weight:bold; font-family:'GMarketSans', sans-serif; width:100%;">등록된 일정이 없습니다.</div>`;
     } else {
         dayEvents.forEach((ev, index) => {
             let dateText = '';
@@ -2601,7 +2650,7 @@ window.showDayInfo = function(dateId, dayEvents) {
 
             if (index < dayEvents.length - 1) {
                 const divider = document.createElement('div');
-                divider.style.cssText = 'height: 2px; width: 100%; max-width: 850px; background-color: #f1f5f9; margin: 25px 0; flex-shrink: 0; border-radius: 2px;';
+                divider.style.cssText = 'height: 2px; width: 100%; max-width: 600px; background-color: #f1f5f9; margin: 25px 0; flex-shrink: 0; border-radius: 2px;';
                 list.appendChild(divider);
             }
         });
@@ -2626,175 +2675,6 @@ window.showDayInfo = function(dateId, dayEvents) {
     document.getElementById('dayInfoModal').style.display = 'flex';
 };
 
-window.openTextCopyModal = function() {
-    let modal = document.getElementById('textCopyModal');
-    
-    // 팝업이 없거나 기존의 고장 난 팝업이라면 강제로 지우고 새로 완벽하게 주입합니다.
-    if (!modal || modal.dataset.injected !== 'true') {
-        if (modal) modal.remove();
-        
-        const html = `
-        <div id="textCopyModal" data-injected="true" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px);">
-            <div style="background:#fff; padding:32px 40px; border-radius:30px; display:flex; flex-direction:column; gap:16px; width:90%; max-width:550px; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
-                <h2 style="margin:0; font-family:'RomanticGumi', sans-serif; color:#7A5A2F; font-size:24px; text-align:center;">일정 복사하기</h2>
-                
-                <!-- Step 1: 날짜 선택 -->
-                <div id="textCopyStep1" style="display:flex; flex-direction:column; gap:12px;">
-                    <div>
-                        <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F;">시작 날짜</label>
-                        <input type="date" id="copyStartDate" class="event-custom-input">
-                    </div>
-                    <div>
-                        <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F;">종료 날짜</label>
-                        <input type="date" id="copyEndDate" class="event-custom-input">
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <button onclick="closeModal('textCopyModal')" style="flex:1; padding:12px; border:none; border-radius:999px; cursor:pointer; background:#f1f5f9; color:#64748b; font-weight:bold; font-size:15px;">취소</button>
-                        <button onclick="generateScheduleText()" style="flex:1; padding:12px; border:none; border-radius:999px; cursor:pointer; background:#F5BDD6; color:#ffffff; font-weight:bold; font-size:15px;">확인</button>
-                    </div>
-                </div>
-
-                <!-- Step 2: 미리보기 및 복사 -->
-                <div id="textCopyStep2" style="display:none; flex-direction:column; gap:12px;">
-                    <div>
-                        <label style="display:block; font-weight:800; margin-bottom:6px; color:#7A5A2F;">미리보기</label>
-                        <textarea id="scheduleTextPreview" class="event-custom-input" style="min-height: 400px; resize: vertical; font-family: inherit; font-size: 14px; line-height: 1.5; background: #fafaf9; text-align: center; border-radius: 16px;" readonly></textarea>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <button onclick="window.resetTextCopyModal()" style="flex:1; padding:12px; border:none; border-radius:999px; cursor:pointer; background:#f1f5f9; color:#64748b; font-weight:bold; font-size:15px;">다시 선택</button>
-                        <button onclick="copyScheduleText()" style="flex:1; padding:12px; border:none; border-radius:999px; cursor:pointer; background:#F5BDD6; color:#ffffff; font-weight:bold; font-size:15px;">복사하기</button>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-        modal = document.getElementById('textCopyModal');
-    }
-
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(today.setDate(diff));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    
-    const pad = n => String(n).padStart(2, '0');
-    document.getElementById('copyStartDate').value = `${monday.getFullYear()}-${pad(monday.getMonth()+1)}-${pad(monday.getDate())}`;
-    document.getElementById('copyEndDate').value = `${sunday.getFullYear()}-${pad(sunday.getMonth()+1)}-${pad(sunday.getDate())}`;
-    
-    window.resetTextCopyModal();
-    document.getElementById('textCopyModal').style.display = 'flex';
-    modal.style.setProperty('display', 'flex', 'important');
-};
-
-window.resetTextCopyModal = function() {
-    document.getElementById('textCopyStep1').style.display = 'flex';
-    document.getElementById('textCopyStep2').style.display = 'none';
-};
-
-window.generateScheduleText = function() {
-    const startStr = document.getElementById('copyStartDate').value;
-    const endStr = document.getElementById('copyEndDate').value;
-    
-    if (!startStr || !endStr) return showToast('날짜를 모두 선택해주세요.');
-    
-    const sParts = startStr.split('-');
-    const startDate = new Date(sParts[0], parseInt(sParts[1]) - 1, sParts[2]);
-    const eParts = endStr.split('-');
-    const endDate = new Date(eParts[0], parseInt(eParts[1]) - 1, eParts[2]);
-    
-    if (startDate > endDate) return showToast('종료 날짜가 시작 날짜보다 빠를 수 없습니다.');
-
-    const allEventsRaw = [];
-    const seenIds = new Set();
-    Object.values(events).flat().forEach(ev => {
-        if (!seenIds.has(ev.id)) { seenIds.add(ev.id); allEventsRaw.push(ev); }
-    });
-
-    const yoils = ['일', '월', '화', '수', '목', '금', '토'];
-    let resultText = '';
-    
-    const formatTextTime = (timeStr) => {
-        if (!timeStr) return '';
-        const [h, m] = timeStr.split(':').map(Number);
-        const ampm = h >= 12 ? '오후' : '오전';
-        const h12 = h % 12 || 12;
-        if (m === 0) return `${ampm} ${h12}시`;
-        return `${ampm} ${h12}시 ${m}분`;
-    };
-
-    const currDate = new Date(startDate);
-    while (currDate <= endDate) {
-        const pad = n => String(n).padStart(2, '0');
-        const mStr = pad(currDate.getMonth() + 1);
-        const dStr = pad(currDate.getDate());
-        const yoil = yoils[currDate.getDay()];
-        
-        const todaysEvents = allEventsRaw.filter(ev => {
-            const evStartStr = ev.startDate || ev.dateId;
-            const evEndStr = ev.endDate || ev.dateId;
-            const evS = evStartStr.split('-');
-            const start = new Date(evS[0], parseInt(evS[1]) - 1, evS[2]);
-            const evE = evEndStr.split('-');
-            const end = new Date(evE[0], parseInt(evE[1]) - 1, evE[2]);
-            return currDate >= start && currDate <= end;
-        });
-
-        todaysEvents.sort((a, b) => {
-            const aS = (a.startDate || a.dateId).split('-');
-            const startA = new Date(aS[0], parseInt(aS[1]) - 1, aS[2]).getTime(); 
-            const bS = (b.startDate || b.dateId).split('-');
-            const startB = new Date(bS[0], parseInt(bS[1]) - 1, bS[2]).getTime();
-            if (startA !== startB) return startA - startB;
-            return (a.order ?? 9999) - (b.order ?? 9999);
-        });
-
-        const isHubang = todaysEvents.length > 0 && todaysEvents.every(ev => ev.type === '휴방');
-        const validEvents = todaysEvents.filter(ev => ev.type !== '휴방');
-
-        if (isHubang) {
-            resultText += `- ${mStr}.${dStr} (${yoil})\n- 휴방\n\n`;
-        } else {
-            resultText += `- ${mStr}.${dStr} (${yoil})\n`;
-
-            if (validEvents.length === 0) {
-                resultText += `일정 미정\n\n`;
-            } else {
-                validEvents.forEach((ev, idx) => {
-                    const timeStr = formatTextTime(ev.time);
-                    
-                    if (timeStr) {
-                        resultText += `- ${ev.title} (${timeStr})\n`;
-                    } else {
-                        resultText += `- ${ev.title}\n`;
-                    }
-                });
-                resultText += `\n`;
-            }
-        }
-        
-        resultText = resultText.replace(/\n\n$/, '\n') + '\u200B\n\n';
-        currDate.setDate(currDate.getDate() + 1);
-    }
-
-    resultText = resultText.replace(/[\u200B\n\s]+$/, '');
-    
-    document.getElementById('scheduleTextPreview').value = resultText;
-    document.getElementById('textCopyStep1').style.display = 'none';
-    document.getElementById('textCopyStep2').style.display = 'flex';
-};
-
-window.copyScheduleText = function() {
-    const text = document.getElementById('scheduleTextPreview').value;
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('일정이 클립보드에 복사되었습니다.');
-        closeModal('textCopyModal');
-    }).catch(err => {
-        showToast('복사에 실패했습니다.');
-        console.error(err);
-    });
-};
-
 Object.assign(window, {
     handleEventImgUpload, addMember, deleteMember,deletePopupImage,
     handlePopupImgUpload: window.handlePopupImgUpload,
@@ -2806,10 +2686,10 @@ Object.assign(window, {
     renderSongbook, openBrowser, closeBrowser,
     editSong, addSong, cancelEdit, deleteSong, setSongbookFilter,
     updateSongbookAdminUI, toggleFavorite, toggleModalFavorite,
-    toggleMobileMenu, handleMobileTab, toggleMobileMemo,
+    toggleMobileMenu, handleMobileTab, toggleMobilePlayer, toggleMobileMemo,
     closeUpPopup, checkAndShowPopup, removeEventImage,
     openDayManager, renderDayManagerList, moveDayManagerItem, removeDayManagerItem, addDayManagerItem, uploadDayManagerImg, saveDayManager, deleteAllDayManagerItems,
-    openTextCopyModal
+    openEditUpModal, saveEditUpItem
 });
 
 document.addEventListener('contextmenu', function(e) {
@@ -2834,8 +2714,9 @@ window.onload = async () => {
     try {
         await seedAdmin();
         await loadData();
-        initAuth(); // 여기서 로그인 상태를 파악함
-        updateAdminUI(); // <--- 이 코드가 있는지 확인하세요! 반드시 있어야 합니다.
+        initAuth(); // 새로 구현된 인증 시스템 초기화
+        
+        handlePlayerPosition();
         
         const initialTab = window.location.hash === '#songbook' ? 'songbook' : 'schedule';
         await window.showTab(initialTab);
@@ -2853,6 +2734,7 @@ window.onload = async () => {
         if (window.innerWidth !== lastWidth) {
             lastWidth = window.innerWidth;
             if (window.location.hash !== '#songbook') renderCalendar();
+            handlePlayerPosition();
         }
     });
 
@@ -2873,58 +2755,11 @@ window.addEventListener('error', () => {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
 });
 
-const loadingGifs = [
-    "https://i.postimg.cc/wMfKnTD7/somload-(1).webp",
-    "https://res.cloudinary.com/dtlqzklk5/image/upload/v1781851578/bc15ayrkqyq18wdw5a4s.webp",
-    "https://i.postimg.cc/x8xrBTLN/somload-(3).webp",
-    "https://i.postimg.cc/9083sFyz/somload-(4).webp",
-];
-
-(async function() {
-    const randomGif = loadingGifs[Math.floor(Math.random() * loadingGifs.length)];
-    const randomLoadingImg = document.getElementById('randomLoadingImg');
-    
-    if (!randomLoadingImg) return;
-
-    let imageLoaded = false;
-
-    // 1. 3초 타임아웃 설정
-    const timeout = setTimeout(() => {
-        if (!imageLoaded) {
-            imageLoaded = true;
-            randomLoadingImg.style.opacity = '1';
-            console.log("타임아웃: 이미지를 즉시 표시합니다.");
-        }
-    }, 3000);
-
-    // 2. 이미지 로딩 시도
-    try {
-        const cache = await caches.open('sompunch-loading-images');
-        const cachedResponse = await cache.match(randomGif);
-
-        if (cachedResponse) {
-            const blob = await cachedResponse.blob();
-            randomLoadingImg.src = URL.createObjectURL(blob);
-        } else {
-            const response = await fetch(randomGif);
-            if (response.ok) {
-                cache.put(randomGif, response.clone());
-                const blob = await response.blob();
-                randomLoadingImg.src = URL.createObjectURL(blob);
-            } else {
-                randomLoadingImg.src = randomGif;
-            }
-        }
-    } catch (error) {
-        randomLoadingImg.src = randomGif;
-    }
-
-    // 3. 이미지가 실제로 로드 완료되었을 때의 처리
-    randomLoadingImg.onload = () => {
-        if (!imageLoaded) {
-            clearTimeout(timeout); // 로드 성공했으니 타임아웃 취소
-            imageLoaded = true;
-            randomLoadingImg.style.opacity = '1';
-        }
-    };
-})();
+// script.js 파일 가장 아래에 추가
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('서비스 워커 등록 성공'))
+            .catch(err => console.error('서비스 워커 등록 실패', err));
+    });
+}
