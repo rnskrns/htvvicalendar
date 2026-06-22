@@ -2,25 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/fireba
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, addDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-// =========================================================================
-// 🔒 [추가된 코드] 사이트 접속 제어 및 즐겨찾기 방지
-// =========================================================================
-const urlParams = new URLSearchParams(window.location.search);
-const secretKey = urlParams.get('key');
-const currentPassword = "1as542fs";  // 방문자용 암호
-const adminPassword = "htvvi_admin"; // 관리자용 암호
-
-if (secretKey !== currentPassword && secretKey !== adminPassword) {
-    alert("잘못된 접근입니다. 네이버 카페를 통해 접속해 주세요.");
-    // 👇 [게시물 링크 등록하는 곳] 아래 주소를 튕겨낼 카페 게시글 링크로 바꿔주세요!
-    window.location.href = "https://cafe.naver.com/brownrakr7/64"; 
-} else {
-    // 주소창에서 열쇠 숨기기 (깡통 주소만 즐겨찾기 되도록 만듦)
-    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
-    window.history.replaceState({}, document.title, cleanUrl);
-}
-// =========================================================================
-
 const firebaseConfig = {
     apiKey: "AIzaSyCYU5fUl5HKlvix7da_muE12fwI34Zf4RY",
     authDomain: "htvvi-calendar.firebaseapp.com",
