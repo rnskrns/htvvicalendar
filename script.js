@@ -1415,10 +1415,45 @@ function showInfo(id, idx) {
     showInfoByEvent(ev);
 }
 
-function showInfoByEvent(ev) {
+window.showInfoByEvent = function(ev) {
     if (!ev) return;
     const titleEl = document.getElementById('infoTitle');
-    if (titleEl) titleEl.innerText = ev.title || '';
+    if (!titleEl) return;
+    
+    const modal = document.getElementById('infoModal');
+    // 스크롤바디가 아닌 '진짜' 메인 모달 컨테이너를 정확히 타겟팅
+    const modalBox = modal.querySelector('.event-modal-box') || modal.firstElementChild;
+    
+    if (modalBox) {
+        modalBox.style.display = 'flex';
+        modalBox.style.flexDirection = 'column';
+        modalBox.style.maxHeight = '85vh'; 
+        modalBox.style.overflow = 'hidden'; // 바깥 창은 스크롤 숨김 (고정)
+    }
+
+    const timeEl = document.getElementById('infoTime');
+    const profs = document.getElementById('infoProfiles');
+    const infoImageContainer = document.getElementById('infoImageContainer');
+    let noticePreview = document.getElementById('infoNoticePreview');
+
+    // 멤버와 이미지만 전용으로 스크롤할 컨테이너 (최초 1회만 생성)
+    let scrollBody = document.getElementById('infoScrollBody');
+    if (!scrollBody) {
+        scrollBody = document.createElement('div');
+        scrollBody.id = 'infoScrollBody';
+        // 스크롤 속성 적용 (세로 스크롤 가능하게)
+        scrollBody.style.cssText = 'flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 5px; margin-bottom: 10px; min-height: 0;';
+        
+        // 제목과 시간 요소 바로 아래에 스크롤 영역을 삽입
+        if (timeEl) {
+            timeEl.after(scrollBody);
+        } else if (titleEl) {
+            titleEl.after(scrollBody);
+        }
+    }
+
+    // --- 1. 제목 & 시간 세팅 (고정 영역) ---
+    titleEl.innerText = ev.title || '';
     
     let dateText = '';
     if (ev.startDate && ev.endDate) {
@@ -1432,29 +1467,30 @@ function showInfoByEvent(ev) {
     }
     
     const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
-    const timeEl = document.getElementById('infoTime'); 
     
     if (timeEl) {
         timeEl.className = '';
-        timeEl.style.cssText = 'text-align:center; margin-bottom: 24px;';
+        timeEl.style.cssText = 'text-align:center; margin-bottom: 20px; flex-shrink: 0;';
         const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
         timeEl.innerHTML = `<span class="${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">${timeTypeStr}</span>`;
     }
     
-    const infoImageContainer = document.getElementById('infoImageContainer');
+    // --- 2. 이미지 & 멤버 세팅 (스크롤 영역) ---
     if(infoImageContainer) {
         infoImageContainer.innerHTML = '';
         if (ev.imageUrl) {
             const img = document.createElement('img'); img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
+            img.style.maxWidth = '100%';
+            img.style.borderRadius = '12px';
             img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
             img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
             infoImageContainer.appendChild(img);
         }
     }
 
-    const profs = document.getElementById('infoProfiles');
     if (profs) {
         profs.innerHTML = '';
+        profs.style.cssText = 'display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-bottom: 20px; flex-shrink:0;';
         if (ev.members) {
             ev.members.split(',').forEach(nameRaw => {
                 const name = nameRaw.trim(); if (!name) return;
@@ -1466,18 +1502,29 @@ function showInfoByEvent(ev) {
         }
     }
 
-    let noticePreview = document.getElementById('infoNoticePreview');
-        
+    // 멤버 ➔ 이미지 순서로 스크롤바디 안에 강제 배치
+    if (profs && infoImageContainer) {
+        scrollBody.appendChild(profs);
+        scrollBody.appendChild(infoImageContainer);
+    }
+
+    // --- 3. 공지사항 세팅 (하단 고정 영역) ---
+    if (noticePreview) {
         if (ev.noticeLink && ev.noticeLink.trim() !== '') {
-            // 💡 핵심 수정: ev.noticeTitle과 ev.noticeDesc를 봇이 채워넣은 대로 전달
+            noticePreview.style.display = 'block';
+            noticePreview.style.width = '100%';
+            noticePreview.style.marginTop = '10px';
+            noticePreview.style.flexShrink = '0'; // 창이 작아져도 찌그러지지 않게 보호
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         } else {
-            if(noticePreview) noticePreview.style.display = 'none';
+            noticePreview.style.display = 'none';
         }
-        
-        const modal = document.getElementById('infoModal'); 
-        if(modal) modal.style.display = 'flex';
+        // 공지사항은 스크롤 영역에 들어가지 않고 그 아래(닫기 버튼 위)에 고정
+        scrollBody.after(noticePreview);
     }
+        
+    if(modal) modal.style.display = 'flex';
+}
 
 function updateSummary() {
     const cont = document.getElementById('summaryContent'); 
@@ -2590,7 +2637,6 @@ window.showDayInfo = function(dateId, dayEvents) {
 
     const list = document.getElementById('dayInfoList');
     list.innerHTML = '';
-
     list.style.justifyContent = 'flex-start';
 
     if (!dayEvents || dayEvents.length === 0) {
@@ -2616,11 +2662,8 @@ window.showDayInfo = function(dateId, dayEvents) {
                     const name = nameRaw.trim(); if (!name) return;
                     const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
                     profsHtml += `
-                        <!-- 카드 전체 폭을 늘리고, 가운데 정렬 속성 추가 -->
                         <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 90px; gap: 8px;">
-                            <!-- 이미지 크기(width, height)를 80px로 크게 확장 -->
                             <img src="${m.img}" class="profile-img" style="width: 80px; height: 80px;" onerror="this.src='https://placehold.co/100x100?text=?'">
-                            <!-- 글씨 크기(font-size)를 16px로 확장 -->
                             <div class="profile-name" style="font-size: 16px;">${m.name}</div>
                         </div>`;
                 });
@@ -2629,6 +2672,7 @@ window.showDayInfo = function(dateId, dayEvents) {
             const cardWrapper = document.createElement('div');
             cardWrapper.style.cssText = 'width: 100%; min-width: 600px; max-width: 850px; display: flex; flex-direction: column;';
             
+            // 본문 순서: 제목/시간 -> [1] 멤버 -> [2] 일정 이미지 순서로 고정 배치
             cardWrapper.innerHTML = `
                 <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0;">
                     <h2 style="text-align:center; margin-top:0; margin-bottom:20px; font-size:34px; font-weight:900; word-break:keep-all;">${ev.title || ''}</h2>
@@ -2637,11 +2681,13 @@ window.showDayInfo = function(dateId, dayEvents) {
                             ${timeTypeStr}
                         </div>
                     </div>
-                    <div class="info-image-container" style="text-align:center; margin-bottom: 20px;">
-                        ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
-                    </div>
+                    
                     <div class="info-profiles" style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-bottom: 30px;">
                         ${profsHtml}
+                    </div>
+                    
+                    <div class="info-image-container" style="text-align:center; margin-bottom: 20px;">
+                        ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
                     </div>
                 </div>
             `;
@@ -2656,10 +2702,14 @@ window.showDayInfo = function(dateId, dayEvents) {
         });
     }
 
+    // [핵심] 공지사항 완전 하단 고정: 스크롤 영역(dayInfoList) 바깥이자 닫기 버튼 바로 위에 고정 렌더링
     const noticeArea = document.getElementById('dayInfoNoticeArea');
     if (noticeArea) {
         noticeArea.innerHTML = '';
         noticeArea.style.display = 'none';
+        noticeArea.style.width = '100%';
+        noticeArea.style.marginTop = '15px';
+        noticeArea.style.flexShrink = '0'; // 스크롤 시 찌그러짐 방지 고정
         
         const evWithNotice = dayEvents?.find(e => e.noticeLink);
         if (evWithNotice) {
