@@ -516,7 +516,64 @@ body {
 #infoModal .info-image { width: 100%; max-width: 100%; height: auto; object-fit: contain; border-radius: 24px; border: 1px solid #F5F5F5; }
 #infoModal .btn { font-size: 18px; padding: 18px; border-radius: 16px; flex-shrink: 0; margin-top: 15px; }
 
-.member-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; background: #F9F9F9; border-radius: 15px; margin-bottom: 10px; }
+.member-list-item { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 10px; 
+    padding: 16px 10px; 
+    background: #F9F9F9; 
+    border-radius: 16px; 
+    position: relative; /* 삭제 버튼을 우측 상단에 띄우기 위함 */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    transition: transform 0.2s;
+}
+
+.member-list-item:hover {
+    transform: translateY(-2px);
+}
+
+.member-item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.member-item-name {
+    font-weight: 800;
+    font-size: 14px;
+    text-align: center;
+    color: var(--text-dark);
+    word-break: keep-all;
+}
+
+/* X 삭제 버튼 스타일 */
+.member-delete-btn {
+    position: absolute;
+    top: 6px;                /* 카드 안쪽으로 살짝 들어오게 위치 조정 */
+    right: 8px;
+    background: transparent; /* 배경을 투명하게 */
+    color: #ef4444;          /* X 글자 색상을 빨간색으로 (원하시는 색으로 변경 가능) */
+    border: none;
+    font-size: 16px;         /* 배경이 없으므로 글자 크기를 살짝 키움 */
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;            /* 투명한 클릭 영역 확보 */
+    box-shadow: none;        /* 그림자 제거 */
+    transition: transform 0.2s, color 0.2s;
+    line-height: 1;
+}
+
+.member-delete-btn:hover {
+    transform: scale(1.2);   /* 마우스를 올리면 X가 살짝 커짐 */
+    color: #dc2626;          /* 마우스를 올리면 색상이 살짝 진해짐 */
+}
+
 .member-img-preview { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #EEE; }
 
 #infoModal .profile-list { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; justify-content: center; }
@@ -545,7 +602,15 @@ body {
 .pw-error { color: #ef4444; font-size: 12px; text-align: center; margin-bottom: 12px; }
 .hidden { display: none; }
 
-.member-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+.member-list { 
+    max-height: 350px; 
+    overflow-y: auto; 
+    margin-bottom: 20px; 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* 화면 크기에 맞춰 100px 이상의 카드를 바둑판 배치 */
+    gap: 15px; 
+    padding: 5px; /* 그림자 잘림 방지 */
+}
 .info-block { background: transparent; padding: 10px 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
 .month-btn { padding: 15px 0; border-radius: 12px; border: 2px solid #F5F5F5; background: #F9F9F9; font-weight: 800; cursor: pointer; transition: 0.2s; text-align: center; font-family: inherit; }
 .month-btn:hover, .month-btn.active { background: #FDE047; border-color: #FDE047; color: #5D4037; }

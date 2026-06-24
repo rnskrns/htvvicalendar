@@ -611,17 +611,19 @@ function renderMemberList() {
         const item = document.createElement('div');
         item.className = 'member-list-item';
         
-        // 크루인 경우 이름 옆에 뱃지 추가
+        // 크루인 경우 이름 아래에 뱃지 추가
         const typeBadge = m.type === 'crew' 
-            ? '<span style="font-size:11px; font-weight:800; background:#E5E7EB; color:#4B5563; padding:2px 8px; border-radius:12px; margin-left:8px;">크루</span>' 
+            ? '<span style="font-size:11px; font-weight:800; background:#E5E7EB; color:#4B5563; padding:3px 8px; border-radius:12px; line-height:1;">크루</span>' 
             : '';
             
+        // 우측 상단 X 모양 삭제 버튼 + 중앙 정렬된 프로필 및 이름
         item.innerHTML = `
+            <button class="member-delete-btn" onclick="deleteMember('${m.name}')" title="삭제">✕</button>
             <img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'">
-            <div style="flex:1; font-weight:800; display:flex; align-items:center;">
-                ${m.name} ${typeBadge}
+            <div class="member-item-info">
+                <span class="member-item-name">${m.name}</span>
+                ${typeBadge}
             </div>
-            <button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>
         `;
         list.appendChild(item);
     });
