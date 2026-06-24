@@ -56,26 +56,26 @@ function saveAdminProfiles(profiles) {
 }
 
 function initAuth() {
-    // 1. 먼저 localStorage 확인 (로그인 유지 체크한 경우)
-    let sessionToken = localStorage.getItem('htvvi_admin_session');
-    
-    // 2. 없으면 sessionStorage 확인 (일반 로그인)
-    if (!sessionToken) {
-        sessionToken = sessionStorage.getItem('htvvi_admin_session');
+    // 1. 현재 접속한 주소창의 'key' 값을 확인합니다.
+    const urlParams = new URLSearchParams(window.location.search);
+    const secretKey = urlParams.get('key');
+
+    // 2. 만약 열쇠가 관리자용(haetbi_admin)이라면? -> 로그인 창 없이 즉시 관리자 권한 부여!
+    if (secretKey === "haetbi_admin") {
+        isAdmin = true;
+        currentAdminProfile = {
+            id: 'htvv2i',
+            name: '햇비', 
+            img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg'
+        };
+    } 
+    // 3. 일반 방문자용 암호로 들어왔거나 열쇠가 없다면 -> 관리자 권한 없음
+    else {
+        isAdmin = false;
+        currentAdminProfile = null;
     }
 
-    if (sessionToken) {
-        const profiles = getAdminProfiles();
-        const profile = profiles.find(p => p.token === sessionToken);
-        if (profile) {
-            isAdmin = true;
-            currentAdminProfile = profile;
-            updateAdminUI();
-            return;
-        }
-    }
-    isAdmin = false;
-    currentAdminProfile = null;
+    // 4. 권한에 맞게 화면의 버튼이나 기능들을 업데이트합니다.
     updateAdminUI();
 }
 
@@ -540,38 +540,64 @@ window.removeEventImage = function() {
     if (placeholder) placeholder.style.display = 'block';
 };
 
+window.toggleAddType = function() {
+    const isCrew = document.querySelector('input[name="addType"]:checked').value === 'crew';
+    document.getElementById('memberInputArea').style.display = isCrew ? 'none' : 'block';
+    document.getElementById('crewInputArea').style.display = isCrew ? 'block' : 'none';
+};
+
+// [수정] 멤버/크루 추가 함수
 async function addMember() {
     const name = document.getElementById('newMemberName').value.trim();
-    const soopId = document.getElementById('newMemberId').value.trim();
-    if (!name) return showToast('닉네임을 입력해주세요.');
-    if (!soopId) return showToast('SOOP 아이디를 입력해주세요.');
+    const type = document.querySelector('input[name="addType"]:checked').value;
+    
+    if (!name) return showToast('이름(크루명)을 입력해주세요.');
 
-    const prefix = soopId.substring(0, 2).toLowerCase();
-    const img = `https://stimg.sooplive.com/LOGO/${prefix}/${soopId}/${soopId}.jpg`;
+    let data = { name, type };
+
+    if (type === 'member') {
+        const soopId = document.getElementById('newMemberId').value.trim();
+        if (!soopId) return showToast('SOOP 아이디를 입력해주세요.');
+        const prefix = soopId.substring(0, 2).toLowerCase();
+        data.soopId = soopId;
+        data.img = `https://stimg.sooplive.com/LOGO/${prefix}/${soopId}/${soopId}.jpg`;
+    } else {
+        const imgUrl = document.getElementById('newCrewImgUrl').value.trim();
+        if (!imgUrl) return showToast('이미지 링크를 입력해주세요.');
+        data.img = imgUrl;
+    }
+
     const id = `member_${encodeURIComponent(name)}`;
-    const data = { name, img, soopId };
 
     try {
         await setDoc(doc(db, 'members', id), data);
         await loadMembersFromFirebase();
+        
         document.getElementById('newMemberName').value = '';
         document.getElementById('newMemberId').value = '';
+        document.getElementById('newCrewImgUrl').value = '';
+        
         renderMemberList();
-        showToast(`${name} 멤버가 추가되었습니다.`);
-    } catch (error) { showToast(`멤버 저장 실패: ${error.message}`); }
+        showToast(`${name} ${type === 'member' ? '멤버' : '크루'}가 추가되었습니다.`);
+    } catch (error) { 
+        showToast(`저장 실패: ${error.message}`); 
+    }
 }
 
 function deleteMember(name) {
     const btn = document.getElementById('confirmBtn');
-    document.getElementById('confirmMessage').innerText = `[${name}] 멤버를 삭제할까요?`;
+    document.getElementById('confirmMessage').innerText = `[${name}] 항목을 삭제할까요?`;
     btn.onclick = async () => {
         try {
             await deleteDoc(doc(db, 'members', `member_${encodeURIComponent(name)}`));
             delete members[name];
             renderMemberList();
             closeModal('confirmModal');
-            showToast(`${name} 멤버가 삭제되었습니다.`);
-        } catch (error) { console.error(error); showToast('멤버 삭제에 실패했습니다.'); }
+            showToast(`${name} 항목이 삭제되었습니다.`);
+        } catch (error) { 
+            console.error(error); 
+            showToast('삭제에 실패했습니다.'); 
+        }
     };
     document.getElementById('confirmModal').style.display = 'flex';
 }
@@ -584,7 +610,19 @@ function renderMemberList() {
     Object.values(members).forEach(m => {
         const item = document.createElement('div');
         item.className = 'member-list-item';
-        item.innerHTML = `<img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'"><div style="flex:1; font-weight:800;">${m.name}</div><button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>`;
+        
+        // 크루인 경우 이름 옆에 뱃지 추가
+        const typeBadge = m.type === 'crew' 
+            ? '<span style="font-size:11px; font-weight:800; background:#E5E7EB; color:#4B5563; padding:2px 8px; border-radius:12px; margin-left:8px;">크루</span>' 
+            : '';
+            
+        item.innerHTML = `
+            <img src="${m.img}" class="member-img-preview" onerror="this.src='https://placehold.co/100x100?text=?'">
+            <div style="flex:1; font-weight:800; display:flex; align-items:center;">
+                ${m.name} ${typeBadge}
+            </div>
+            <button class="text-red-400 font-bold" onclick="deleteMember('${m.name}')">삭제</button>
+        `;
         list.appendChild(item);
     });
 }
@@ -636,7 +674,11 @@ async function loadMembersFromFirebase() {
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (!data || !data.name) return;
-        members[data.name] = { name: data.name, img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` };
+        members[data.name] = { 
+            name: data.name, 
+            type: data.type || 'member', // 기존 데이터는 member로 취급
+            img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` 
+        };
     });
 }
 
@@ -1421,14 +1463,13 @@ window.showInfoByEvent = function(ev) {
     if (!titleEl) return;
     
     const modal = document.getElementById('infoModal');
-    // 스크롤바디가 아닌 '진짜' 메인 모달 컨테이너를 정확히 타겟팅
     const modalBox = modal.querySelector('.event-modal-box') || modal.firstElementChild;
     
     if (modalBox) {
         modalBox.style.display = 'flex';
         modalBox.style.flexDirection = 'column';
         modalBox.style.maxHeight = '85vh'; 
-        modalBox.style.overflow = 'hidden'; // 바깥 창은 스크롤 숨김 (고정)
+        modalBox.style.overflow = 'hidden';
     }
 
     const timeEl = document.getElementById('infoTime');
@@ -1436,15 +1477,12 @@ window.showInfoByEvent = function(ev) {
     const infoImageContainer = document.getElementById('infoImageContainer');
     let noticePreview = document.getElementById('infoNoticePreview');
 
-    // 멤버와 이미지만 전용으로 스크롤할 컨테이너 (최초 1회만 생성)
     let scrollBody = document.getElementById('infoScrollBody');
     if (!scrollBody) {
         scrollBody = document.createElement('div');
         scrollBody.id = 'infoScrollBody';
-        // 스크롤 속성 적용 (세로 스크롤 가능하게)
         scrollBody.style.cssText = 'flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 5px; margin-bottom: 10px; min-height: 0;';
         
-        // 제목과 시간 요소 바로 아래에 스크롤 영역을 삽입
         if (timeEl) {
             timeEl.after(scrollBody);
         } else if (titleEl) {
@@ -1452,7 +1490,6 @@ window.showInfoByEvent = function(ev) {
         }
     }
 
-    // --- 1. 제목 & 시간 세팅 (고정 영역) ---
     titleEl.innerText = ev.title || '';
     
     let dateText = '';
@@ -1475,7 +1512,6 @@ window.showInfoByEvent = function(ev) {
         timeEl.innerHTML = `<span class="${typeClass}" style="display:inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 14px;">${timeTypeStr}</span>`;
     }
     
-    // --- 2. 이미지 & 멤버 세팅 (스크롤 영역) ---
     if(infoImageContainer) {
         infoImageContainer.innerHTML = '';
         if (ev.imageUrl) {
@@ -1490,36 +1526,52 @@ window.showInfoByEvent = function(ev) {
 
     if (profs) {
         profs.innerHTML = '';
-        profs.style.cssText = 'display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-bottom: 20px; flex-shrink:0;';
+        // 레이아웃을 세로 방향(column)으로 변경하여 크루가 무조건 위쪽에 크게 쌓이도록 설정
+        profs.style.cssText = 'display:flex; flex-direction:column; align-items:center; width:100%; gap:20px; margin-bottom: 20px; flex-shrink:0;';
+        
+        let crewHtml = '';
+        let memberHtml = '';
+        
         if (ev.members) {
             ev.members.split(',').forEach(nameRaw => {
                 const name = nameRaw.trim(); if (!name) return;
                 const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-                const card = document.createElement('div'); card.className = 'profile-card';
-                card.innerHTML = `<img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>`;
-                profs.appendChild(card);
+                
+                if (m.type === 'crew') {
+                    crewHtml += `
+                        <div class="crew-card" style="display:flex; justify-content:center; align-items:center; width:100%;">
+                            <img src="${m.img}" style="width: 100%; max-width: 100%; height: auto; object-fit: contain; border-radius: 8px;" onerror="this.src='https://placehold.co/100x100?text=?'">
+                        </div>`;
+                } else {
+                    memberHtml += `
+                        <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 80px; gap: 8px;">
+                            <img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>
+                        </div>`;
+                }
             });
         }
+        
+        profs.innerHTML = `
+            ${crewHtml ? `<div class="crew-section" style="width:100%; display:flex; flex-direction:column; gap:12px; align-items:center;">${crewHtml}</div>` : ''}
+            ${memberHtml ? `<div class="member-section" style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:20px;">${memberHtml}</div>` : ''}
+        `;
     }
 
-    // 멤버 ➔ 이미지 순서로 스크롤바디 안에 강제 배치
     if (profs && infoImageContainer) {
         scrollBody.appendChild(profs);
         scrollBody.appendChild(infoImageContainer);
     }
 
-    // --- 3. 공지사항 세팅 (하단 고정 영역) ---
     if (noticePreview) {
         if (ev.noticeLink && ev.noticeLink.trim() !== '') {
             noticePreview.style.display = 'block';
             noticePreview.style.width = '100%';
             noticePreview.style.marginTop = '10px';
-            noticePreview.style.flexShrink = '0'; // 창이 작아져도 찌그러지지 않게 보호
+            noticePreview.style.flexShrink = '0';
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
         } else {
             noticePreview.style.display = 'none';
         }
-        // 공지사항은 스크롤 영역에 들어가지 않고 그 아래(닫기 버튼 위)에 고정
         scrollBody.after(noticePreview);
     }
         
@@ -1979,6 +2031,13 @@ window.showAdminMenu = function(e) {
         menu.id = 'dynamicAdminMenu';
         menu.style.cssText = 'position:fixed; background:white; border:2px solid #e2e8f0; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:9999; display:flex; flex-direction:column; padding:8px; gap:4px; min-width:140px;';
         
+        // [추가됨] 멤버 관리 버튼 생성
+        const btnMemberManage = document.createElement('button');
+        btnMemberManage.innerText = '멤버 관리';
+        btnMemberManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
+        btnMemberManage.onmouseover = () => btnMemberManage.style.background = '#f1f5f9'; btnMemberManage.onmouseout = () => btnMemberManage.style.background = 'none';
+        btnMemberManage.onclick = () => { menu.style.display = 'none'; window.openMemberManager(); };
+        
         const btnManage = document.createElement('button');
         btnManage.innerText = '업링크 관리';
         btnManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
@@ -2011,8 +2070,13 @@ window.showAdminMenu = function(e) {
             renderCalendar(); 
             showToast('로그아웃 되었습니다.');
         };
-        menu.appendChild(btnManage); menu.appendChild(btnLogout); document.body.appendChild(menu);
-        menu.appendChild(btnManage); menu.appendChild(btnChangePw); menu.appendChild(btnLogout); document.body.appendChild(menu);
+
+        // [수정됨] 메뉴에 멤버 관리 버튼(btnMemberManage)을 추가
+        menu.appendChild(btnMemberManage); 
+        menu.appendChild(btnManage); 
+        menu.appendChild(btnChangePw); 
+        menu.appendChild(btnLogout); 
+        document.body.appendChild(menu);
     }
     
     menu.style.top = (rect.bottom + 8) + 'px';
@@ -2656,25 +2720,33 @@ window.showDayInfo = function(dateId, dayEvents) {
             const timeTypeStr = dateText + (ev.type ? ` | ${ev.type}` : '');
             const typeClass = ev.type ? `type-${ev.type.replace(/\s+/g, '')}` : '';
 
-            let profsHtml = '';
+            let crewHtml = '';
+            let memberHtml = '';
             if (ev.members) {
                 ev.members.split(',').forEach(nameRaw => {
                     const name = nameRaw.trim(); if (!name) return;
                     const m = members[name] || { name, img: `https://placehold.co/100x100?text=${encodeURIComponent(name[0] || '')}` };
-                    profsHtml += `
-                        <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 90px; gap: 8px;">
-                            <img src="${m.img}" class="profile-img" style="width: 80px; height: 80px;" onerror="this.src='https://placehold.co/100x100?text=?'">
-                            <div class="profile-name" style="font-size: 16px;">${m.name}</div>
-                        </div>`;
+                    
+                    if (m.type === 'crew') {
+                        crewHtml += `
+                            <div class="crew-card" style="display: flex; align-items: center; justify-content: center; width: 100%;">
+                                <img src="${m.img}" style="width: 100%; max-width: 100%; height: auto; object-fit: contain; border-radius: 8px;" onerror="this.src='https://placehold.co/100x100?text=?'">
+                            </div>`;
+                    } else {
+                        memberHtml += `
+                            <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 90px; gap: 8px;">
+                                <img src="${m.img}" class="profile-img" style="width: 80px; height: 80px;" onerror="this.src='https://placehold.co/100x100?text=?'">
+                                <div class="profile-name" style="font-size: 16px;">${m.name}</div>
+                            </div>`;
+                    }
                 });
             }
 
             const cardWrapper = document.createElement('div');
             cardWrapper.style.cssText = 'width: 100%; min-width: 600px; max-width: 850px; display: flex; flex-direction: column;';
             
-            // 본문 순서: 제목/시간 -> [1] 멤버 -> [2] 일정 이미지 순서로 고정 배치
             cardWrapper.innerHTML = `
-                <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0;">
+                <div class="info-block" style="flex:1; display:flex; flex-direction:column; margin:0; width:100%;">
                     <h2 style="text-align:center; margin-top:0; margin-bottom:20px; font-size:34px; font-weight:900; word-break:keep-all;">${ev.title || ''}</h2>
                     <div style="text-align:center; margin-bottom: 30px;">
                         <div class="info-time ${typeClass}" style="display:inline-block; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 18px;">
@@ -2682,11 +2754,12 @@ window.showDayInfo = function(dateId, dayEvents) {
                         </div>
                     </div>
                     
-                    <div class="info-profiles" style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-bottom: 30px;">
-                        ${profsHtml}
+                    <div class="info-profiles" style="display:flex; flex-direction:column; align-items:center; width:100%; gap:20px; margin-bottom: 30px;">
+                        ${crewHtml ? `<div class="crew-section" style="width:100%; display:flex; flex-direction:column; gap:12px; align-items:center;">${crewHtml}</div>` : ''}
+                        ${memberHtml ? `<div class="member-section" style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:20px;">${memberHtml}</div>` : ''}
                     </div>
                     
-                    <div class="info-image-container" style="text-align:center; margin-bottom: 20px;">
+                    <div class="info-image-container" style="text-align:center; margin-bottom: 20px; width:100%;">
                         ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
                     </div>
                 </div>
@@ -2702,14 +2775,13 @@ window.showDayInfo = function(dateId, dayEvents) {
         });
     }
 
-    // [핵심] 공지사항 완전 하단 고정: 스크롤 영역(dayInfoList) 바깥이자 닫기 버튼 바로 위에 고정 렌더링
     const noticeArea = document.getElementById('dayInfoNoticeArea');
     if (noticeArea) {
         noticeArea.innerHTML = '';
         noticeArea.style.display = 'none';
         noticeArea.style.width = '100%';
         noticeArea.style.marginTop = '15px';
-        noticeArea.style.flexShrink = '0'; // 스크롤 시 찌그러짐 방지 고정
+        noticeArea.style.flexShrink = '0';
         
         const evWithNotice = dayEvents?.find(e => e.noticeLink);
         if (evWithNotice) {
