@@ -329,13 +329,15 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
 
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
-        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 15px; border: none; border-radius: 12px; background: #FFF9C4; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <div class="premium-notice-header" style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
-                <span class="premium-notice-badge" style="font-size: 11px; font-weight: 900; color: #7A5A2F; background: #FDE047; padding: 4px 8px; border-radius: 6px; border: none;">공지사항</span>
+        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 0; border: 2px solid #865000; border-radius: 12px; background: #FFF9C4; box-shadow: none; overflow: hidden;">
+            <div class="premium-notice-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; margin-bottom: 0; background: #ffffff; border-bottom: 2px solid #865000;">
+                <span class="premium-notice-badge" style="font-size: 14px; font-weight: 900; color: #865000; background: none; padding: 0; border-radius: 0; border: none;">공지사항</span>
                 <span class="premium-notice-date" style="font-size: 12px; color: #7A5A2F; font-weight: bold;">바로가기 ↗</span>
             </div>
-            <h3 class="premium-notice-title" style="margin: 0 0 10px 0; font-size: 16px; color: #1e293b; font-weight: 800; word-break: keep-all;">${title}</h3>
-            ${desc ? `<div class="premium-notice-desc" style="font-size: 13px; color: #475569; white-space: pre-wrap; word-break: break-all; line-height: 1.6; background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 8px; border: none;">${desc}</div>` : ''}
+            <div style="padding: 12px 15px 15px 15px;">
+                <h3 class="premium-notice-title" style="margin: 0 0 10px 0; font-size: 16px; color: #1e293b; font-weight: 800; word-break: keep-all;">${title}</h3>
+                ${desc ? `<div class="premium-notice-desc" style="font-size: 13px; color: #475569; white-space: pre-wrap; word-break: break-all; line-height: 1.6; background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 8px; border: none;">${desc}</div>` : ""}
+            </div>
         </a>
     `;
 }
@@ -714,8 +716,8 @@ async function ensureMonthsLoadedForDate(date) {
     const m = date.getMonth() + 1;
     await loadEventsForMonth(y, m);
 
-    const isMobile = window.innerWidth < 1050;
-    if (isMobile) {
+    const isPortraitMobile = window.innerWidth < 1050 && window.innerWidth <= window.innerHeight;
+    if (isPortraitMobile) {
         const target = new Date(date);
         const dayNum = target.getDay();
         const diff = target.getDate() - dayNum + (dayNum === 0 ? -6 : 1);
@@ -1288,7 +1290,8 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    const isMobile = window.innerWidth < 1050;
+    const isLandscapeMobile = window.innerWidth < 1050 && window.innerWidth > window.innerHeight;
+    const isMobile = window.innerWidth < 1050 && !isLandscapeMobile;
     
     const allEventsRaw = [];
     const seenIds = new Set();
@@ -2369,6 +2372,7 @@ function renderSongbook() {
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: thin;
+                padding: 6px 8px 10px 8px !important;
             }
             /* 스크롤바 투명/얇게 설정 */
             #songList::-webkit-scrollbar { width: 6px; }
@@ -2854,9 +2858,13 @@ window.onload = async () => {
     window.checkAndShowPopup();
 
     let lastWidth = window.innerWidth;
+    let lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
     window.addEventListener('resize', () => {
-        if (window.innerWidth !== lastWidth) {
+        const currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+        const orientationChanged = currentOrientation !== lastOrientation;
+        if (window.innerWidth !== lastWidth || orientationChanged) {
             lastWidth = window.innerWidth;
+            lastOrientation = currentOrientation;
             if (window.location.hash !== '#songbook') renderCalendar();
             handlePlayerPosition();
         }
