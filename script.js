@@ -60,17 +60,31 @@ function initAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     const secretKey = urlParams.get('key');
 
-    // 2. 만약 열쇠가 관리자용(haetbi_admin)이라면? -> 로그인 창 없이 즉시 관리자 권한 부여!
-    if (secretKey === "haetbi_admin") {
+    // 2. 로컬 스토리지나 세션 스토리지에 저장된 로그인 세션(토큰)이 있는지 확인합니다.
+    const savedToken = localStorage.getItem('htvvi_admin_session') || sessionStorage.getItem('htvvi_admin_session');
+    let profileFromToken = null;
+
+    if (savedToken) {
+        const profiles = getAdminProfiles();
+        // 저장된 토큰과 일치하는 프로필을 찾습니다.
+        profileFromToken = profiles.find(p => p.token === savedToken);
+    }
+
+    // 3. 권한 부여 로직: 저장된 세션이 있거나, 관리자용 열쇠(key)가 있다면 권한 부여!
+    if (profileFromToken) {
+        // 기존 로그인 유지 기록이 있는 경우
+        isAdmin = true;
+        currentAdminProfile = profileFromToken;
+    } else if (secretKey === "haetbi_admin") {
+        // 관리자용 주소로 접속한 경우
         isAdmin = true;
         currentAdminProfile = {
             id: 'htvv2i',
             name: '햇비', 
             img: 'https://stimg.sooplive.com/LOGO/ht/htvv2i/htvv2i.jpg'
         };
-    } 
-    // 3. 일반 방문자용 암호로 들어왔거나 열쇠가 없다면 -> 관리자 권한 없음
-    else {
+    } else {
+        // 일반 방문자
         isAdmin = false;
         currentAdminProfile = null;
     }
