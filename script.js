@@ -1963,9 +1963,14 @@ window.checkAndShowPopup = async function() {
 
     try {
         let popupImageUrl = '';
+        let popupImageDeadline = '';
         try {
             const settingsSnap = await getDoc(doc(db, 'settings', 'popup'));
-            if (settingsSnap.exists()) popupImageUrl = settingsSnap.data().imageUrl || '';
+            if (settingsSnap.exists()) {
+                const data = settingsSnap.data();
+                popupImageUrl = data.imageUrl || '';
+                popupImageDeadline = data.imageDeadline || '';
+            }
         } catch(e) {}
 
         const [uplinkSnapshot, upSnapshot] = await Promise.all([
@@ -1975,65 +1980,61 @@ window.checkAndShowPopup = async function() {
         
         let validItems = [];
         const todayLocal = new Date();
+        todayLocal.setHours(0, 0, 0, 0);
         const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
 
-        // ✨ 팝업에서도 컬렉션 이름을 알 수 있도록 collectionName 속성 추가
-        uplinkSnapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.deadline && data.deadline < todayStr) return;
-            validItems.push({ id: docSnap.id, collectionName: 'uplink', ...data });
-        });
-        upSnapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.deadline && data.deadline < todayStr) return;
-            validItems.push({ id: docSnap.id, collectionName: 'up', ...data });
-        });
+        // 이미지 마감일 체크
+        const isImageExpired = popupImageDeadline && popupImageDeadline < todayStr;
+        const finalImageUrl = isImageExpired ? '' : popupImageUrl;
 
-        if (validItems.length === 0) {
-            if (popupImageUrl) {
-                try {
-                    await deleteDoc(doc(db, 'settings', 'popup'));
-                    const popupInput = document.getElementById('popupImageUrlInput');
-                    if (popupInput) popupInput.value = '';
-                } catch(e) { console.error("팝업 이미지 자동 삭제 실패:", e); }
-            }
-            return;
-        }
+        const processSnapshot = (snapshot, collectionName) => {
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.deadline && data.deadline < todayStr) return;
+                validItems.push({ id: docSnap.id, collectionName, ...data });
+            });
+        };
+
+        processSnapshot(uplinkSnapshot, 'uplink');
+        processSnapshot(upSnapshot, 'up');
+
+        if (validItems.length === 0 && !finalImageUrl) return;
 
         validItems.sort((a, b) => {
             if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
             return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
         });
         
-        popupList.innerHTML = `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
-        
-        if (popupImageUrl) { popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${popupImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`; }
+        // 1. 이미지 먼저 렌더링
+        popupList.innerHTML = '';
+        if (finalImageUrl) { 
+            popupList.innerHTML += `<div style="margin-bottom: 16px;"><img src="${finalImageUrl}" style="width: 100%; height: auto; border-radius: 12px; display: block;" alt="Notice Image"></div>`; 
+        }
 
-        validItems.forEach(data => {
-            let deadlineText = '';
-            if (data.deadline) {
-                const parts = data.deadline.split('-');
-                if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
-            }
+        // 2. UP 항목이 있을 때만 텍스트와 목록 렌더링
+        if (validItems.length > 0) {
+            popupList.innerHTML += `<div style="font-family: 'OngleipParkDahyeon', sans-serif; font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 15px; color: #7A5A2F;">💦UP구걸</div>`;
             
-            // ✨ 팝업창 항목에도 우클릭 이벤트 적용
-            const safeTitle = data.title.replace(/'/g, "\\'");
-            const contextMenuHtml = isAdmin ? `oncontextmenu="event.preventDefault(); event.stopPropagation(); window.openEditUpModal('${data.id}', '${data.collectionName}', '${safeTitle}', '${data.deadline || ''}');"` : '';
+            validItems.forEach(data => {
+                let deadlineText = '';
+                if (data.deadline) {
+                    const parts = data.deadline.split('-');
+                    if (parts.length === 3) deadlineText = `<div style="color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: 'Cafe24SurroundAir', sans-serif;">${parts[1]}.${parts[2]} 마감</div>`;
+                }
+                
+                const safeTitle = data.title.replace(/'/g, "\\'");
+                const contextMenuHtml = isAdmin ? `oncontextmenu="event.preventDefault(); event.stopPropagation(); window.openEditUpModal('${data.id}', '${data.collectionName}', '${safeTitle}', '${data.deadline || ''}');"` : '';
 
-            popupList.innerHTML += `
-                <div class="up-item-card" ${contextMenuHtml} style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
-                        ${deadlineText}
+                popupList.innerHTML += `
+                    <div class="up-item-card" ${contextMenuHtml} style="background: #ffffff; border: 2px solid #bae6fd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; cursor: pointer;" onclick="window.open('${data.link}', '_blank')" onmouseover="this.style.background='#e0f2fe'" onmouseout="this.style.background='#ffffff'">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 15px; font-family: 'Cafe24SurroundAir', sans-serif;">${data.title}</div>
+                            ${deadlineText}
+                        </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <a href="${data.link}" target="_blank" style="color: #0284c7; display: flex; align-items: center;" onclick="event.stopPropagation()">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
-                        </a>
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
 
         document.getElementById('upPopupModal').style.display = 'flex';
     } catch (error) { console.error("Popup UP Load Error:", error); }
@@ -2043,14 +2044,15 @@ window.showAdminMenu = function(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     let menu = document.getElementById('dynamicAdminMenu');
     const targetBtn = e.currentTarget || document.getElementById('adminBtn');
+    // 버튼의 현재 화면 기준 위치를 가져옵니다.
     const rect = targetBtn.getBoundingClientRect();
 
     if (!menu) {
         menu = document.createElement('div');
         menu.id = 'dynamicAdminMenu';
-        menu.style.cssText = 'position:fixed; background:white; border:2px solid #e2e8f0; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:9999; display:flex; flex-direction:column; padding:8px; gap:4px; min-width:140px;';
+        // position: absolute로 설정하여 특정 위치에 붙게 합니다.
+        menu.style.cssText = 'position:absolute; background:white; border:2px solid #865000; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:9999; display:flex; flex-direction:column; padding:8px; gap:4px; min-width:140px;';
         
-        // [추가됨] 멤버 관리 버튼 생성
         const btnMemberManage = document.createElement('button');
         btnMemberManage.innerText = '멤버 관리';
         btnMemberManage.style.cssText = 'padding:10px 16px; border:none; background:none; text-align:left; cursor:pointer; font-weight:bold; border-radius:8px; font-size:14px; font-family: "GMarketSans";';
@@ -2076,21 +2078,16 @@ window.showAdminMenu = function(e) {
         btnLogout.onclick = async () => { 
             menu.style.display = 'none'; 
             if (modifiedDates.size > 0) { if (confirm("순서 변경 사항이 있습니다. 저장하시겠습니까?")) await saveAllModifiedOrders(); }
-            
             isAdmin = false;
             currentAdminProfile = null;
-            
-            // 두 저장소 모두 삭제
             sessionStorage.removeItem('htvvi_admin_session'); 
             localStorage.removeItem('htvvi_admin_session');
-            
             modifiedDates.clear(); 
             updateAdminUI(); 
             renderCalendar(); 
             showToast('로그아웃 되었습니다.');
         };
 
-        // [수정됨] 메뉴에 멤버 관리 버튼(btnMemberManage)을 추가
         menu.appendChild(btnMemberManage); 
         menu.appendChild(btnManage); 
         menu.appendChild(btnChangePw); 
@@ -2098,8 +2095,11 @@ window.showAdminMenu = function(e) {
         document.body.appendChild(menu);
     }
     
-    menu.style.top = (rect.bottom + 8) + 'px';
-    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    // [수정 핵심] 스크롤 위치를 포함하여 버튼 바로 아래에 위치하도록 계산합니다.
+    menu.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+    // 오른쪽 기준(right) 대신 왼쪽 기준(left)을 사용하여 버튼과 정렬합니다.
+    // 필요하다면 rect.right - menu.offsetWidth 로 우측 정렬을 유지할 수도 있습니다.
+    menu.style.left = (rect.right - 140) + 'px'; 
     
     if (menu.style.display === 'none' || menu.style.display === '') {
         menu.style.display = 'flex';
@@ -2115,17 +2115,21 @@ window.showAdminMenu = function(e) {
 window.openAdminSettings = async function() {
     try {
         const settingsSnap = await getDoc(doc(db, 'settings', 'popup'));
-        if (settingsSnap.exists()) document.getElementById('popupImageUrlInput').value = settingsSnap.data().imageUrl || '';
-        else document.getElementById('popupImageUrlInput').value = '';
+        if (settingsSnap.exists()) {
+            const data = settingsSnap.data();
+            document.getElementById('popupImageUrlInput').value = data.imageUrl || '';
+            document.getElementById('popupImageDeadlineInput').value = data.imageDeadline || '';
+        }
     } catch(e) {}
     document.getElementById('popupAdminModal').style.display = 'flex';
 };
 
 window.savePopupImage = async function() {
     const imgUrl = document.getElementById('popupImageUrlInput').value.trim();
+    const imageDeadline = document.getElementById('popupImageDeadlineInput').value;
     try {
-        await setDoc(doc(db, 'settings', 'popup'), { imageUrl: imgUrl });
-        showToast('팝업 이미지가 설정되었습니다. 새로고침 후 확인하세요.');
+        await setDoc(doc(db, 'settings', 'popup'), { imageUrl: imgUrl, imageDeadline: imageDeadline });
+        showToast('이미지와 마감일이 설정되었습니다.');
     } catch(e) { showToast('설정 저장 실패: ' + e.message); }
 };
 
