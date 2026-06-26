@@ -938,7 +938,7 @@ function ensureDayManagerModal() {
     const html = `
     <div id="dayManagerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center; backdrop-filter:blur(2px); box-sizing:border-box; padding:10px;">
         <div class="event-modal-box mgr-modal-box" style="display:flex; flex-direction:column; padding:32px 40px; max-height:90vh; width:100%; max-width:850px; background:#fff; border-radius:16px; box-sizing:border-box;">
-            <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'OngleipParkDahyeon', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
+            <h2 id="dayManagerTitle" style="margin-top:0; margin-bottom:24px; font-family:'TMoneyDungunbaram', sans-serif; color:#7A5A2F; font-size:38px; font-weight:bold; text-align:center; letter-spacing:1px; flex-shrink:0;">일정 관리</h2>
             
             <div id="dayManagerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; padding-right:8px; min-height:300px;"></div>
             

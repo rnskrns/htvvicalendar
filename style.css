@@ -1,34 +1,6 @@
 @font-face {
-    font-family: 'Cafe24SurroundAir';
-    src: url('https://gcore.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24SsurroundAir.woff') format('woff');
-    font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'RixInuaridurine';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2207-01@1.0/RixInooAriDuriR.woff2') format('woff2');
-    font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
     font-family: 'OngleipParkDahyeon';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2411-3@1.0/Ownglyph_ParkDaHyun.woff2') format('woff2');
-    font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'KerisKeduLine';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_Line.woff2') format('woff2');
-    font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'JejuStoneWall';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@1.0/EF_jejudoldam.woff2') format('woff2');
     font-weight: normal;
     font-display: swap;
 }
@@ -68,6 +40,7 @@
     font-display: swap;
 }
 
+
 :root {
     --point-yellow: #FFF3B0;
     --point-text: #7A5A2F;
@@ -94,7 +67,7 @@
 html, body { margin: 0; min-height: 100%; width: 100%; }
 
 body {
-    font-family: 'Cafe24SurroundAir', sans-serif !important;
+    font-family: 'TMoneyDungunbaram', sans-serif !important;
     background-color: var(--bg-cream);
     color: var(--text-dark);
     display: flex;
@@ -207,7 +180,7 @@ body {
 .today-summary h4 {
     background: #fff7a4;
     color: #865000 !important;
-    font-family: 'Cafe24SurroundAir', sans-serif !important;
+    font-family: 'TMoneyDungunbaram', sans-serif !important;
     font-size: 15px !important;
     font-weight: 900 !important;
     text-align: center;
@@ -499,7 +472,7 @@ body {
 .browser-content-wrapper { flex: none; background: #000; display: flex; flex-direction: column; }
 .browser-iframe { width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0; background: #000; display: block; }
 .browser-footer { padding: 22px 28px 26px; background: white; border-top: none; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
-.browser-footer-title { font-size: 28px; font-weight: 900; color: #2D2D2D; font-family: 'Cafe24SurroundAir', sans-serif; line-height: 1.2; margin: 0; }
+.browser-footer-title { font-size: 28px; font-weight: 900; color: #2D2D2D; font-family: 'TMoneyDungunbaram', sans-serif; line-height: 1.2; margin: 0; }
 .browser-footer-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .browser-footer-tag { background: white; color: #4E4942; border: 1.5px solid #D1D5DB; border-radius: 999px; font-size: 13px; font-weight: 700; padding: 4px 14px; font-family: inherit; }
 .modal-favorite-btn { padding: 13px 26px; border-radius: 10px; border: none; background: #7DD3FC; color: white; font-size: 15px; font-weight: 900; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; font-family: inherit; }
@@ -744,7 +717,7 @@ body {
         font-size: 13px !important; 
         color: var(--point-text) !important;
         transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s !important;
-        font-family: 'Cafe24SurroundAir', sans-serif !important;
+        font-family: 'TMoneyDungunbaram', sans-serif !important;
         text-decoration: none !important;
         padding: 0 0 0 12px !important; 
         margin: 0 !important;
