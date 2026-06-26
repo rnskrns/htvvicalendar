@@ -1022,19 +1022,19 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
     });
     
 dayManagerItems.sort((a, b) => {
-        // 1. 먼저 order 필드(숫자)로 정렬
-        const orderA = a.order ?? 9999;
-        const orderB = b.order ?? 9999;
-        if (orderA !== orderB) return orderA - orderB;
-        
-        // 2. order가 같다면 시간순으로 정렬
-        const timeA = a.time || "00:00";
-        const timeB = b.time || "00:00";
-        return timeA.localeCompare(timeB);
-    });
+    // 1. 먼저 order 필드(숫자)로 정렬
+    const orderA = a.order ?? 9999;
+    const orderB = b.order ?? 9999;
+    if (orderA !== orderB) return orderA - orderB;
     
-    dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    
+    // 2. order가 같다면 시간순으로 정렬
+    const timeA = a.time || "00:00";
+    const timeB = b.time || "00:00";
+    return timeA.localeCompare(timeB);
+});
+
+dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+
     const firstNotice = dayManagerItems.find(item => item.noticeLink)?.noticeLink || '';
     const noticeInput = document.getElementById('dayManagerNoticeInput');
     if (noticeInput) noticeInput.value = firstNotice;
@@ -2293,19 +2293,32 @@ window.promptAdmin = async function(e) {
 
 async function saveAllModifiedOrders() {
     const updatePromises = [];
-    for (const dateId of modifiedDates) {
-        const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) || document.querySelector(`[data-date-id="${dateId}"] .week-events`);
-        if (container) {
-            const items = container.querySelectorAll('.event-tag');
-            items.forEach((item, index) => {
-                const docId = item.dataset.id;
-                if (docId) updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
+    const container = document.querySelector('.calendar-grid'); // 현재 캘린더 그리드
+    const items = container.querySelectorAll('.event-tag'); // 또는 .calendar-event
+    
+    items.forEach((item, index) => {
+        const docId = item.dataset.id;
+        if (docId) {
+            updatePromises.push(updateDoc(doc(db, 'events', docId), { order: index }));
+            
+            // 핵심: 로컬 메모리의 이벤트 데이터 순서도 즉시 업데이트
+            Object.values(events).flat().forEach(ev => {
+                if (ev.id === docId) ev.order = index;
             });
         }
-    }
-    await Promise.all(updatePromises); 
-    await updateDbStatus(); 
+    });
+
+    await Promise.all(updatePromises);
+    await updateDbStatus();
     modifiedDates.clear();
+
+    // [추가] 캘린더 화면을 다시 렌더링하여 순서 확정
+    renderCalendar(); 
+    
+    // [추가] 만약 모달이 열려있다면 모달도 다시 렌더링
+    if (document.getElementById('dayManagerModal').style.display === 'flex') {
+        renderDayManagerList(); 
+    }
 }
 
 window.moveMonth = async function(v) {
