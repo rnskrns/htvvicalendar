@@ -490,18 +490,24 @@ body {
 .add-song-btn { background: transparent !important; color: #C0B7A9; border: none; width: 48px; height: 48px; cursor: pointer; font-weight: 900; font-size: 42px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.2s, color 0.2s; font-family: inherit; padding: 0; flex-shrink: 0 !important; }
 .add-song-btn:hover { transform: scale(1.15); color: #FBBF24; }
 
-.songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4) !important; backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 99999 !important; padding: 20px;}.songbook-modal.visible { display: flex !important; }
+.songbook-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55) !important; backdrop-filter: blur(6px); justify-content: center; align-items: center; z-index: 99999 !important; padding: 20px;}.songbook-modal.visible { display: flex !important; }
 
-.browser-container { width: min(90%, 1080px); max-height: 92vh; background: white; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; box-shadow: none; border: 2px solid #865000; }
-.browser-header { background: #f3f4f6; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; }
-.close-browser { background: #81D4FA; color: #01579B; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; font-family: inherit; }
-.close-browser:hover { background: #4FC3F7; }
-.browser-content-wrapper { flex: 1; padding: 24px; background: #FFFDF5; display: flex; flex-direction: column; min-height: 0; }
-.browser-iframe { width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #000; }
-.browser-footer { padding: 16px 24px; background: white; border-top: 1px solid #E5E7EB; display: flex; justify-content: center; align-items: center; }
-.modal-favorite-btn { padding: 12px 30px; border-radius: 999px; border: 2px solid #E5E7EB; background: white; color: #7A7A7A; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; font-family: inherit; }
-.modal-favorite-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
-.modal-favorite-btn.active { border-color: #FDE047; background: #FFFDF0; color: #D97706; }
+.browser-container { position: relative; width: min(90%, 860px); max-height: 92vh; background: white; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.35); border: none; }
+.browser-header { display: none; }
+.close-browser { position: absolute; top: 14px; right: 16px; z-index: 10; background: transparent; color: white; border: none; width: auto; height: auto; border-radius: 0; cursor: pointer; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; line-height: 1; transition: opacity 0.2s; font-family: inherit; padding: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.close-browser:hover { opacity: 0.7; background: transparent; }
+.browser-content-wrapper { flex: none; background: #000; display: flex; flex-direction: column; }
+.browser-iframe { width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0; background: #000; display: block; }
+.browser-footer { padding: 22px 28px 26px; background: white; border-top: none; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.browser-footer-title { font-size: 28px; font-weight: 900; color: #2D2D2D; font-family: 'Cafe24SurroundAir', sans-serif; line-height: 1.2; margin: 0; }
+.browser-footer-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.browser-footer-tag { background: white; color: #4E4942; border: 1.5px solid #D1D5DB; border-radius: 999px; font-size: 13px; font-weight: 700; padding: 4px 14px; font-family: inherit; }
+.modal-favorite-btn { padding: 13px 26px; border-radius: 10px; border: none; background: #7DD3FC; color: white; font-size: 15px; font-weight: 900; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; font-family: inherit; }
+.modal-favorite-btn:hover { background: #38BDF8; }
+.modal-favorite-btn.active { background: #7DD3FC; color: white; }
+.modal-favorite-btn .star-wrap { background: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.modal-favorite-btn .star-wrap svg { color: #7DD3FC; }
+.modal-favorite-btn.active .star-wrap svg { color: #7DD3FC; fill: #7DD3FC; }
 
 .admin-song-form { display: none; background: white; border: 2px solid #865000; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: none; width: 100%; box-sizing: border-box; }
 .admin-song-form.visible { display: block; animation: fadeInDown 0.3s ease; }

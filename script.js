@@ -2436,7 +2436,7 @@ function renderSongbook() {
         songListDiv.innerHTML += `
             <div class="song-item" oncontextmenu="editSong(event, '${song.id}')">
                 <div class="song-item-left"><button class="favorite-btn ${favClass}" onclick="toggleFavorite(event, '${song.id}')" title="즐겨찾기">${favIcon}</button></div>
-                <div class="song-clickable" onclick="openBrowser('${safeUrl}', '${song.id}', '${safeTitle}')" style="align-items: flex-start; justify-content: center; overflow: hidden;">
+                <div class="song-clickable" onclick="openBrowser('${safeUrl}', '${song.id}', '${safeTitle}', '${song.artist}', ${song.isConditionSong ? true : false})" style="align-items: flex-start; justify-content: center; overflow: hidden;">
                     <div style="display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden;">
                         <span class="song-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; flex: 0 1 auto; font-family: 'GMarketSans', sans-serif;">${song.title}</span>
                         ${conditionBadge}
@@ -2471,10 +2471,20 @@ function renderSongbook() {
     });        
 }
 
-function openBrowser(url, id, title) {
+function openBrowser(url, id, title, artist, isConditionSong) {
     if(!url) { showToast("등록된 링크가 없습니다."); return; }
     document.body.appendChild(document.getElementById('browserModal'));
-    currentModalSongId = id; document.getElementById('browserTitle').innerText = title ? title : 'HTVVI 브라우저';
+    currentModalSongId = id;
+    const titleEl = document.getElementById('browserTitle');
+    titleEl.textContent = title ? title : 'HTVVI 브라우저';
+    // 태그 렌더링 (가수명 + 컨디션곡)
+    const tagArea = document.getElementById('browserTagArea');
+    if (tagArea) {
+        const tags = [];
+        if (artist) tags.push(artist);
+        if (isConditionSong) tags.push('컨디션곡');
+        tagArea.innerHTML = tags.map(t => `<span class="browser-footer-tag">${t}</span>`).join('');
+    }
     document.getElementById('browserModal').classList.add('visible');
     let src = url;
     if (url.includes("sooplive.com/player/")) {

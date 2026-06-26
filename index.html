@@ -277,14 +277,13 @@
 
         <div id="browserModal" class="songbook-modal">
             <div class="browser-container">
-                <div class="browser-header">
-                    <span id="browserTitle" style="font-weight: 800; color: #4E4942; font-family: 'Cafe24SurroundAir', sans-serif;">HTVVI 브라우저</span>
-                    <button class="close-browser" onclick="closeBrowser()">닫기</button>
-                </div>
+                <button class="close-browser" onclick="closeBrowser()">✕</button>
                 <div class="browser-content-wrapper">
                     <iframe id="browserIframe" class="browser-iframe" allow="autoplay; clipboard-write; web-share;" allowfullscreen="true"></iframe>
                 </div>
                 <div class="browser-footer">
+                    <div id="browserTitle" class="browser-footer-title">HTVVI 브라우저</div>
+                    <div id="browserTagArea" class="browser-footer-tags"></div>
                     <button id="modalFavoriteBtn" class="modal-favorite-btn" onclick="toggleModalFavorite()">☆ 즐겨찾기 추가</button>
                 </div>
             </div>
