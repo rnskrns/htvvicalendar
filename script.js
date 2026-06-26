@@ -1457,8 +1457,28 @@ function createDay(num, isCurr, dayEvents = []) {
             tag.className = `event-tag type-${ev.type}${isLong ? ' long-term' : ''}`; tag.dataset.id = ev.id;
             tag.style.cssText = 'position: relative; display: flex !important; flex-direction: column; justify-content: center; align-items: center;';
 
-            // 텍스트 중앙 정렬(text-align: center !important) 및 우측 상단 시간 뱃지
-            tag.innerHTML = `${ev.time ? `<span class="event-time-badge" style="position: absolute; top: 6px; right: 6px; left: auto; margin: 0; font-size: 10px; line-height: 1;">${formatTime12h(ev.time)}</span>` : ''}<div style="width: 100%; text-align: center !important; line-height: 1.3; word-break: break-word; white-space: pre-wrap; padding-top: 14px; padding-bottom: 4px;">${ev.title}</div>`;            
+            const isDense = dayEvents.length >= 3; // 💡 일정이 3개 이상인지 체크
+            
+            if (isDense) {
+                if (ev.time) {
+                    // 💡 시간이 있는 경우: 볼드체(font-weight: 900) 적용 & 시간 뱃지 3px 왼쪽 이동(margin-right: 3px)
+                    tag.innerHTML = `
+                        <span style="display: flex !important; width: 100% !important; justify-content: flex-end !important; align-items: center !important; gap: 6px !important; padding: 0 !important; margin: 0 !important;">
+                            <span style="display: block !important; text-align: right !important; overflow: hidden; word-break: break-word; white-space: pre-wrap !important; flex: 1 1 auto !important; line-height: 1.3; font-weight: 900 !important;">${ev.title}</span>
+                            <span class="event-time-badge" style="position: static !important; flex-shrink: 0 !important; margin: 0 3px 0 0 !important; font-size: 10px; line-height: 1; font-weight: 900 !important;">${formatTime12h(ev.time)}</span>
+                        </span>
+                    `;
+                } else {
+                    // 💡 시간이 없는 경우: 볼드체(font-weight: 900) 적용
+                    tag.innerHTML = `
+                        <span style="display: block !important; width: 100% !important; text-align: center !important; overflow: hidden; word-break: break-word; white-space: pre-wrap !important; line-height: 1.3; font-weight: 900 !important;">${ev.title}</span>
+                    `;
+                }
+            } else {
+                // 💡 일정이 1~2개일 때: 기존 방식 유지 (가운데 정렬, 시간 우측 상단 뱃지)
+                tag.innerHTML = `${ev.time ? `<span class="event-time-badge" style="position: absolute; top: 6px; right: 6px; left: auto; margin: 0; font-size: 10px; line-height: 1;">${formatTime12h(ev.time)}</span>` : ''}<div style="width: 100%; text-align: center !important; line-height: 1.3; word-break: break-word; white-space: pre-wrap; padding-top: 14px; padding-bottom: 4px;">${ev.title}</div>`;
+            }
+
             tag.onclick = (e) => { e.stopPropagation(); showInfoByEvent(ev); };
             
             if (isAdmin) tag.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
