@@ -1021,11 +1021,16 @@ window.openDayManager = function(dateIdStr, targetEventId = null) {
         };
     });
     
-    dayManagerItems.sort((a, b) => {
-        const startA = new Date(a.startDate || a.dateId).getTime();
-        const startB = new Date(b.startDate || b.dateId).getTime();
-        if (startA !== startB) return startA - startB;
-        return (a.order ?? 9999) - (b.order ?? 9999);
+dayManagerItems.sort((a, b) => {
+        // 1. 먼저 order 필드(숫자)로 정렬
+        const orderA = a.order ?? 9999;
+        const orderB = b.order ?? 9999;
+        if (orderA !== orderB) return orderA - orderB;
+        
+        // 2. order가 같다면 시간순으로 정렬
+        const timeA = a.time || "00:00";
+        const timeB = b.time || "00:00";
+        return timeA.localeCompare(timeB);
     });
     
     dayManagerFormattedDateId = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
@@ -1426,17 +1431,31 @@ function applyDraggable() {
         if (isAdmin) {
             if (!el.sortableInstance && window.Sortable) {
                 el.sortableInstance = new Sortable(el, {
-                    animation: 150, ghostClass: 'dragging-ghost', fallbackOnBody: true, delay: 200, delayOnTouchOnly: true, fallbackTolerance: 5,
-                    onStart: function(evt) { evt.item.style.height = evt.item.offsetHeight + 'px'; },
-                    onEnd: function (evt) {
+                    animation: 150,
+                    ghostClass: 'dragging-ghost',
+                    fallbackOnBody: true,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
+                    onStart: function(evt) {
+                        evt.item.style.height = evt.item.offsetHeight + 'px';
+                    },
+                    onEnd: async function (evt) { // 1. async 추가
                         evt.item.style.height = '';
                         const dateId = evt.to.closest('.day')?.dataset.dateId || evt.to.parentElement.closest('.week-row')?.dataset.dateId;
-                        if (dateId) modifiedDates.add(dateId);
+                        if (dateId) {
+                            modifiedDates.add(dateId);
+                            // 2. 드래그가 끝나면 즉시 저장 함수 호출
+                            await saveAllModifiedOrders(); 
+                        }
                     }
                 });
             }
         } else {
-            if (el.sortableInstance) { el.sortableInstance.destroy(); el.sortableInstance = null; }
+            if (el.sortableInstance) {
+                el.sortableInstance.destroy();
+                el.sortableInstance = null;
+            }
         }
     });
 }
@@ -2273,7 +2292,6 @@ window.promptAdmin = async function(e) {
 }
 
 async function saveAllModifiedOrders() {
-    showToast('순서를 서버에 저장 중입니다...');
     const updatePromises = [];
     for (const dateId of modifiedDates) {
         const container = document.querySelector(`[data-date-id="${dateId}"] .event-container`) || document.querySelector(`[data-date-id="${dateId}"] .week-events`);
@@ -2287,7 +2305,7 @@ async function saveAllModifiedOrders() {
     }
     await Promise.all(updatePromises); 
     await updateDbStatus(); 
-    modifiedDates.clear(); showToast('모든 순서가 저장되었습니다.');
+    modifiedDates.clear();
 }
 
 window.moveMonth = async function(v) {
