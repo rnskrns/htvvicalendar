@@ -692,10 +692,17 @@ async function loadMembersFromFirebase() {
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (!data || !data.name) return;
+        let soopId = data.soopId || '';
+        if (!soopId && data.img) {
+            // img URL 구조: https://stimg.sooplive.com/LOGO/앞2자/아이디/아이디.jpg
+            const parts = data.img.split('/');
+            if (parts.length >= 6) soopId = parts[5];
+        }
         members[data.name] = { 
             name: data.name, 
             type: data.type || 'member', // 기존 데이터는 member로 취급
-            img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}` 
+            img: data.img || `https://placehold.co/100x100/FFD54F/ffffff?text=${encodeURIComponent(data.name[0] || '')}`,
+            soopId
         };
     });
 }
@@ -1562,9 +1569,11 @@ window.showInfoByEvent = function(ev) {
                             <img src="${m.img}" style="width: 100%; max-width: 100%; height: auto; object-fit: contain; border-radius: 8px;" onerror="this.src='https://placehold.co/100x100?text=?'">
                         </div>`;
                 } else {
+                    const stationUrl1 = m.soopId ? `https://www.sooplive.com/station/${m.soopId}` : null;
+                    const imgTag1 = `<img src="${m.img}" class="profile-img"${stationUrl1 ? ' style="cursor:pointer;"' : ''} onerror="this.src='https://placehold.co/100x100?text=?'">`;
                     memberHtml += `
                         <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 80px; gap: 8px;">
-                            <img src="${m.img}" class="profile-img" onerror="this.src='https://placehold.co/100x100?text=?'"><div class="profile-name">${m.name}</div>
+                            ${stationUrl1 ? `<a href="${stationUrl1}" target="_blank" rel="noopener noreferrer" style="display:block; border-radius:50%; line-height:0;">${imgTag1}</a>` : imgTag1}<div class="profile-name">${m.name}</div>
                         </div>`;
                 }
             });
@@ -2757,9 +2766,11 @@ window.showDayInfo = function(dateId, dayEvents) {
                                 <img src="${m.img}" style="width: 100%; max-width: 100%; height: auto; object-fit: contain; border-radius: 8px;" onerror="this.src='https://placehold.co/100x100?text=?'">
                             </div>`;
                     } else {
+                        const stationUrl2 = m.soopId ? `https://www.sooplive.com/station/${m.soopId}` : null;
+                        const imgTag2 = `<img src="${m.img}" class="profile-img" style="width: 80px; height: 80px;${stationUrl2 ? ' cursor:pointer;' : ''}" onerror="this.src='https://placehold.co/100x100?text=?'">`;
                         memberHtml += `
                             <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 90px; gap: 8px;">
-                                <img src="${m.img}" class="profile-img" style="width: 80px; height: 80px;" onerror="this.src='https://placehold.co/100x100?text=?'">
+                                ${stationUrl2 ? `<a href="${stationUrl2}" target="_blank" rel="noopener noreferrer" style="display:block; border-radius:50%; line-height:0;">${imgTag2}</a>` : imgTag2}
                                 <div class="profile-name" style="font-size: 16px;">${m.name}</div>
                             </div>`;
                     }
