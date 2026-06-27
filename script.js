@@ -341,6 +341,57 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 };
 
+// 날짜(dateId: "YYYY-MM-DD")로 soop_posts에서 공지를 자동 검색해 표시
+window.loadNoticePreviewByDate = async function(dateId, container) {
+    if (!dateId || !container) return;
+
+    // dateId 형식: "YYYY-MM-DD" (예: "2025-07-04")
+    // soop_posts의 date 필드는 "YYYY-MM-DD" 문자열 또는 "YYYY.MM.DD" 등일 수 있음
+    const [year, month, day] = dateId.split('-');
+    const dateVariants = [
+        dateId,                             // "2025-07-04"
+        `${year}.${month}.${day}`,          // "2025.07.04"
+        `${year}/${month}/${day}`,          // "2025/07/04"
+        `${year}-${month}-${day.replace(/^0/, '')}`, // "2025-7-4"
+    ];
+
+    try {
+        // date 필드가 문자열인 경우: 여러 형식 시도
+        let matchedDoc = null;
+
+        for (const dateStr of dateVariants) {
+            const q = query(collection(db, "soop_posts"), where("date", "==", dateStr), orderBy("date", "desc"));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                matchedDoc = snap.docs[0].data();
+                break;
+            }
+        }
+
+        // date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우도 처리
+        if (!matchedDoc) {
+            const dayStart = new Date(`${dateId}T00:00:00+09:00`).getTime();
+            const dayEnd   = new Date(`${dateId}T23:59:59+09:00`).getTime();
+            const qTs = query(
+                collection(db, "soop_posts"),
+                where("date", ">=", dayStart),
+                where("date", "<=", dayEnd)
+            );
+            const snapTs = await getDocs(qTs);
+            if (!snapTs.empty) matchedDoc = snapTs.docs[0].data();
+        }
+
+        if (matchedDoc && matchedDoc.title && matchedDoc.title.trim() !== '') {
+            container.style.display = 'block';
+            renderNoticeHTML(container, matchedDoc.link || '#', matchedDoc.title, matchedDoc.content || '');
+        }
+        // 해당 날짜 공지가 없으면 noticeArea를 숨긴 채로 둠 (아무것도 표시 안 함)
+    } catch (error) {
+        console.log("날짜 기반 공지 검색 실패:", error);
+        // 에러 시에도 공지 영역 숨김 유지 (조용히 실패)
+    }
+};
+
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
         <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 0; border: 2px solid #865000; border-radius: 12px; background: #FFF9C4; box-shadow: none; overflow: hidden;">
@@ -2881,10 +2932,18 @@ window.showDayInfo = function(dateId, dayEvents) {
         
         const evWithNotice = dayEvents?.find(e => e.noticeLink);
         if (evWithNotice) {
+            // 기존 방식: 이벤트에 noticeLink가 직접 연결된 경우
             noticeArea.style.display = 'block';
             setTimeout(() => {
                 if (window.loadNoticePreview) {
                     window.loadNoticePreview(evWithNotice.noticeLink, noticeArea, evWithNotice.noticeTitle, evWithNotice.noticeDesc);
+                }
+            }, 0);
+        } else if (dateId) {
+            // 새 방식: noticeLink가 없어도 날짜로 soop_posts에서 자동 검색
+            setTimeout(() => {
+                if (window.loadNoticePreviewByDate) {
+                    window.loadNoticePreviewByDate(dateId, noticeArea);
                 }
             }, 0);
         }
