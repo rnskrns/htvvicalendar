@@ -346,7 +346,7 @@ window.loadNoticePreviewByDate = async function(dateId, container) {
     if (!dateId || !container) return;
 
     // dateId 형식: "YYYY-MM-DD" (예: "2025-07-04")
-    // soop_posts의 date 필드는 "YYYY-MM-DD" 문자열 또는 "YYYY.MM.DD" 등일 수 있음
+    // soop_posts의 post_date 또는 date 필드는 "YYYY-MM-DD" 문자열 또는 "YYYY.MM.DD" 등일 수 있음
     const [year, month, day] = dateId.split('-');
     const dateVariants = [
         dateId,                             // "2025-07-04"
@@ -356,11 +356,11 @@ window.loadNoticePreviewByDate = async function(dateId, container) {
     ];
 
     try {
-        // date 필드가 문자열인 경우: 여러 형식 시도
         let matchedDoc = null;
 
+        // 1순위: post_date 필드 (문자열 형식) 검색
         for (const dateStr of dateVariants) {
-            const q = query(collection(db, "soop_posts"), where("date", "==", dateStr), orderBy("date", "desc"));
+            const q = query(collection(db, "soop_posts"), where("post_date", "==", dateStr), orderBy("post_date", "desc"));
             const snap = await getDocs(q);
             if (!snap.empty) {
                 matchedDoc = snap.docs[0].data();
@@ -368,7 +368,32 @@ window.loadNoticePreviewByDate = async function(dateId, container) {
             }
         }
 
-        // date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우도 처리
+        // 2순위: date 필드 (문자열 형식) 검색
+        if (!matchedDoc) {
+            for (const dateStr of dateVariants) {
+                const q = query(collection(db, "soop_posts"), where("date", "==", dateStr), orderBy("date", "desc"));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    matchedDoc = snap.docs[0].data();
+                    break;
+                }
+            }
+        }
+
+        // 3순위: post_date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우 처리
+        if (!matchedDoc) {
+            const dayStart = new Date(`${dateId}T00:00:00+09:00`).getTime();
+            const dayEnd   = new Date(`${dateId}T23:59:59+09:00`).getTime();
+            const qTs = query(
+                collection(db, "soop_posts"),
+                where("post_date", ">=", dayStart),
+                where("post_date", "<=", dayEnd)
+            );
+            const snapTs = await getDocs(qTs);
+            if (!snapTs.empty) matchedDoc = snapTs.docs[0].data();
+        }
+
+        // 4순위: date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우 처리
         if (!matchedDoc) {
             const dayStart = new Date(`${dateId}T00:00:00+09:00`).getTime();
             const dayEnd   = new Date(`${dateId}T23:59:59+09:00`).getTime();
