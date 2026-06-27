@@ -341,79 +341,49 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 };
 
-// 날짜(dateId: "YYYY-MM-DD")로 soop_posts에서 공지를 자동 검색해 표시
+// 날짜(dateId: "YYYY-MM-DD")로 soop_posts에서 공지를 자동 검색해 표시 (문자열 대조 방식 수정)
 window.loadNoticePreviewByDate = async function(dateId, container) {
     if (!dateId || !container) return;
 
-    // dateId 형식: "YYYY-MM-DD" (예: "2025-07-04")
-    // soop_posts의 post_date 또는 date 필드는 "YYYY-MM-DD" 문자열 또는 "YYYY.MM.DD" 등일 수 있음
-    const [year, month, day] = dateId.split('-');
-    const dateVariants = [
-        dateId,                             // "2025-07-04"
-        `${year}.${month}.${day}`,          // "2025.07.04"
-        `${year}/${month}/${day}`,          // "2025/07/04"
-        `${year}-${month}-${day.replace(/^0/, '')}`, // "2025-7-4"
-    ];
+    const parts = dateId.split('-');
+    const year = parts[0];
+    const month = parts[1].padStart(2, '0');
+    const day = parts[2].padStart(2, '0');
+    
+    // YYYY-MM-DD 형태로 변환
+    const datePrefix = `${year}-${month}-${day}`;
+
+    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px; font-weight: bold;">숲 게시판 연동 중... 🔄</div>';
 
     try {
         let matchedDoc = null;
 
-        // 1순위: post_date 필드 (문자열 형식) 검색
-        for (const dateStr of dateVariants) {
-            const q = query(collection(db, "soop_posts"), where("post_date", "==", dateStr), orderBy("post_date", "desc"));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                matchedDoc = snap.docs[0].data();
-                break;
-            }
-        }
-
-        // 2순위: date 필드 (문자열 형식) 검색
-        if (!matchedDoc) {
-            for (const dateStr of dateVariants) {
-                const q = query(collection(db, "soop_posts"), where("date", "==", dateStr), orderBy("date", "desc"));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    matchedDoc = snap.docs[0].data();
-                    break;
-                }
-            }
-        }
-
-        // 3순위: post_date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우 처리
-        if (!matchedDoc) {
-            const dayStart = new Date(`${dateId}T00:00:00+09:00`).getTime();
-            const dayEnd   = new Date(`${dateId}T23:59:59+09:00`).getTime();
-            const qTs = query(
-                collection(db, "soop_posts"),
-                where("post_date", ">=", dayStart),
-                where("post_date", "<=", dayEnd)
-            );
-            const snapTs = await getDocs(qTs);
-            if (!snapTs.empty) matchedDoc = snapTs.docs[0].data();
-        }
-
-        // 4순위: date 필드가 타임스탬프(숫자/Firestore Timestamp)인 경우 처리
-        if (!matchedDoc) {
-            const dayStart = new Date(`${dateId}T00:00:00+09:00`).getTime();
-            const dayEnd   = new Date(`${dateId}T23:59:59+09:00`).getTime();
-            const qTs = query(
-                collection(db, "soop_posts"),
-                where("date", ">=", dayStart),
-                where("date", "<=", dayEnd)
-            );
-            const snapTs = await getDocs(qTs);
-            if (!snapTs.empty) matchedDoc = snapTs.docs[0].data();
+        // post_date가 "2026-06-25 14:29:44" 문자열 형태이므로 startsWith 개념으로 검색
+        const qStr = query(
+            collection(db, "soop_posts"),
+            where("post_date", ">=", datePrefix),
+            where("post_date", "<=", datePrefix + '\uf8ff')
+        );
+        const snapStr = await getDocs(qStr);
+        
+        if (!snapStr.empty) {
+            // 여러 개일 경우 가장 최신글(시간순)로 정렬
+            const docs = snapStr.docs.map(d => d.data());
+            docs.sort((a, b) => (b.post_date || '').localeCompare(a.post_date || ''));
+            matchedDoc = docs[0];
         }
 
         if (matchedDoc && matchedDoc.title && matchedDoc.title.trim() !== '') {
             container.style.display = 'block';
             renderNoticeHTML(container, matchedDoc.link || '#', matchedDoc.title, matchedDoc.content || '');
+        } else {
+            container.style.display = 'none';
+            container.innerHTML = '';
         }
-        // 해당 날짜 공지가 없으면 noticeArea를 숨긴 채로 둠 (아무것도 표시 안 함)
     } catch (error) {
         console.log("날짜 기반 공지 검색 실패:", error);
-        // 에러 시에도 공지 영역 숨김 유지 (조용히 실패)
+        container.style.display = 'none';
+        container.innerHTML = '';
     }
 };
 
@@ -1598,6 +1568,7 @@ function showInfo(id, idx) {
     showInfoByEvent(ev);
 }
 
+// ✨ 단일 일정 클릭 시(모달창)에서도 링크가 없으면 날짜를 대조하도록 추가
 window.showInfoByEvent = function(ev) {
     if (!ev) return;
     const titleEl = document.getElementById('infoTitle');
@@ -1712,6 +1683,14 @@ window.showInfoByEvent = function(ev) {
             noticePreview.style.marginTop = '10px';
             noticePreview.style.flexShrink = '0';
             window.loadNoticePreview(ev.noticeLink, noticePreview, ev.noticeTitle, ev.noticeDesc);
+        } else if (ev.dateId || ev.startDate) {
+            // 날짜 대조 추가
+            noticePreview.style.display = 'block';
+            noticePreview.style.width = '100%';
+            noticePreview.style.marginTop = '10px';
+            noticePreview.style.flexShrink = '0';
+            const searchDate = ev.dateId || ev.startDate;
+            window.loadNoticePreviewByDate(searchDate, noticePreview);
         } else {
             noticePreview.style.display = 'none';
         }
