@@ -747,7 +747,7 @@ function renderGroupList() {
         const div = document.createElement('div');
         div.style.cssText = 'display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fafaf9; border-radius:10px; margin-bottom:8px; border:1px solid #e5e7eb;';
         div.innerHTML = `
-            <span style="font-weight:900; color:#7A5A2F; flex:1; min-width:0;">👥 ${g.name}</span>
+            <span style="font-weight:900; color:#7A5A2F; flex:1; min-width:0;">${g.name}</span>
             <span style="font-size:12px; color:#888; flex:2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${(g.members||[]).join(', ')}</span>
             <button onclick="editGroup('${g.name}')" style="background:#E8F4FD; border:1.5px solid #b3d9f5; color:#1a6ba0; font-size:12px; font-weight:900; padding:4px 10px; border-radius:7px; cursor:pointer; white-space:nowrap; flex-shrink:0;">수정</button>
             <button onclick="deleteGroup('${g.name}')" style="background:transparent; border:none; color:#e57373; font-size:18px; cursor:pointer; font-weight:900; line-height:1; padding:2px 4px; flex-shrink:0;">✕</button>
