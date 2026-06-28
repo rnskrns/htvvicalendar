@@ -324,7 +324,11 @@
                     </div>
                 </div>
                 <div class="event-modal-right">
-                    <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분)</label><input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2" class="event-custom-input"></div>
+                    <div>
+                        <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">참여 멤버 (쉼표로 구분 또는 그룹명)</label>
+                        <input type="text" id="eventMembers" placeholder="예: 햇비, 멤버2 또는 그룹명" class="event-custom-input" oninput="onEventMembersInput()" autocomplete="off">
+                        <div id="groupSuggestions" style="display:none; border:1px solid #e5e7eb; border-radius:8px; background:#fff; margin-top:4px; z-index:99; position:relative; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>
+                    </div>
                     <div><label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">공지 링크</label><input type="text" id="eventNoticeLink" placeholder="https://..." class="event-custom-input"></div>
                     <div>
                         <label style="display: block; font-weight: 800; margin-bottom: 6px; color: #7A5A2F;">포스터 / 썸네일 이미지</label>
@@ -388,7 +392,55 @@
         </div>
     </div>
 
-    <div id="memberModal" class="modal"><div class="modal-content"><h3 class="modal-title">멤버/크루 관리</h3><div id="memberList" class="member-list"></div><div class="member-add-box"><h4 style="font-weight:900; margin-bottom:12px;">새 멤버/크루 추가</h4><div style="display: flex; gap: 15px; margin-bottom: 12px; font-weight: 800; color: #7A5A2F;"><label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="addType" value="member" checked onchange="toggleAddType()" style="accent-color: #FDE047; width: 16px; height: 16px;">멤버</label><label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="addType" value="crew" onchange="toggleAddType()" style="accent-color: #FDE047; width: 16px; height: 16px;">크루</label></div><input type="text" id="newMemberName" class="admin-input" placeholder="멤버 이름 / 크루명" style="margin-bottom: 8px;"><div id="memberInputArea"><input type="text" id="newMemberId" class="admin-input" placeholder="SOOP 아이디 (예: htvv2i)" style="margin-bottom: 12px;"></div><div id="crewInputArea" style="display: none;"><input type="text" id="newCrewImgUrl" class="admin-input" placeholder="이미지 주소 (https://...)" style="margin-bottom: 12px;"></div><button class="btn btn-save" style="width:100%; padding:14px;" onclick="addMember()">추가하기</button></div><button class="btn btn-cancel" style="margin-top:15px;" onclick="closeModal('memberModal')">닫기</button></div></div>    
+    <div id="memberModal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <h3 class="modal-title">멤버/크루 관리</h3>
+            <!-- 검색 -->
+            <div style="position:relative; margin-bottom:14px;">
+                <input type="text" id="memberSearchInput" class="admin-input" placeholder="🔍 멤버/크루 검색..." oninput="filterMemberList()" style="padding-left:14px; margin-bottom:0;">
+            </div>
+            <div id="memberList" class="member-list"></div>
+            <div class="member-add-box">
+                <h4 style="font-weight:900; margin-bottom:12px;">새 멤버/크루 추가</h4>
+                <div style="display: flex; gap: 15px; margin-bottom: 12px; font-weight: 800; color: #7A5A2F;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="addType" value="member" checked onchange="toggleAddType()" style="accent-color: #FDE047; width: 16px; height: 16px;">멤버</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="addType" value="crew" onchange="toggleAddType()" style="accent-color: #FDE047; width: 16px; height: 16px;">크루</label>
+                </div>
+                <input type="text" id="newMemberName" class="admin-input" placeholder="멤버 이름 / 크루명" style="margin-bottom: 8px;">
+                <div id="memberInputArea"><input type="text" id="newMemberId" class="admin-input" placeholder="SOOP 아이디 (예: htvv2i)" style="margin-bottom: 12px;"></div>
+                <div id="crewInputArea" style="display: none;"><input type="text" id="newCrewImgUrl" class="admin-input" placeholder="이미지 주소 (https://...)" style="margin-bottom: 12px;"></div>
+                <button class="btn btn-save" style="width:100%; padding:14px;" onclick="addMember()">추가하기</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-save" style="flex:1; background:#E8F4FD; color:#1a6ba0; border:1.5px solid #b3d9f5;" onclick="openGroupModal()">👥 그룹 관리</button>
+                <button class="btn btn-cancel" style="flex:1;" onclick="closeModal('memberModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 그룹 관리 모달 -->
+    <div id="groupModal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <h3 class="modal-title">그룹 관리</h3>
+            <div id="groupList" style="margin-bottom:16px;"></div>
+            <div class="member-add-box">
+                <h4 style="font-weight:900; margin-bottom:12px;">새 그룹 추가</h4>
+                <input type="text" id="newGroupName" class="admin-input" placeholder="그룹 이름 (예: 합방팀A)" style="margin-bottom:12px;">
+                <!-- 그룹 멤버 선택 검색 -->
+                <div style="position:relative; margin-bottom:8px;">
+                    <input type="text" id="groupMemberSearch" class="admin-input" placeholder="🔍 멤버 검색..." oninput="filterGroupMemberPicker()" style="margin-bottom:0;">
+                </div>
+                <div id="groupMemberPicker" style="display:flex; flex-wrap:wrap; gap:8px; max-height:180px; overflow-y:auto; padding:10px; background:#fafaf9; border:1px solid #e5e7eb; border-radius:10px; margin-bottom:12px;"></div>
+                <div id="groupSelectedPreview" style="font-size:13px; color:#7A5A2F; font-weight:700; margin-bottom:12px; min-height:18px;"></div>
+                <button id="groupSaveBtn" class="btn btn-save" style="width:100%; padding:14px;" onclick="saveGroup()">그룹 저장</button>
+                <button id="groupCancelEditBtn" class="btn btn-cancel" style="width:100%; padding:10px; margin-top:8px; display:none;" onclick="cancelGroupEdit()">수정 취소</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-cancel" style="flex:1;" onclick="closeModal('groupModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="confirmModal" class="modal"><div class="modal-content" style="max-width: 320px; align-items: center; text-align: center;"><h3 id="confirmMessage" class="font-black text-lg mb-6"></h3><div class="btn-group" style="width: 100%;"><button class="btn btn-cancel" onclick="closeModal('confirmModal')">취소</button><button id="confirmBtn" class="btn btn-danger">삭제</button></div></div></div>
     
     <div id="monthPickerModal" class="modal"><div class="modal-content" style="max-width: 380px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><button class="nav-btn" onclick="changePickerYear(-1)">◀</button><h3 id="pickerYearDisplay" class="font-black text-2xl m-0"></h3><button class="nav-btn" onclick="changePickerYear(1)">▶</button></div><div class="month-picker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div><button class="btn btn-cancel mt-6" onclick="closeModal('monthPickerModal')">닫기</button></div></div>

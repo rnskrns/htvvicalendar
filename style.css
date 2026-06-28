@@ -1271,3 +1271,15 @@ body {
         right: 12px !important;
     }
 }
+/* ====== 그룹/검색 기능 추가 스타일 ====== */
+#groupMemberPicker label:hover {
+    background: #FFF9C4 !important;
+    border-color: #FDE047 !important;
+}
+#groupMemberPicker {
+    scrollbar-width: thin;
+    scrollbar-color: #FDE047 #f5f5f5;
+}
+#groupSuggestions div:last-child {
+    border-bottom: none !important;
+}
