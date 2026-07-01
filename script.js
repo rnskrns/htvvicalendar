@@ -315,7 +315,7 @@ window.loadNoticePreview = async function(url, container, manualTitle, manualDes
     }
 
     // 2. 파이어베이스 soop_posts 컬렉션에서 긁어온 숲 최신글 검색
-    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px; font-weight: bold;">숲 게시판 연동 중... 🔄</div>';
+    container.innerHTML = '';
 
     try {
         // 기존 'events' 대신 'soop_posts' 컬렉션에서 현재 입력한 링크(url)와 똑같은 글을 찾습니다.
@@ -354,7 +354,7 @@ window.loadNoticePreviewByDate = async function(dateId, container) {
     // YYYY-MM-DD 형태로 변환
     const datePrefix = `${year}-${month}-${day}`;
 
-    container.innerHTML = '<div style="padding: 10px; text-align: center; color: #A09586; font-size: 13px; font-weight: bold;">숲 게시판 연동 중... 🔄</div>';
+    container.innerHTML = '';
 
     try {
         let matchedDoc = null;
@@ -390,16 +390,16 @@ window.loadNoticePreviewByDate = async function(dateId, container) {
 
 function renderNoticeHTML(container, url, title, desc) {
     container.innerHTML = `
-        <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 0; border: 2px solid #865000; border-radius: 12px; background: #FFF9C4; box-shadow: none; overflow: hidden;">
+        <div class="premium-notice-card" style="display: block; text-decoration: none; color: inherit; text-align: left; padding: 0; border: 2px solid #865000; border-radius: 12px; background: #FFF9C4; box-shadow: none; overflow: hidden; cursor: pointer;" onclick="this.classList.toggle('expanded')">
             <div class="premium-notice-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; margin-bottom: 0; background: #ffffff; border-bottom: 2px solid #865000;">
                 <span class="premium-notice-badge" style="font-size: 14px; font-weight: 900; color: #865000; background: none; padding: 0; border-radius: 0; border: none;">공지사항</span>
-                <span class="premium-notice-date" style="font-size: 12px; color: #7A5A2F; font-weight: bold;">바로가기 ↗</span>
+                <a href="${url}" target="_blank" rel="noreferrer" class="premium-notice-date" style="font-size: 12px; color: #7A5A2F; font-weight: bold; text-decoration: none;" onclick="event.stopPropagation();">바로가기 ↗</a>
             </div>
             <div style="padding: 12px 15px 15px 15px;">
                 <h3 class="premium-notice-title" style="margin: 0 0 10px 0; font-size: 16px; color: #1e293b; font-weight: 800; word-break: keep-all;">${title}</h3>
                 ${desc ? `<div class="premium-notice-desc" style="font-size: 13px; color: #475569; white-space: pre-wrap; word-break: break-all; line-height: 1.6; background: rgba(255, 255, 255, 0.6); padding: 12px; border-radius: 8px; border: none;">${desc}</div>` : ""}
             </div>
-        </a>
+        </div>
     `;
 }
 
@@ -698,6 +698,17 @@ window.filterMemberList = function() { renderMemberList(); };
 
 // ====== 그룹 기능 ======
 
+// 멤버 이름 표시 포맷: 최대 7자까지만 노출(초과 시 ...), 5자 이하는 줄바꿈 없이, 6자 이상부터 4번째 글자 이후 줄바꿈
+function formatProfileName(name) {
+    if (!name) return '';
+    const isTruncated = name.length > 7;
+    const display = isTruncated ? name.slice(0, 7) + '...' : name;
+    if (name.length <= 5) return display;
+    const line1 = display.slice(0, 4);
+    const line2 = display.slice(4);
+    return line2 ? `${line1}<br>${line2}` : line1;
+}
+
 // 멤버 문자열에서 그룹명을 실제 멤버 이름들로 확장하는 헬퍼
 function expandMembersWithGroups(membersStr) {
     if (!membersStr) return [];
@@ -706,12 +717,22 @@ function expandMembersWithGroups(membersStr) {
     membersStr.split(',').forEach(nameRaw => {
         const name = nameRaw.trim();
         if (!name) return;
-        if (groups[name]) {
-            // 그룹 이름이면 그룹 멤버들로 펼침
+
+        const isCrew = members[name] && members[name].type === 'crew';
+        const isGroup = !!groups[name];
+
+        // 크루로 등록되어 있으면 크루 이미지가 보이도록 크루 자체를 결과에 포함
+        if (isCrew) {
+            if (!seen.has(name)) { seen.add(name); result.push(name); }
+        }
+
+        if (isGroup) {
+            // 그룹으로도 등록되어 있으면 그룹 멤버들을 함께 펼쳐서 추가 (크루+그룹 동시 등록 시 크루 이미지 아래 멤버 프사 표시)
             (groups[name].members || []).forEach(mName => {
                 if (!seen.has(mName)) { seen.add(mName); result.push(mName); }
             });
-        } else {
+        } else if (!isCrew) {
+            // 크루도 그룹도 아니면 일반 멤버 이름 그대로 추가
             if (!seen.has(name)) { seen.add(name); result.push(name); }
         }
     });
@@ -1663,8 +1684,8 @@ function renderCalendar() {
                     item.onclick = (e) => { e.stopPropagation(); showDayInfo(dateId, todaysEvents); };
                     if (isAdmin) item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); openDayManager(dateId, ev.id); };
                     
-                    if (ev.time) { item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div>${ev.title}</div>`; } 
-                    else { item.innerHTML = `<div>${ev.title}</div>`; }
+                    if (ev.time) { item.innerHTML = `<span class="event-time-badge">${formatTime12h(ev.time)}</span><div style="white-space: pre-wrap; word-break: break-word;">${ev.title}</div>`; } 
+                    else { item.innerHTML = `<div style="white-space: pre-wrap; word-break: break-word;">${ev.title}</div>`; }
                     eventsDiv.appendChild(item);
                 });
             } else { eventsDiv.innerHTML = "<div class='empty-event-card'>오늘은 일정이 없습니다.</div>"; }
@@ -1823,13 +1844,17 @@ window.showInfoByEvent = function(ev) {
         scrollBody = document.createElement('div');
         scrollBody.id = 'infoScrollBody';
         scrollBody.style.cssText = 'flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 5px; margin-bottom: 10px; min-height: 0;';
-        
-        if (timeEl) {
-            timeEl.after(scrollBody);
+
+        if (modalBox) {
+            modalBox.appendChild(scrollBody);
         } else if (titleEl) {
             titleEl.after(scrollBody);
         }
     }
+
+    // 제목/날짜(시간)를 스크롤 영역 안으로 옮겨서 더 이상 상단에 고정되지 않도록 함
+    if (titleEl) scrollBody.appendChild(titleEl);
+    if (timeEl) scrollBody.appendChild(timeEl);
 
     titleEl.innerText = ev.title || '';
     
@@ -1859,6 +1884,9 @@ window.showInfoByEvent = function(ev) {
             const img = document.createElement('img'); img.src = ev.imageUrl; img.alt = ev.title; img.className = 'info-image';
             img.style.maxWidth = '100%';
             img.style.borderRadius = '12px';
+            img.style.cursor = 'pointer'; // 클릭 가능하게 마우스 포인터 변경
+            img.onclick = () => window.openImageViewer(ev.imageUrl); // 클릭 시 확대 함수 호출
+            
             img.onload = () => { infoImageContainer.innerHTML = ''; infoImageContainer.appendChild(img); };
             img.onerror = () => { infoImageContainer.innerHTML = `<a class="info-link" href="${ev.imageUrl}" target="_blank" rel="noopener noreferrer">이미지 보기</a>`; };
             infoImageContainer.appendChild(img);
@@ -1887,7 +1915,7 @@ window.showInfoByEvent = function(ev) {
                     const imgTag1 = `<img src="${m.img}" class="profile-img"${stationUrl1 ? ' style="cursor:pointer;"' : ''} onerror="this.src='https://placehold.co/100x100?text=?'">`;
                     memberHtml += `
                         <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 80px; gap: 8px;">
-                            ${stationUrl1 ? `<a href="${stationUrl1}" target="_blank" rel="noopener noreferrer" style="display:block; border-radius:50%; line-height:0;">${imgTag1}</a>` : imgTag1}<div class="profile-name">${m.name}</div>
+                            ${stationUrl1 ? `<a href="${stationUrl1}" target="_blank" rel="noopener noreferrer" style="display:block; border-radius:50%; line-height:0;">${imgTag1}</a>` : imgTag1}<div class="profile-name">${formatProfileName(m.name)}</div>
                         </div>`;
                 }
             });
@@ -1922,9 +1950,16 @@ window.showInfoByEvent = function(ev) {
         } else {
             noticePreview.style.display = 'none';
         }
-        scrollBody.after(noticePreview);
+        // 공지카드는 스크롤 영역 밖에 두어 하단에 고정되도록 함
+        if (modalBox) modalBox.appendChild(noticePreview);
     }
-        
+
+    // 닫기 버튼은 항상 맨 아래(공지카드 밑)에 위치하도록 재배치
+    const closeBtn = document.getElementById('infoCloseBtn');
+    if (modalBox && closeBtn) {
+        modalBox.appendChild(closeBtn);
+    }
+
     if(modal) modal.style.display = 'flex';
 }
 
@@ -3114,7 +3149,7 @@ window.showDayInfo = function(dateId, dayEvents) {
                         memberHtml += `
                             <div class="profile-card" style="display: flex; flex-direction: column; align-items: center; width: 90px; gap: 8px;">
                                 ${stationUrl2 ? `<a href="${stationUrl2}" target="_blank" rel="noopener noreferrer" style="display:block; border-radius:50%; line-height:0;">${imgTag2}</a>` : imgTag2}
-                                <div class="profile-name" style="font-size: 16px;">${m.name}</div>
+                                <div class="profile-name" style="font-size: 16px;">${formatProfileName(m.name)}</div>
                             </div>`;
                     }
                 });
@@ -3138,7 +3173,7 @@ window.showDayInfo = function(dateId, dayEvents) {
                     </div>
                     
                     <div class="info-image-container" style="text-align:center; margin-bottom: 20px; width:100%;">
-                        ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px;" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
+                        ${ev.imageUrl ? `<img src="${ev.imageUrl}" alt="${ev.title}" class="info-image" style="max-width:100%; border-radius:12px; cursor:pointer;" onclick="window.openImageViewer('${ev.imageUrl}')" onerror="this.outerHTML='<a href=&quot;${ev.imageUrl}&quot; target=&quot;_blank&quot; class=&quot;info-link&quot;>이미지 보기</a>'">` : ''}
                     </div>
                 </div>
             `;
@@ -3276,3 +3311,26 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('서비스 워커 등록 실패', err));
     });
 }
+
+// ==========================================
+// 이미지 뷰어 (확대 기능) 추가
+// ==========================================
+window.openImageViewer = function(src) {
+    let viewer = document.getElementById('imageViewerModal');
+    if (!viewer) {
+        const html = `
+        <div id="imageViewerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:20000; justify-content:center; align-items:center; backdrop-filter:blur(4px); flex-direction:column;" onclick="closeImageViewer()">
+            <button onclick="closeImageViewer()" style="position:absolute; top:20px; right:20px; background:transparent; color:white; border:none; font-size:30px; font-weight:bold; cursor:pointer; z-index:20001; padding:10px;">✕</button>
+            <img id="viewerImage" src="" style="max-width:90%; max-height:85vh; border-radius:12px; object-fit:contain; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" onclick="event.stopPropagation();">
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        viewer = document.getElementById('imageViewerModal');
+    }
+    document.getElementById('viewerImage').src = src;
+    viewer.style.display = 'flex';
+};
+
+window.closeImageViewer = function() {
+    const viewer = document.getElementById('imageViewerModal');
+    if (viewer) viewer.style.display = 'none';
+};
